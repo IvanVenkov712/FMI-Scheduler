@@ -1,0 +1,46 @@
+CREATE DATABASE IF NOT EXISTS schedule_management_system
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
+
+USE schedule_management_system;
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+DROP TABLE IF EXISTS system_logs;
+DROP TABLE IF EXISTS audit_logs;
+DROP TABLE IF EXISTS import_export_jobs;
+DROP TABLE IF EXISTS allocation_runs;
+DROP TABLE IF EXISTS movement_constraints;
+DROP TABLE IF EXISTS route_steps;
+DROP TABLE IF EXISTS routes;
+DROP TABLE IF EXISTS room_unavailability;
+DROP TABLE IF EXISTS schedule_events;
+DROP TABLE IF EXISTS schedules;
+DROP TABLE IF EXISTS exam_requests;
+DROP TABLE IF EXISTS online_sessions;
+DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS resource_requests;
+DROP TABLE IF EXISTS room_resources;
+DROP TABLE IF EXISTS resources;
+DROP TABLE IF EXISTS room_connections;
+DROP TABLE IF EXISTS rooms;
+DROP TABLE IF EXISTS room_types;
+DROP TABLE IF EXISTS floor_points;
+DROP TABLE IF EXISTS floors;
+DROP TABLE IF EXISTS buildings;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS roles;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+SOURCE database/migrations/001_create_users_table.sql;
+SOURCE database/migrations/002_create_roles_table.sql;
+SOURCE database/migrations/003_create_buildings_table.sql;
+SOURCE database/migrations/004_create_floors_table.sql;
+SOURCE database/migrations/005_create_rooms_table.sql;
+SOURCE database/migrations/006_create_resources_table.sql;
+SOURCE database/migrations/007_create_events_table.sql;
+SOURCE database/migrations/008_create_schedules_table.sql;
+SOURCE database/migrations/009_create_routes_table.sql;
+SOURCE database/migrations/010_create_constraints_table.sql;
+SOURCE database/migrations/011_create_audit_logs_table.sql;
