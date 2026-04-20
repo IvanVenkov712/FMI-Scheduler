@@ -1,0 +1,32 @@
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Internal application code, data and documentation must not be web-readable.
+    RewriteRule ^(?:app|config|database|docs|routes|storage|tests)(?:/|$) - [F,L,NC]
+    RewriteRule ^(?:FileStructure|project_structure|project_requirements|project_specification|xampp-setup)\.txt$ - [F,L,NC]
+
+    # Uploaded files are public assets, but executable PHP files are never served from there.
+    RewriteRule ^(?:public/)?uploads/.*\.(?:php|phtml|phar)$ - [F,L,NC]
+
+    # Allow short asset URLs such as /css/main.css while keeping assets in /public.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(css|js|images|uploads)/(.*)$ public/$1/$2 [L,NC]
+
+    # Existing public files and directories are served directly.
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Every application route is handled by the root front controller.
+    RewriteRule ^ index.php [L,QSA]
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
