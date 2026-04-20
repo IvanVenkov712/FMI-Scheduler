@@ -33,14 +33,14 @@ DROP TABLE IF EXISTS roles;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
-SOURCE database/migrations/001_create_users_table.sql;
-SOURCE database/migrations/002_create_roles_table.sql;
-SOURCE database/migrations/003_create_buildings_table.sql;
-SOURCE database/migrations/004_create_floors_table.sql;
-SOURCE database/migrations/005_create_rooms_table.sql;
-SOURCE database/migrations/006_create_resources_table.sql;
-SOURCE database/migrations/007_create_events_table.sql;
-SOURCE database/migrations/008_create_schedules_table.sql;
-SOURCE database/migrations/009_create_routes_table.sql;
-SOURCE database/migrations/010_create_constraints_table.sql;
-SOURCE database/migrations/011_create_audit_logs_table.sql;
+SOURCE migrations/001_create_users_table.sql;
+SOURCE migrations/002_create_roles_table.sql;
+SOURCE migrations/003_create_buildings_table.sql;
+SOURCE migrations/004_create_floors_table.sql;
+SOURCE migrations/005_create_rooms_table.sql;
+SOURCE migrations/006_create_resources_table.sql;
+SOURCE migrations/007_create_events_table.sql;
+SOURCE migrations/008_create_schedules_table.sql;
+SOURCE migrations/009_create_routes_table.sql;
+SOURCE migrations/010_create_constraints_table.sql;
+SOURCE migrations/011_create_audit_logs_table.sql;
