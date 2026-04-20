@@ -1,6 +1,7 @@
 <?php
-
 declare(strict_types=1);
+
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'core' . DIRECTORY_SEPARATOR . 'View.php';
 
 $old = isset($old) && is_array($old) ? $old : [];
 $error = isset($error) ? (string) $error : '';
@@ -357,7 +358,7 @@ $value = static function (string $key) use ($old): string {
 
                 <div class="actions">
                     <button type="submit">Вход в системата</button>
-                    <p class="switch">Нямате акаунт? <a href="/register">Регистрация</a></p>
+                    <p class="switch">Нямате акаунт? <a href="/app/views/auth/register.php">Регистрация</a></p>
                 </div>
             </form>
 

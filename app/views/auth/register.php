@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'core' . DIRECTORY_SEPARATOR . 'View.php';
+
 $old = isset($old) && is_array($old) ? $old : [];
 $errors = isset($errors) && is_array($errors) ? $errors : [];
 
@@ -477,7 +479,7 @@ $fieldError = static function (string $key) use ($errors): string {
 
                 <div class="actions">
                     <button type="submit">Създаване на акаунт</button>
-                    <p class="switch">Вече имате акаунт? <a href="/login">Вход</a></p>
+                    <p class="switch">Вече имате акаунт? <a href="/app/views/auth/login.php">Вход</a></p>
                 </div>
             </form>
         </section>
