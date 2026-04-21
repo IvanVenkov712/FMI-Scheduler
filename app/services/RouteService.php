@@ -23,12 +23,9 @@ class RouteService
 
     public function create(array $data, array $steps = [], ?int $userId = null): array
     {
-        $data = $this->validation->normalizeIntegers($data, [
-            'from_room_id', 'to_room_id', 'from_building_id', 'to_building_id', 'distance_meters', 'duration_minutes',
-        ]);
+        $data = $this->normalizeRouteIntegers($this->applyLegacyDurationInput($data));
         $data = $this->validation->normalizeBooleans($data, ['is_accessible']);
         $data['status'] = $data['status'] ?? 'active';
-        $data['movement_type'] = $data['movement_type'] ?? 'walking';
 
         $errors = $this->validateRouteData($data);
 
@@ -53,9 +50,7 @@ class RouteService
             return ['success' => false, 'errors' => ['route' => ['Route not found.']]];
         }
 
-        $payload = $this->validation->normalizeIntegers($data, [
-            'from_room_id', 'to_room_id', 'from_building_id', 'to_building_id', 'distance_meters', 'duration_minutes',
-        ]);
+        $payload = $this->normalizeRouteIntegers($this->applyLegacyDurationInput($data));
         $payload = $this->validation->normalizeBooleans($payload, ['is_accessible']);
         $errors = $this->validateRouteData($payload + $route->toArray());
 
@@ -75,9 +70,9 @@ class RouteService
         return ['success' => true, 'route' => $updated];
     }
 
-    public function betweenRooms(int $fromRoomId, int $toRoomId, bool $accessibleOnly = false): array
+    public function betweenRooms(int $fromRoomId, int $toRoomId, bool $accessibleOnly = false, string $movementType = ''): array
     {
-        return $this->routes->betweenRooms($fromRoomId, $toRoomId, $accessibleOnly);
+        return $this->routes->betweenRooms($fromRoomId, $toRoomId, $accessibleOnly, $movementType);
     }
 
     public function betweenBuildings(int $fromBuildingId, int $toBuildingId, string $movementType = ''): array
@@ -85,22 +80,26 @@ class RouteService
         return $this->routes->betweenBuildings($fromBuildingId, $toBuildingId, $movementType);
     }
 
-    public function recommended(int $fromRoomId, int $toRoomId, bool $accessibleOnly = false): ?array
+    public function recommended(int $fromRoomId, int $toRoomId, bool $accessibleOnly = false, string $movementType = ''): ?array
     {
-        $candidates = $this->betweenRooms($fromRoomId, $toRoomId, $accessibleOnly);
+        $candidates = $this->betweenRooms($fromRoomId, $toRoomId, $accessibleOnly, $movementType);
         $route = $candidates[0] ?? null;
 
         if ($route === null) {
             return null;
         }
 
+        $selectedMovementType = $movementType !== '' ? $movementType : ($route->preferredMovementType() ?? 'walking');
+        $duration = $route->durationFor($selectedMovementType) ?? $route->durationFor() ?? 0;
+
         return [
             'route' => $route,
             'steps' => $this->routes->steps((int) $route->get('id')),
             'explanation' => sprintf(
-                'Selected route "%s" because it has the lowest travel time of %d minutes.',
+                'Selected route "%s" because it has the lowest %s travel time of %d minutes.',
                 (string) $route->get('name'),
-                (int) $route->get('duration_minutes', 0)
+                $this->movementLabel($selectedMovementType),
+                $duration
             ),
         ];
     }
@@ -152,9 +151,10 @@ class RouteService
     {
         $result = $this->validation->validate($data, [
             'name' => 'required|string|max:190',
-            'movement_type' => 'required|in:walking,car,public_transport',
-            'duration_minutes' => 'required|integer|min:1',
             'distance_meters' => 'nullable|integer|min:0',
+            'walking_duration_minutes' => 'nullable|integer|min:1',
+            'car_duration_minutes' => 'nullable|integer|min:1',
+            'public_transport_duration_minutes' => 'nullable|integer|min:1',
             'status' => 'required|in:active,inactive,restricted',
             'is_accessible' => 'nullable|boolean',
         ]);
@@ -166,7 +166,56 @@ class RouteService
         if (empty($data['to_room_id']) && empty($data['to_building_id'])) {
             $errors['to'][] = 'A route must define an end room or end building.';
         }
+        if (
+            empty($data['walking_duration_minutes'])
+            && empty($data['car_duration_minutes'])
+            && empty($data['public_transport_duration_minutes'])
+        ) {
+            $errors['durations'][] = 'A route must define at least one travel duration.';
+        }
 
         return $errors;
+    }
+
+    private function normalizeRouteIntegers(array $data): array
+    {
+        return $this->validation->normalizeIntegers($data, [
+            'from_room_id',
+            'to_room_id',
+            'from_building_id',
+            'to_building_id',
+            'distance_meters',
+            'walking_duration_minutes',
+            'car_duration_minutes',
+            'public_transport_duration_minutes',
+        ]);
+    }
+
+    private function applyLegacyDurationInput(array $data): array
+    {
+        if (array_key_exists('duration_minutes', $data) && !array_key_exists('walking_duration_minutes', $data)
+            && !array_key_exists('car_duration_minutes', $data)
+            && !array_key_exists('public_transport_duration_minutes', $data)
+        ) {
+            $movementType = (string) ($data['movement_type'] ?? 'walking');
+            $targetField = match ($movementType) {
+                'car' => 'car_duration_minutes',
+                'public_transport' => 'public_transport_duration_minutes',
+                default => 'walking_duration_minutes',
+            };
+            $data[$targetField] = $data['duration_minutes'];
+        }
+
+        unset($data['duration_minutes'], $data['movement_type']);
+
+        return $data;
+    }
+
+    private function movementLabel(string $movementType): string
+    {
+        return match ($movementType) {
+            'public_transport' => 'public transport',
+            default => $movementType,
+        };
     }
 }

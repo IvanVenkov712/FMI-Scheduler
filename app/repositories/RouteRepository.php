@@ -24,12 +24,13 @@ class RouteRepository
             $params['status'] = 'active';
         }
 
-        if ($movementType !== '') {
-            $sql .= ' AND movement_type = :movement_type';
-            $params['movement_type'] = $movementType;
+        $durationColumn = $this->durationColumn($movementType);
+
+        if ($durationColumn !== null) {
+            $sql .= sprintf(' AND %s IS NOT NULL', $durationColumn);
         }
 
-        $sql .= ' ORDER BY duration_minutes ASC, name ASC';
+        $sql .= ' ORDER BY ' . $this->orderByDuration($durationColumn) . ', name ASC';
 
         $rows = $this->db()->fetchAll($sql, $params);
 
@@ -73,7 +74,7 @@ class RouteRepository
         return $route?->delete() ?? false;
     }
 
-    public function betweenRooms(int $fromRoomId, int $toRoomId, bool $accessibleOnly = false): array
+    public function betweenRooms(int $fromRoomId, int $toRoomId, bool $accessibleOnly = false, string $movementType = ''): array
     {
         $sql = 'SELECT * FROM routes
                 WHERE from_room_id = :from_room_id
@@ -88,7 +89,13 @@ class RouteRepository
             $params['is_accessible'] = 1;
         }
 
-        $sql .= ' AND status = "active" ORDER BY duration_minutes ASC, distance_meters ASC, id ASC';
+        $durationColumn = $this->durationColumn($movementType);
+
+        if ($durationColumn !== null) {
+            $sql .= sprintf(' AND %s IS NOT NULL', $durationColumn);
+        }
+
+        $sql .= ' AND status = "active" ORDER BY ' . $this->orderByDuration($durationColumn) . ', id ASC';
 
         $rows = $this->db()->fetchAll($sql, $params);
 
@@ -106,12 +113,13 @@ class RouteRepository
             'to_building_id' => $toBuildingId,
         ];
 
-        if ($movementType !== '') {
-            $sql .= ' AND movement_type = :movement_type';
-            $params['movement_type'] = $movementType;
+        $durationColumn = $this->durationColumn($movementType);
+
+        if ($durationColumn !== null) {
+            $sql .= sprintf(' AND %s IS NOT NULL', $durationColumn);
         }
 
-        $sql .= ' ORDER BY duration_minutes ASC, distance_meters ASC, id ASC';
+        $sql .= ' ORDER BY ' . $this->orderByDuration($durationColumn) . ', id ASC';
 
         $rows = $this->db()->fetchAll($sql, $params);
 
@@ -157,5 +165,28 @@ class RouteRepository
     private function db(): Database
     {
         return $this->database ?? Database::getInstance(Database::configFromFile());
+    }
+
+    private function durationColumn(string $movementType): ?string
+    {
+        return match ($movementType) {
+            'walking' => 'walking_duration_minutes',
+            'car' => 'car_duration_minutes',
+            'public_transport' => 'public_transport_duration_minutes',
+            default => null,
+        };
+    }
+
+    private function orderByDuration(?string $durationColumn): string
+    {
+        if ($durationColumn !== null) {
+            return sprintf('%s IS NULL ASC, %s ASC, distance_meters ASC', $durationColumn, $durationColumn);
+        }
+
+        return 'LEAST(
+            IFNULL(walking_duration_minutes, 65535),
+            IFNULL(car_duration_minutes, 65535),
+            IFNULL(public_transport_duration_minutes, 65535)
+        ) ASC, distance_meters ASC';
     }
 }

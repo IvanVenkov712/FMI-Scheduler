@@ -77,7 +77,13 @@ class Building extends Model
         }
 
         $rows = $this->db()->fetchAll(
-            "SELECT * FROM routes WHERE {$column} = :building_id ORDER BY duration_minutes ASC, name ASC",
+            "SELECT * FROM routes
+             WHERE {$column} = :building_id
+             ORDER BY LEAST(
+                IFNULL(walking_duration_minutes, 65535),
+                IFNULL(car_duration_minutes, 65535),
+                IFNULL(public_transport_duration_minutes, 65535)
+             ) ASC, name ASC",
             ['building_id' => $this->primaryValue()]
         );
 

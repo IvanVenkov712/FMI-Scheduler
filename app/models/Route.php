@@ -12,9 +12,10 @@ class Route extends Model
         'to_building_id',
         'name',
         'description',
-        'movement_type',
         'distance_meters',
-        'duration_minutes',
+        'walking_duration_minutes',
+        'car_duration_minutes',
+        'public_transport_duration_minutes',
         'path_data',
         'is_accessible',
         'status',
@@ -86,5 +87,50 @@ class Route extends Model
     public function isInterBuilding(): bool
     {
         return $this->get('from_building_id') !== null && $this->get('to_building_id') !== null;
+    }
+
+    public function durationFor(string $movementType = ''): ?int
+    {
+        $durations = $this->durations();
+
+        if ($movementType !== '' && isset($durations[$movementType])) {
+            return $durations[$movementType];
+        }
+
+        $available = array_filter($durations, static fn (?int $duration): bool => $duration !== null);
+
+        return $available === [] ? null : min($available);
+    }
+
+    public function preferredMovementType(): ?string
+    {
+        $durations = array_filter(
+            $this->durations(),
+            static fn (?int $duration): bool => $duration !== null
+        );
+
+        if ($durations === []) {
+            return null;
+        }
+
+        asort($durations, SORT_NUMERIC);
+
+        return array_key_first($durations);
+    }
+
+    private function durations(): array
+    {
+        return [
+            'walking' => $this->durationValue('walking_duration_minutes'),
+            'car' => $this->durationValue('car_duration_minutes'),
+            'public_transport' => $this->durationValue('public_transport_duration_minutes'),
+        ];
+    }
+
+    private function durationValue(string $field): ?int
+    {
+        $value = $this->get($field);
+
+        return $value === null || $value === '' ? null : (int) $value;
     }
 }

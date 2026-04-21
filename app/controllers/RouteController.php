@@ -9,15 +9,18 @@ class RouteController extends CrudController
     protected string $entityName = 'route';
     protected array $fillable = [
         'from_room_id', 'to_room_id', 'from_building_id', 'to_building_id', 'name',
-        'description', 'movement_type', 'distance_meters', 'duration_minutes',
+        'description', 'distance_meters', 'walking_duration_minutes', 'car_duration_minutes', 'public_transport_duration_minutes',
         'path_data', 'is_accessible', 'status',
     ];
-    protected array $required = ['name', 'movement_type', 'duration_minutes'];
-    protected array $integerFields = ['from_room_id', 'to_room_id', 'from_building_id', 'to_building_id', 'distance_meters', 'duration_minutes'];
+    protected array $required = ['name'];
+    protected array $integerFields = [
+        'from_room_id', 'to_room_id', 'from_building_id', 'to_building_id', 'distance_meters',
+        'walking_duration_minutes', 'car_duration_minutes', 'public_transport_duration_minutes',
+    ];
     protected array $booleanFields = ['is_accessible'];
     protected array $jsonFields = ['path_data'];
-    protected array $listFilters = ['movement_type', 'status', 'from_building_id', 'to_building_id'];
-    protected string $defaultOrder = 'duration_minutes ASC, name ASC';
+    protected array $listFilters = ['status', 'is_accessible', 'from_building_id', 'to_building_id'];
+    protected string $defaultOrder = 'LEAST(IFNULL(walking_duration_minutes, 65535), IFNULL(car_duration_minutes, 65535), IFNULL(public_transport_duration_minutes, 65535)) ASC, name ASC';
 
     public function map(int|string|null $id = null): mixed
     {
@@ -77,5 +80,58 @@ class RouteController extends CrudController
             'rooms' => $this->database()->fetchAll('SELECT id, code, name FROM rooms ORDER BY code ASC'),
             'buildings' => $this->database()->fetchAll('SELECT id, code, name FROM buildings ORDER BY name ASC'),
         ];
+    }
+
+    protected function validate(array $data, bool $partial = false): array
+    {
+        $fields = $partial ? array_intersect($this->required, array_keys($data)) : $this->required;
+        $errors = $this->requireFields($data, $fields);
+
+        return array_merge($errors, $this->routeDomainErrors($data, $partial));
+    }
+
+    private function routeDomainErrors(array $data, bool $partial): array
+    {
+        $errors = [];
+        $hasStartFields = array_key_exists('from_room_id', $data) || array_key_exists('from_building_id', $data);
+        $hasEndFields = array_key_exists('to_room_id', $data) || array_key_exists('to_building_id', $data);
+
+        if ((!$partial || $hasStartFields) && empty($data['from_room_id']) && empty($data['from_building_id'])) {
+            $errors['from'][] = 'A route must define a start room or start building.';
+        }
+
+        if ((!$partial || $hasEndFields) && empty($data['to_room_id']) && empty($data['to_building_id'])) {
+            $errors['to'][] = 'A route must define an end room or end building.';
+        }
+
+        $durationFields = [
+            'walking_duration_minutes',
+            'car_duration_minutes',
+            'public_transport_duration_minutes',
+        ];
+
+        $hasDuration = false;
+        $durationFieldPresent = false;
+
+        foreach ($durationFields as $field) {
+            if (!array_key_exists($field, $data) || $data[$field] === '' || $data[$field] === null) {
+                continue;
+            }
+
+            $durationFieldPresent = true;
+
+            if ((int) $data[$field] < 1) {
+                $errors[$field][] = 'Travel duration must be at least 1 minute.';
+                continue;
+            }
+
+            $hasDuration = true;
+        }
+
+        if ((!$partial || $durationFieldPresent) && !$hasDuration) {
+            $errors['durations'][] = 'At least one of the walking, car, or public transport durations is required.';
+        }
+
+        return $errors;
     }
 }
