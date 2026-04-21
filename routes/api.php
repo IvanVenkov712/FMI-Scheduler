@@ -4,50 +4,57 @@ declare(strict_types=1);
 
 /** @var Router $router */
 
-$router->get('/api/dashboard', 'DashboardController@index');
+$auth = ['auth'];
+$admin = ['admin'];
+$scheduleManagers = [[RoleMiddleware::forRoles([ROLE_SCHEDULE_MANAGER]), 'handle']];
+$teachers = [[RoleMiddleware::forRoles([ROLE_TEACHER]), 'handle']];
+$technicalStaff = [[RoleMiddleware::forRoles([ROLE_TECHNICAL_STAFF]), 'handle']];
+$managersOrTeachers = [[RoleMiddleware::forRoles([ROLE_SCHEDULE_MANAGER, ROLE_TEACHER]), 'handle']];
 
-$router->get('/api/buildings', 'BuildingController@index');
-$router->post('/api/buildings', 'BuildingController@store');
-$router->get('/api/buildings/{id}', 'BuildingController@details');
-$router->put('/api/buildings/{id}', 'BuildingController@update');
-$router->delete('/api/buildings/{id}', 'BuildingController@delete');
+$router->get('/api/dashboard', 'DashboardController@index', $auth);
 
-$router->get('/api/floors', 'FloorController@index');
-$router->post('/api/floors', 'FloorController@store');
-$router->get('/api/floors/{id}/plan', 'FloorController@plan');
-$router->put('/api/floors/{id}/plan', 'FloorController@updatePlan');
+$router->get('/api/buildings', 'BuildingController@index', $auth);
+$router->post('/api/buildings', 'BuildingController@store', $admin);
+$router->get('/api/buildings/{id}', 'BuildingController@details', $auth);
+$router->put('/api/buildings/{id}', 'BuildingController@update', $admin);
+$router->delete('/api/buildings/{id}', 'BuildingController@delete', $admin);
 
-$router->get('/api/rooms', 'RoomController@index');
-$router->post('/api/rooms', 'RoomController@store');
-$router->get('/api/rooms/search', 'RoomController@searchAvailable');
-$router->get('/api/rooms/{id}/availability', 'RoomController@availability');
+$router->get('/api/floors', 'FloorController@index', $auth);
+$router->post('/api/floors', 'FloorController@store', $admin);
+$router->get('/api/floors/{id}/plan', 'FloorController@plan', $auth);
+$router->put('/api/floors/{id}/plan', 'FloorController@updatePlan', $admin);
 
-$router->get('/api/schedules', 'ScheduleController@index');
-$router->post('/api/schedules', 'ScheduleController@store');
-$router->get('/api/schedules/{id}/calendar', 'ScheduleController@calendar');
-$router->post('/api/schedules/{id}/events', 'ScheduleController@attachEvent');
+$router->get('/api/rooms', 'RoomController@index', $auth);
+$router->post('/api/rooms', 'RoomController@store', array_merge($auth, $technicalStaff));
+$router->get('/api/rooms/search', 'RoomController@searchAvailable', $auth);
+$router->get('/api/rooms/{id}/availability', 'RoomController@availability', $auth);
 
-$router->get('/api/events', 'EventController@index');
-$router->post('/api/events', 'EventController@store');
-$router->put('/api/events/{id}', 'EventController@update');
+$router->get('/api/schedules', 'ScheduleController@index', $auth);
+$router->post('/api/schedules', 'ScheduleController@store', array_merge($auth, $scheduleManagers));
+$router->get('/api/schedules/{id}/calendar', 'ScheduleController@calendar', $auth);
+$router->post('/api/schedules/{id}/events', 'ScheduleController@attachEvent', array_merge($auth, $scheduleManagers));
 
-$router->get('/api/requests', 'RequestController@index');
-$router->post('/api/requests', 'RequestController@store');
-$router->post('/api/requests/{id}/review', 'RequestController@review');
+$router->get('/api/events', 'EventController@index', array_merge($auth, $scheduleManagers));
+$router->post('/api/events', 'EventController@store', array_merge($auth, $scheduleManagers));
+$router->put('/api/events/{id}', 'EventController@update', array_merge($auth, $scheduleManagers));
 
-$router->get('/api/resources', 'ResourceController@index');
-$router->post('/api/resources', 'ResourceController@store');
-$router->get('/api/resources/room/{roomId}', 'ResourceController@roomResources');
+$router->get('/api/requests', 'RequestController@index', array_merge($auth, $managersOrTeachers));
+$router->post('/api/requests', 'RequestController@store', array_merge($auth, $managersOrTeachers));
+$router->post('/api/requests/{id}/review', 'RequestController@review', array_merge($auth, $scheduleManagers));
 
-$router->get('/api/routes', 'RouteController@index');
-$router->post('/api/routes', 'RouteController@store');
-$router->get('/api/routes/{id}/steps', 'RouteController@steps');
-$router->post('/api/routes/{id}/steps', 'RouteController@saveSteps');
+$router->get('/api/resources', 'ResourceController@index', array_merge($auth, $technicalStaff));
+$router->post('/api/resources', 'ResourceController@store', array_merge($auth, $technicalStaff));
+$router->get('/api/resources/room/{roomId}', 'ResourceController@roomResources', $auth);
 
-$router->get('/api/allocation/search', 'AllocationController@search');
-$router->post('/api/allocation/auto-assign', 'AllocationController@autoAssign');
-$router->post('/api/allocation/auto-assign/{scheduleId}', 'AllocationController@autoAssign');
-$router->get('/api/allocation/result/{id}', 'AllocationController@result');
+$router->get('/api/routes', 'RouteController@index', $auth);
+$router->post('/api/routes', 'RouteController@store', $admin);
+$router->get('/api/routes/{id}/steps', 'RouteController@steps', $auth);
+$router->post('/api/routes/{id}/steps', 'RouteController@saveSteps', $admin);
 
-$router->post('/api/import', 'ImportExportController@import');
-$router->get('/api/export', 'ImportExportController@export');
+$router->get('/api/allocation/search', 'AllocationController@search', $auth);
+$router->post('/api/allocation/auto-assign', 'AllocationController@autoAssign', array_merge($auth, $scheduleManagers));
+$router->post('/api/allocation/auto-assign/{scheduleId}', 'AllocationController@autoAssign', array_merge($auth, $scheduleManagers));
+$router->get('/api/allocation/result/{id}', 'AllocationController@result', array_merge($auth, $scheduleManagers));
+
+$router->post('/api/import', 'ImportExportController@import', $admin);
+$router->get('/api/export', 'ImportExportController@export', $admin);

@@ -70,11 +70,16 @@ class AuthController extends Controller
         }
 
         $role = $this->database()->fetch("SELECT id FROM roles WHERE slug = 'student' LIMIT 1");
+
+        if ($role === null) {
+            return $this->authError('Student role is not configured.', 500);
+        }
+
         $id = $this->database()->insert(
             'INSERT INTO users (role_id, username, email, password_hash, first_name, last_name, phone, faculty_number, department, status)
              VALUES (:role_id, :username, :email, :password_hash, :first_name, :last_name, :phone, :faculty_number, :department, :status)',
             [
-                'role_id' => $data['role_id'] ?? ($role['id'] ?? null),
+                'role_id' => $role['id'],
                 'username' => trim((string) $data['username']),
                 'email' => trim((string) $data['email']),
                 'password_hash' => password_hash((string) $data['password'], PASSWORD_DEFAULT),
@@ -83,11 +88,18 @@ class AuthController extends Controller
                 'phone' => $data['phone'] ?? null,
                 'faculty_number' => $data['faculty_number'] ?? null,
                 'department' => $data['department'] ?? null,
-                'status' => $data['status'] ?? 'active',
+                'status' => 'active',
             ]
         );
 
-        $user = $this->database()->fetch('SELECT id, role_id, username, email, first_name, last_name, status FROM users WHERE id = :id', ['id' => $id]);
+        $user = $this->database()->fetch(
+            'SELECT users.id, users.role_id, users.username, users.email, users.first_name, users.last_name, users.status,
+                    roles.slug AS role_slug, roles.name AS role_name
+             FROM users
+             LEFT JOIN roles ON roles.id = users.role_id
+             WHERE users.id = :id',
+            ['id' => $id]
+        );
         $_SESSION['user'] = $user;
 
         if ($this->wantsJson()) {
