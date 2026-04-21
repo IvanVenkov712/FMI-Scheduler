@@ -6,6 +6,7 @@ class AllocationService
 {
     public function __construct(
         private readonly RoomService $rooms = new RoomService(),
+        private readonly EventService $eventService = new EventService(),
         private readonly EventRepository $events = new EventRepository(),
         private readonly ScheduleRepository $schedules = new ScheduleRepository(),
         private readonly RouteService $routes = new RouteService(),
@@ -119,30 +120,48 @@ class AllocationService
             ];
         }
 
-        $selected = $rankedRooms[0];
-        /** @var Room $room */
-        $room = $selected['room'];
+        $alternatives = [];
 
-        $this->db()->transaction(function (Database $db) use ($scheduleId, $eventId, $room): void {
-            $db->execute(
-                'UPDATE events SET room_id = :room_id, status = :status WHERE id = :event_id',
-                ['room_id' => $room->get('id'), 'status' => 'scheduled', 'event_id' => $eventId]
-            );
+        foreach ($rankedRooms as $selected) {
+            /** @var Room $room */
+            $room = $selected['room'];
+            $roomId = (int) $room->get('id');
+            $assignResult = $this->eventService->assignRoom($eventId, $roomId, $userId);
 
-            $this->markAllocation($scheduleId, $eventId, (int) $room->get('id'), 'auto_assigned', null);
-        });
+            if (!($assignResult['success'] ?? false)) {
+                $alternatives[] = [
+                    'room_id' => $roomId,
+                    'room_code' => (string) $room->get('code'),
+                    'score' => (int) ($selected['score'] ?? 0),
+                    'explanation' => (string) ($selected['explanation'] ?? ''),
+                    'reason' => $this->flattenErrors((array) ($assignResult['errors'] ?? [])),
+                ];
+                continue;
+            }
 
-        $payload = [
-            'event_id' => $eventId,
-            'room_id' => (int) $room->get('id'),
-            'room_code' => (string) $room->get('code'),
-            'score' => $selected['score'],
-            'explanation' => $selected['explanation'],
+            $this->markAllocation($scheduleId, $eventId, $roomId, 'auto_assigned', null);
+
+            $payload = [
+                'event_id' => $eventId,
+                'room_id' => $roomId,
+                'room_code' => (string) $room->get('code'),
+                'score' => (int) ($selected['score'] ?? 0),
+                'explanation' => (string) ($selected['explanation'] ?? ''),
+            ];
+
+            $this->auditLogs->record('allocate', 'event', $eventId, null, $payload, $userId);
+
+            return ['success' => true] + $payload;
+        }
+
+        $reason = 'No suitable room remained available during allocation.';
+        $this->markAllocation($scheduleId, $eventId, null, 'conflict', $reason);
+
+        return [
+            'success' => false,
+            'reason' => $reason,
+            'alternatives' => $alternatives,
         ];
-
-        $this->auditLogs->record('allocate', 'event', $eventId, null, $payload, $userId);
-
-        return ['success' => true] + $payload;
     }
 
     private function scoreRoom(Room $room, int $capacity, array $requiredResourceIds, array $criteria): array
@@ -279,6 +298,19 @@ class AllocationService
                 'finished_at' => date('Y-m-d H:i:s'),
             ]
         );
+    }
+
+    private function flattenErrors(array $errors): string
+    {
+        $messages = [];
+
+        foreach ($errors as $fieldErrors) {
+            foreach ((array) $fieldErrors as $message) {
+                $messages[] = (string) $message;
+            }
+        }
+
+        return $messages === [] ? 'Allocation failed.' : implode('; ', $messages);
     }
 
     private function db(): Database
