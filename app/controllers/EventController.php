@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 class EventController extends CrudController
 {
+    public function __construct(
+        array $request = [],
+        private readonly EventService $events = new EventService()
+    ) {
+        parent::__construct($request);
+    }
+
     protected string $table = 'events';
     protected string $viewPath = 'events';
     protected string $entityName = 'event';
@@ -18,26 +25,35 @@ class EventController extends CrudController
 
     public function store(): mixed
     {
-        $_POST['created_by'] ??= $this->currentUserId();
-        return parent::store();
+        $data = $this->payload();
+        $data['created_by'] ??= $this->currentUserId();
+        $result = $this->events->create($this->normalize($data), null, $this->currentUserId());
+
+        if (!($result['success'] ?? false)) {
+            return $this->validationResponse((array) ($result['errors'] ?? []), $data, $this->viewPath . '/create', $this->formData());
+        }
+
+        /** @var Event|null $event */
+        $event = $result['event'] ?? null;
+
+        return $this->storedResponse($event?->toArray() ?? []);
     }
 
     public function update(int|string $id): mixed
     {
         $data = $this->payload();
-        $data['id'] = $id;
-        $errors = $this->validate($data, true);
+        $result = $this->events->update($id, $this->normalize($data), null, $this->currentUserId());
 
-        if ($errors !== []) {
-            return $this->validationResponse($errors, $data, 'events/edit', [
+        if (!($result['success'] ?? false)) {
+            return $this->validationResponse((array) ($result['errors'] ?? []), $data, 'events/edit', array_merge($this->formData(), [
                 'event' => array_merge($this->findOrFail($id), $data),
-            ]);
+            ]));
         }
 
-        unset($data['id']);
-        $this->updateRow($id, $this->normalize($data));
+        /** @var Event|null $event */
+        $event = $result['event'] ?? null;
 
-        return $this->updatedResponse($this->findOrFail($id));
+        return $this->updatedResponse($event?->toArray() ?? $this->findOrFail($id));
     }
 
     protected function domainErrors(array $data): array

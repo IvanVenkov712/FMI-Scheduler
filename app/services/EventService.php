@@ -8,7 +8,8 @@ class EventService
         private readonly EventRepository $events = new EventRepository(),
         private readonly RoomRepository $rooms = new RoomRepository(),
         private readonly AuditLogRepository $auditLogs = new AuditLogRepository(),
-        private readonly ValidationService $validation = new ValidationService()
+        private readonly ValidationService $validation = new ValidationService(),
+        private readonly ?Database $database = null
     ) {
     }
 
@@ -40,10 +41,19 @@ class EventService
             return ['success' => false, 'errors' => $errors];
         }
 
-        $event = $this->events->create($data);
+        try {
+            $event = $this->db()->transaction(function (Database $db) use ($data, $onlineSession): Event {
+                $this->guardRoomBooking($db, $data, null);
+                $event = $this->events->create($data);
 
-        if ($event->requiresOnlineSession()) {
-            $this->events->upsertOnlineSession((int) $event->get('id'), $this->onlineSessionPayload($event, $onlineSession ?? []));
+                if ($event->requiresOnlineSession()) {
+                    $this->events->upsertOnlineSession((int) $event->get('id'), $this->onlineSessionPayload($event, $onlineSession ?? []));
+                }
+
+                return $event;
+            });
+        } catch (RuntimeException $exception) {
+            return ['success' => false, 'errors' => ['room_id' => [$exception->getMessage()]]];
         }
 
         $this->auditLogs->record('create', 'event', $event->get('id'), null, $event->toArray(), $userId);
@@ -67,10 +77,25 @@ class EventService
         }
 
         $old = $event->toArray();
-        $updated = $this->events->update($id, $payload);
 
-        if ($updated !== null && $updated->requiresOnlineSession()) {
-            $this->events->upsertOnlineSession((int) $updated->get('id'), $this->onlineSessionPayload($updated, $onlineSession ?? []));
+        try {
+            $updated = $this->db()->transaction(function (Database $db) use ($id, $payload, $onlineSession): ?Event {
+                $lockedEvent = $db->fetch('SELECT * FROM events WHERE id = :id LIMIT 1 FOR UPDATE', ['id' => $id]);
+                if ($lockedEvent === null) {
+                    return null;
+                }
+
+                $this->guardRoomBooking($db, $payload + $lockedEvent, (int) $id);
+                $updated = $this->events->update($id, $payload);
+
+                if ($updated !== null && $updated->requiresOnlineSession()) {
+                    $this->events->upsertOnlineSession((int) $updated->get('id'), $this->onlineSessionPayload($updated, $onlineSession ?? []));
+                }
+
+                return $updated;
+            });
+        } catch (RuntimeException $exception) {
+            return ['success' => false, 'errors' => ['room_id' => [$exception->getMessage()]]];
         }
 
         $this->auditLogs->record('update', 'event', $id, $old, $updated?->toArray(), $userId);
@@ -183,5 +208,79 @@ class EventService
             'starts_at' => $session['starts_at'] ?? $event->get('starts_at'),
             'ends_at' => $session['ends_at'] ?? $event->get('ends_at'),
         ];
+    }
+
+    private function guardRoomBooking(Database $db, array $data, ?int $ignoreEventId): void
+    {
+        $roomId = isset($data['room_id']) ? (int) $data['room_id'] : 0;
+        if ($roomId <= 0) {
+            return;
+        }
+
+        $room = $db->fetch(
+            'SELECT id, status, capacity, covid_capacity FROM rooms WHERE id = :id LIMIT 1 FOR UPDATE',
+            ['id' => $roomId]
+        );
+
+        if ($room === null) {
+            throw new RuntimeException('Room not found.');
+        }
+
+        if (($room['status'] ?? 'available') !== 'available') {
+            throw new RuntimeException('Room is not available.');
+        }
+
+        $effectiveCapacity = $room['covid_capacity'] ?? $room['capacity'] ?? 0;
+        if ((int) $effectiveCapacity < (int) ($data['students_count'] ?? 0)) {
+            throw new RuntimeException('Room capacity is insufficient.');
+        }
+
+        $params = [
+            'room_id' => $roomId,
+            'starts_at' => (string) ($data['starts_at'] ?? ''),
+            'ends_at' => (string) ($data['ends_at'] ?? ''),
+        ];
+
+        $sql = 'SELECT id
+                FROM events
+                WHERE room_id = :room_id
+                  AND starts_at < :ends_at
+                  AND ends_at > :starts_at
+                  AND status <> "cancelled"';
+
+        if ($ignoreEventId !== null) {
+            $sql .= ' AND id <> :ignore_id';
+            $params['ignore_id'] = $ignoreEventId;
+        }
+
+        $sql .= ' LIMIT 1 FOR UPDATE';
+
+        $conflict = $db->fetch($sql, $params);
+        if ($conflict !== null) {
+            throw new RuntimeException('Room is busy in the selected interval.');
+        }
+
+        $blocked = $db->fetch(
+            'SELECT id
+             FROM room_unavailability
+             WHERE room_id = :room_id
+               AND starts_at < :ends_at
+               AND ends_at > :starts_at
+             LIMIT 1 FOR UPDATE',
+            [
+                'room_id' => $roomId,
+                'starts_at' => (string) ($data['starts_at'] ?? ''),
+                'ends_at' => (string) ($data['ends_at'] ?? ''),
+            ]
+        );
+
+        if ($blocked !== null) {
+            throw new RuntimeException('Room is unavailable in the selected interval.');
+        }
+    }
+
+    private function db(): Database
+    {
+        return $this->database ?? Database::getInstance(Database::configFromFile());
     }
 }
