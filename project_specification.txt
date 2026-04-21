@@ -1065,3 +1065,306 @@ schedule-management-system/
 ├── index.php
 ├── README.md
 └── xampp-setup.txt
+
+Да. За такъв проект с PHP + MySQL + HTML/CSS/JavaScript, който трябва да върви на XAMPP, най-подходяща е лека MVC-подобна файлова структура. Тя е достатъчно подредена за курсов проект, но не е прекалено тежка.
+По-долу е добра и практична структура.
+Предложена файлова структура
+schedule-management-system/
+│
+├── app/
+│   ├── controllers/
+│   │   ├── AuthController.php
+│   │   ├── DashboardController.php
+│   │   ├── BuildingController.php
+│   │   ├── FloorController.php
+│   │   ├── RoomController.php
+│   │   ├── ScheduleController.php
+│   │   ├── EventController.php
+│   │   ├── RequestController.php
+│   │   ├── ResourceController.php
+│   │   ├── RouteController.php
+│   │   ├── AllocationController.php
+│   │   ├── ImportExportController.php
+│   │   └── UserController.php
+│   │
+│   ├── models/
+│   │   ├── User.php
+│   │   ├── Role.php
+│   │   ├── Building.php
+│   │   ├── Floor.php
+│   │   ├── Room.php
+│   │   ├── RoomType.php
+│   │   ├── Resource.php
+│   │   ├── RoomResource.php
+│   │   ├── Event.php
+│   │   ├── Schedule.php
+│   │   ├── ExamRequest.php
+│   │   ├── Route.php
+│   │   ├── MovementConstraint.php
+│   │   ├── OnlineSession.php
+│   │   └── AuditLog.php
+│   │
+│   ├── services/
+│   │   ├── AuthService.php
+│   │   ├── BuildingService.php
+│   │   ├── FloorService.php
+│   │   ├── RoomService.php
+│   │   ├── ScheduleService.php
+│   │   ├── EventService.php
+│   │   ├── RequestService.php
+│   │   ├── ResourceService.php
+│   │   ├── RouteService.php
+│   │   ├── AllocationService.php
+│   │   ├── CovidConstraintService.php
+│   │   ├── ImportService.php
+│   │   ├── ExportService.php
+│   │   └── ValidationService.php
+│   │
+│   ├── repositories/
+│   │   ├── UserRepository.php
+│   │   ├── BuildingRepository.php
+│   │   ├── FloorRepository.php
+│   │   ├── RoomRepository.php
+│   │   ├── ScheduleRepository.php
+│   │   ├── EventRepository.php
+│   │   ├── RequestRepository.php
+│   │   ├── ResourceRepository.php
+│   │   ├── RouteRepository.php
+│   │   └── AuditLogRepository.php
+│   │
+│   ├── middleware/
+│   │   ├── AuthMiddleware.php
+│   │   ├── AdminMiddleware.php
+│   │   └── RoleMiddleware.php
+│   │
+│   ├── helpers/
+│   │   ├── Response.php
+│   │   ├── Validator.php
+│   │   ├── FileUploader.php
+│   │   ├── CsvParser.php
+│   │   ├── XmlParser.php
+│   │   ├── AsciiPlanParser.php
+│   │   └── SessionHelper.php
+│   │
+│   ├── core/
+│   │   ├── App.php
+│   │   ├── Router.php
+│   │   ├── Controller.php
+│   │   ├── Model.php
+│   │   ├── Database.php
+│   │   └── View.php
+│   │
+│   └── views/
+│       ├── layouts/
+│       │   ├── header.php
+│       │   ├── footer.php
+│       │   ├── navbar.php
+│       │   └── sidebar.php
+│       │
+│       ├── auth/
+│       │   ├── login.php
+│       │   └── register.php
+│       │
+│       ├── dashboard/
+│       │   └── index.php
+│       │
+│       ├── buildings/
+│       │   ├── index.php
+│       │   ├── create.php
+│       │   ├── edit.php
+│       │   └── details.php
+│       │
+│       ├── floors/
+│       │   ├── index.php
+│       │   ├── create.php
+│       │   └── edit.php
+│       │
+│       ├── rooms/
+│       │   ├── index.php
+│       │   ├── create.php
+│       │   ├── edit.php
+│       │   ├── details.php
+│       │   └── availability.php
+│       │
+│       ├── schedules/
+│       │   ├── index.php
+│       │   ├── calendar.php
+│       │   └── details.php
+│       │
+│       ├── events/
+│       │   ├── create.php
+│       │   ├── edit.php
+│       │   └── details.php
+│       │
+│       ├── requests/
+│       │   ├── index.php
+│       │   ├── create.php
+│       │   ├── edit.php
+│       │   └── review.php
+│       │
+│       ├── resources/
+│       │   ├── index.php
+│       │   └── manage.php
+│       │
+│       ├── routes/
+│       │   ├── index.php
+│       │   ├── map.php
+│       │   └── details.php
+│       │
+│       ├── allocation/
+│       │   ├── search.php
+│       │   ├── auto-assign.php
+│       │   └── result.php
+│       │
+│       ├── import-export/
+│       │   ├── import.php
+│       │   ├── export.php
+│       │   └── history.php
+│       │
+│       ├── users/
+│       │   ├── index.php
+│       │   ├── profile.php
+│       │   └── manage.php
+│       │
+│       └── errors/
+│           ├── 403.php
+│           ├── 404.php
+│           └── 500.php
+│
+├── config/
+│   ├── app.php
+│   ├── database.php
+│   ├── routes.php
+│   └── constants.php
+│
+├── public/
+│   ├── css/
+│   │   ├── main.css
+│   │   ├── layout.css
+│   │   ├── forms.css
+│   │   ├── dashboard.css
+│   │   ├── planner.css
+│   │   └── schedule.css
+│   │
+│   ├── js/
+│   │   ├── main.js
+│   │   ├── api.js
+│   │   ├── dragdrop.js
+│   │   ├── building-editor.js
+│   │   ├── room-visualization.js
+│   │   ├── schedule-calendar.js
+│   │   ├── route-map.js
+│   │   ├── allocation.js
+│   │   ├── import-export.js
+│   │   └── validation.js
+│   │
+│   ├── images/
+│   │   ├── logo/
+│   │   ├── icons/
+│   │   ├── buildings/
+│   │   └── ui/
+│   │
+│   ├── uploads/
+│   │   ├── imports/
+│   │   └── plans/
+│   │
+│   └── index.php
+│
+├── routes/
+│   ├── web.php
+│   └── api.php
+│
+├── storage/
+│   ├── logs/
+│   │   ├── app.log
+│   │   ├── error.log
+│   │   └── audit.log
+│   │
+│   ├── cache/
+│   ├── exports/
+│   └── temp/
+│
+├── database/
+│   ├── migrations/
+│   │   ├── 001_create_users_table.sql
+│   │   ├── 002_create_roles_table.sql
+│   │   ├── 003_create_buildings_table.sql
+│   │   ├── 004_create_floors_table.sql
+│   │   ├── 005_create_rooms_table.sql
+│   │   ├── 006_create_resources_table.sql
+│   │   ├── 007_create_events_table.sql
+│   │   ├── 008_create_schedules_table.sql
+│   │   ├── 009_create_routes_table.sql
+│   │   ├── 010_create_constraints_table.sql
+│   │   └── 011_create_audit_logs_table.sql
+│   │
+│   ├── seeders/
+│   │   ├── roles_seeder.sql
+│   │   ├── users_seeder.sql
+│   │   ├── buildings_seeder.sql
+│   │   ├── floors_seeder.sql
+│   │   └── rooms_seeder.sql
+│   │
+│   └── schema.sql
+│
+├── docs/
+│   ├── srs/
+│   ├── diagrams/
+│   ├── api/
+│   └── test-cases/
+│
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── manual/
+│
+├── .htaccess
+├── index.php
+├── README.md
+└── xampp-setup.txt
+
+Какво означават основните папки
+app/
+Тук е основната логика на системата.
+controllers/ — приемат заявките и координират обработката им.
+models/ — представят основните обекти от домейна.
+services/ — бизнес логика, например автоматично разпределение на зали.
+repositories/ — достъп до MySQL и заявки към базата.
+middleware/ — контрол на достъпа и проверка на роли.
+helpers/ — помощни класове за валидация, файлове, сесии, парсване.
+core/ — базовата рамка на приложението: router, database, base controller.
+views/ — PHP/HTML шаблоните.
+config/
+Конфигурационни файлове:
+връзка с MySQL;
+основни константи;
+настройки на приложението.
+public/
+Публично достъпната част през браузъра. Тук са:
+CSS;
+JavaScript;
+изображения;
+качени файлове, ако е нужно;
+входната публична точка на приложението.
+routes/
+Описва URL маршрутите. Например:
+web.php за нормалните страници;
+api.php за AJAX/fetch заявки.
+storage/
+Тук се пазят:
+логове;
+временни файлове;
+генерирани export-и.
+database/
+Всичко, свързано с базата:
+SQL schema;
+migration файлове;
+seed данни.
+docs/
+Полезно е за университетски проект — тук държиш:
+спецификацията;
+диаграмите;
+тестовете;
+API описание.
+tests/
+Ако имаш тестове, тук е мястото им.
