@@ -29,6 +29,16 @@ class UserRepository
         return $row === null ? null : new User($row);
     }
 
+    public function findByFacultyNumber(string $facultyNumber): ?User
+    {
+        $row = $this->db()->fetch(
+            'SELECT * FROM users WHERE faculty_number = :faculty_number LIMIT 1',
+            ['faculty_number' => $facultyNumber]
+        );
+
+        return $row === null ? null : new User($row);
+    }
+
     public function all(bool $onlyActive = false, string $roleSlug = ''): array
     {
         $sql = 'SELECT users.*
@@ -105,6 +115,29 @@ class UserRepository
     public function activeTeachers(): array
     {
         return $this->all(true, 'teacher');
+    }
+
+    public function studentRoleId(): ?int
+    {
+        $row = $this->db()->fetch('SELECT id FROM roles WHERE slug = :slug LIMIT 1', ['slug' => 'student']);
+
+        return $row === null ? null : (int) $row['id'];
+    }
+
+    public function allStudents(): array
+    {
+        return $this->db()->fetchAll(
+            'SELECT users.id, users.role_id, users.username, users.email, users.first_name, users.last_name,
+                    users.phone, users.faculty_number, users.department, users.status, users.created_at, users.updated_at,
+                    GROUP_CONCAT(student_groups.code ORDER BY student_groups.code SEPARATOR ",") AS group_codes
+             FROM users
+             INNER JOIN roles ON roles.id = users.role_id AND roles.slug = :role_slug
+             LEFT JOIN student_group_members ON student_group_members.user_id = users.id
+             LEFT JOIN student_groups ON student_groups.id = student_group_members.student_group_id
+             GROUP BY users.id
+             ORDER BY users.last_name ASC, users.first_name ASC, users.id ASC',
+            ['role_slug' => 'student']
+        );
     }
 
     public function auditLogs(int $userId, int $limit = 50): array

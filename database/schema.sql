@@ -45,3 +45,4 @@ SOURCE migrations/009_create_routes_table.sql;
 SOURCE migrations/010_create_constraints_table.sql;
 SOURCE migrations/011_create_audit_logs_table.sql;
 SOURCE migrations/012_alter_routes_multi_duration.sql;
+SOURCE migrations/013_create_catalog_import_tables.sql;

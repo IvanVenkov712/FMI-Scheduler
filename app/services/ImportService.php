@@ -14,6 +14,14 @@ class ImportService
         private readonly EventService $events = new EventService(),
         private readonly ResourceService $resources = new ResourceService(),
         private readonly RouteService $routes = new RouteService(),
+        private readonly CourseService $courses = new CourseService(),
+        private readonly StudentGroupService $studentGroups = new StudentGroupService(),
+        private readonly AllocationParameterService $allocationParameters = new AllocationParameterService(),
+        private readonly UserService $users = new UserService(),
+        private readonly UserRepository $userRepository = new UserRepository(),
+        private readonly CourseRepository $courseRepository = new CourseRepository(),
+        private readonly StudentGroupRepository $studentGroupRepository = new StudentGroupRepository(),
+        private readonly AllocationParameterRepository $allocationParameterRepository = new AllocationParameterRepository(),
         private readonly ?Database $database = null
     ) {
     }
@@ -61,6 +69,10 @@ class ImportService
                 'events' => $this->events->create($row, null, $userId),
                 'resources' => $this->resources->create($row, $userId),
                 'routes' => $this->routes->create($row, [], $userId),
+                'courses' => $this->importCourse($row, $userId),
+                'student_groups' => $this->importStudentGroup($row, $userId),
+                'students' => $this->importStudent($row, $userId),
+                'allocation_parameters' => $this->importAllocationParameter($row, $userId),
                 default => throw new InvalidArgumentException('Unsupported import entity.'),
             };
 
@@ -126,8 +138,118 @@ class ImportService
             'events' => 'event',
             'resources' => 'resource',
             'routes' => 'route',
+            'courses' => 'course',
+            'student_groups' => 'student_group',
+            'students' => 'student',
+            'allocation_parameters' => 'allocation_parameter',
             default => 'row',
         };
+    }
+
+    private function importCourse(array $row, ?int $userId): array
+    {
+        $existing = !empty($row['code']) ? $this->courseRepository->findByCode((string) $row['code']) : null;
+
+        return $existing === null
+            ? $this->courses->create($row, $userId)
+            : $this->courses->update((int) $existing->get('id'), $row, $userId);
+    }
+
+    private function importStudentGroup(array $row, ?int $userId): array
+    {
+        $existing = !empty($row['code']) ? $this->studentGroupRepository->findByCode((string) $row['code']) : null;
+
+        return $existing === null
+            ? $this->studentGroups->create($row, $userId)
+            : $this->studentGroups->update((int) $existing->get('id'), $row, $userId);
+    }
+
+    private function importAllocationParameter(array $row, ?int $userId): array
+    {
+        $existing = !empty($row['code']) ? $this->allocationParameterRepository->findByCode((string) $row['code']) : null;
+
+        return $existing === null
+            ? $this->allocationParameters->create($row, $userId)
+            : $this->allocationParameters->update((int) $existing->get('id'), $row, $userId);
+    }
+
+    private function importStudent(array $row, ?int $userId): array
+    {
+        $studentRoleId = $this->userRepository->studentRoleId();
+        if ($studentRoleId === null) {
+            return ['success' => false, 'errors' => ['student' => ['Student role is not configured.']]];
+        }
+
+        $payload = $row;
+        $payload['role_id'] = $studentRoleId;
+        $payload['status'] = $payload['status'] ?? 'active';
+
+        $password = (string) ($payload['password'] ?? '');
+        if ($password === '') {
+            $seed = (string) ($payload['faculty_number'] ?? $payload['username'] ?? $payload['email'] ?? 'student');
+            $payload['password'] = $seed;
+        }
+
+        $existing = null;
+        if (!empty($payload['faculty_number'])) {
+            $existing = $this->userRepository->findByFacultyNumber((string) $payload['faculty_number']);
+        }
+        if ($existing === null && !empty($payload['email'])) {
+            $existing = $this->userRepository->findByEmail((string) $payload['email']);
+        }
+        if ($existing === null && !empty($payload['username'])) {
+            $existing = $this->userRepository->findByLogin((string) $payload['username']);
+        }
+
+        $result = $existing === null
+            ? $this->users->create($payload, $userId)
+            : $this->users->update((int) $existing->get('id'), $payload, $userId);
+
+        if (!($result['success'] ?? false)) {
+            return $result;
+        }
+
+        /** @var User|null $student */
+        $student = $result['user'] ?? null;
+        if (!$student instanceof User) {
+            return ['success' => false, 'errors' => ['student' => ['Student record could not be loaded.']]];
+        }
+
+        $groupCodes = $this->groupCodesFromRow($row);
+        if ($groupCodes !== []) {
+            foreach ($groupCodes as $groupCode) {
+                $group = $this->studentGroupRepository->findByCode($groupCode);
+                if ($group !== null) {
+                    $this->appendStudentToGroup((int) $group->get('id'), (int) $student->get('id'));
+                }
+            }
+        }
+
+        return ['success' => true, 'user' => $student];
+    }
+
+    private function appendStudentToGroup(int $groupId, int $userId): void
+    {
+        $members = $this->db()->fetchAll(
+            'SELECT user_id FROM student_group_members WHERE student_group_id = :group_id',
+            ['group_id' => $groupId]
+        );
+        $userIds = array_map(static fn (array $row): int => (int) $row['user_id'], $members);
+        $userIds[] = $userId;
+        $this->studentGroupRepository->syncMembers($groupId, $userIds);
+    }
+
+    private function groupCodesFromRow(array $row): array
+    {
+        $value = $row['group_codes'] ?? $row['groups'] ?? [];
+
+        if (is_string($value)) {
+            $parts = preg_split('/[,\|;]/', $value) ?: [];
+
+            return array_values(array_filter(array_map(static fn (string $item): string => trim($item), $parts)));
+        }
+
+        return array_values(array_filter(array_map('strval', (array) $value)));
     }
 
     private function summaryMessage(array $result): string

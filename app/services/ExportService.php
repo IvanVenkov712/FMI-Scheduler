@@ -15,6 +15,10 @@ class ExportService
         private readonly ResourceRepository $resources = new ResourceRepository(),
         private readonly RouteRepository $routes = new RouteRepository(),
         private readonly ScheduleRepository $schedules = new ScheduleRepository(),
+        private readonly CourseRepository $courses = new CourseRepository(),
+        private readonly StudentGroupRepository $studentGroups = new StudentGroupRepository(),
+        private readonly AllocationParameterRepository $allocationParameters = new AllocationParameterRepository(),
+        private readonly UserRepository $users = new UserRepository(),
         private readonly ?Database $database = null
     ) {
     }
@@ -104,6 +108,10 @@ class ExportService
             'resources' => $this->mapModels($entityId === null ? $this->resources->all() : array_filter([$this->resources->find($entityId)])),
             'routes' => $this->mapModels($entityId === null ? $this->routes->all() : array_filter([$this->routes->find($entityId)])),
             'schedules' => $this->mapModels($entityId === null ? $this->schedules->all() : array_filter([$this->schedules->find($entityId)])),
+            'courses' => $this->mapModels($entityId === null ? $this->courses->all() : array_filter([$this->courses->find($entityId)])),
+            'student_groups' => $this->mapRows($entityId === null ? $this->studentGroups->exportRows() : $this->filterById($this->studentGroups->exportRows(), $entityId)),
+            'students' => $this->mapRows($entityId === null ? $this->users->allStudents() : $this->filterById($this->users->allStudents(), $entityId)),
+            'allocation_parameters' => $this->mapRows($entityId === null ? $this->allocationParameters->exportRows() : $this->filterById($this->allocationParameters->exportRows(), $entityId)),
             default => throw new InvalidArgumentException('Unsupported export entity.'),
         };
     }
@@ -114,6 +122,16 @@ class ExportService
             static fn (object $model): array => SensitiveData::strip(method_exists($model, 'toArray') ? $model->toArray() : (array) $model),
             array_filter($models)
         ));
+    }
+
+    private function mapRows(array $rows): array
+    {
+        return array_values(array_map(static fn (array $row): array => SensitiveData::strip($row), $rows));
+    }
+
+    private function filterById(array $rows, int $entityId): array
+    {
+        return array_values(array_filter($rows, static fn (array $row): bool => (int) ($row['id'] ?? 0) === $entityId));
     }
 
     private function toText(string $entity, array $rows): string
