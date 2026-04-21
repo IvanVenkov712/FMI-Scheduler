@@ -78,4 +78,9 @@ abstract class Controller
     {
         return Database::getInstance(Database::configFromFile());
     }
+
+    protected function sanitize(mixed $data): mixed
+    {
+        return SensitiveData::strip($data);
+    }
 }

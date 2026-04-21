@@ -84,10 +84,10 @@ class AllocationController extends Controller
     private function respond(string $view, array $data): mixed
     {
         if (str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') || $this->input('format') === 'json') {
-            return $data;
+            return $this->sanitize($data);
         }
 
-        return $this->render($view, $data);
+        return $this->render($view, $this->sanitize($data));
     }
 
     private function normalizeRankedRooms(array $rankedRooms): array
@@ -96,7 +96,7 @@ class AllocationController extends Controller
             $room = $entry['room'] ?? null;
 
             return [
-                'room' => $room instanceof Room ? $room->toArray() : $room,
+                'room' => $this->sanitize($room instanceof Room ? $room->toArray() : $room),
                 'score' => (int) ($entry['score'] ?? 0),
                 'explanation' => (string) ($entry['explanation'] ?? ''),
             ];

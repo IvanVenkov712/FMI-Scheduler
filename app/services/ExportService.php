@@ -111,7 +111,7 @@ class ExportService
     private function mapModels(array $models): array
     {
         return array_values(array_map(
-            static fn (object $model): array => method_exists($model, 'toArray') ? $model->toArray() : (array) $model,
+            static fn (object $model): array => SensitiveData::strip(method_exists($model, 'toArray') ? $model->toArray() : (array) $model),
             array_filter($models)
         ));
     }

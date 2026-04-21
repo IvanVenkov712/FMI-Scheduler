@@ -19,7 +19,7 @@ abstract class CrudController extends Controller
     public function index(): mixed
     {
         return $this->respond($this->viewPath . '/index', [
-            $this->collectionKey() => $this->rows(),
+            $this->collectionKey() => $this->sanitize($this->rows()),
             'filters' => $this->filters(),
         ]);
     }
@@ -41,13 +41,13 @@ abstract class CrudController extends Controller
         $id = $this->insert($this->normalize($data));
         $record = $this->findOrFail($id);
 
-        return $this->storedResponse($record);
+        return $this->storedResponse($this->sanitize($record));
     }
 
     public function details(int|string $id): mixed
     {
         return $this->respond($this->viewPath . '/details', [
-            $this->entityName => $this->findOrFail($id),
+            $this->entityName => $this->sanitize($this->findOrFail($id)),
         ]);
     }
 
@@ -59,7 +59,7 @@ abstract class CrudController extends Controller
     public function edit(int|string $id): string
     {
         return $this->render($this->viewPath . '/edit', array_merge($this->formData(), [
-            $this->entityName => $this->findOrFail($id),
+            $this->entityName => $this->sanitize($this->findOrFail($id)),
         ]));
     }
 
@@ -70,14 +70,14 @@ abstract class CrudController extends Controller
 
         if ($errors !== []) {
             return $this->validationResponse($errors, $data, $this->viewPath . '/edit', [
-                $this->entityName => array_merge($this->findOrFail($id), $data),
+                $this->entityName => $this->sanitize(array_merge($this->findOrFail($id), $data)),
             ]);
         }
 
         $this->updateRow($id, $this->normalize($data));
         $record = $this->findOrFail($id);
 
-        return $this->updatedResponse($record);
+        return $this->updatedResponse($this->sanitize($record));
     }
 
     public function delete(int|string $id): mixed
@@ -213,10 +213,10 @@ abstract class CrudController extends Controller
     protected function respond(string $view, array $data = []): mixed
     {
         if ($this->wantsJson()) {
-            return $data;
+            return $this->sanitize($data);
         }
 
-        return $this->render($view, $data);
+        return $this->render($view, $this->sanitize($data));
     }
 
     protected function wantsJson(): bool
@@ -232,13 +232,15 @@ abstract class CrudController extends Controller
     protected function validationResponse(array $errors, array $old, string $view, array $extra = []): mixed
     {
         http_response_code(422);
-        $data = array_merge($extra, ['errors' => $errors, 'old' => $old]);
+        $data = array_merge($this->sanitize($extra), ['errors' => $errors, 'old' => $this->sanitize($old)]);
 
         return $this->respond($view, $data);
     }
 
     protected function storedResponse(array $record): mixed
     {
+        $record = $this->sanitize($record);
+
         if ($this->wantsJson()) {
             http_response_code(201);
             return [$this->entityName => $record, 'message' => 'Created successfully.'];
@@ -249,6 +251,8 @@ abstract class CrudController extends Controller
 
     protected function updatedResponse(array $record): mixed
     {
+        $record = $this->sanitize($record);
+
         if ($this->wantsJson()) {
             return [$this->entityName => $record, 'message' => 'Updated successfully.'];
         }
@@ -303,6 +307,11 @@ abstract class CrudController extends Controller
     protected function collectionKey(): string
     {
         return str_replace('-', '_', basename($this->viewPath));
+    }
+
+    protected function sanitize(mixed $data): mixed
+    {
+        return SensitiveData::strip($data);
     }
 
     protected function filters(): array

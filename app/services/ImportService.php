@@ -52,6 +52,8 @@ class ImportService
                 continue;
             }
 
+            $row = SensitiveData::strip($row);
+
             $result = match ($entity) {
                 'buildings' => $this->buildings->create($row, $userId),
                 'floors' => $this->floors->create($row, $userId),

@@ -43,6 +43,9 @@ class AuditLog extends Model
         ?array $newValues = null,
         ?int $userId = null
     ): self {
+        $oldValues = $oldValues === null ? null : SensitiveData::redact($oldValues);
+        $newValues = $newValues === null ? null : SensitiveData::redact($newValues);
+
         $log = new self([
             'user_id' => $userId,
             'action' => $action,
