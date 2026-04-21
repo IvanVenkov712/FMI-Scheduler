@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 class ImportExportController extends Controller
 {
-    private array $importEntities = ['buildings', 'floors', 'rooms', 'events', 'resources'];
-    private array $exportEntities = ['buildings', 'floors', 'rooms', 'events', 'schedules'];
+    private array $importEntities = ['buildings', 'floors', 'rooms', 'events', 'resources', 'routes'];
+    private array $exportEntities = ['buildings', 'floors', 'rooms', 'events', 'resources', 'routes', 'schedules'];
 
     public function import(): mixed
     {
@@ -24,6 +24,10 @@ class ImportExportController extends Controller
             return $this->fail('Import file is required.', 422);
         }
 
+        if (in_array(strtolower($format), ['ascii', 'txt'], true) && $entity === 'floors' && $this->importContext($entity) === []) {
+            return $this->fail('ASCII import for floors requires a target floor_id.', 422);
+        }
+
         try {
             $upload = $this->uploader()->upload(
                 $_FILES['file'],
@@ -36,7 +40,8 @@ class ImportExportController extends Controller
                 $entity,
                 $format,
                 $upload['path'],
-                $this->currentUserId()
+                $this->currentUserId(),
+                $this->importContext($entity)
             );
 
             if (!($result['success'] ?? false)) {
@@ -44,6 +49,8 @@ class ImportExportController extends Controller
             }
 
             return $this->success($result, $this->resultMessage($result, 'Import finished successfully.'));
+        } catch (InvalidArgumentException $exception) {
+            return $this->fail($exception->getMessage(), 422);
         } catch (Throwable $exception) {
             return $this->fail($exception->getMessage(), 500);
         }
@@ -87,6 +94,8 @@ class ImportExportController extends Controller
             }
 
             return $this->success($result, $this->resultMessage($result, 'Export finished successfully.'));
+        } catch (InvalidArgumentException $exception) {
+            return $this->fail($exception->getMessage(), 422);
         } catch (Throwable $exception) {
             return $this->fail($exception->getMessage(), 500);
         }
@@ -266,5 +275,16 @@ class ImportExportController extends Controller
             'txt', 'ascii' => 'text/plain; charset=utf-8',
             default => 'application/octet-stream',
         };
+    }
+
+    private function importContext(string $entity): array
+    {
+        if ($entity !== 'floors') {
+            return [];
+        }
+
+        $floorId = $this->normalizeEntityId($this->input('floor_id') ?? $this->input('entity_id'));
+
+        return $floorId === null ? [] : ['floor_id' => $floorId];
     }
 }

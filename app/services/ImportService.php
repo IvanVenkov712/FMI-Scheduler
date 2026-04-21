@@ -13,11 +13,12 @@ class ImportService
         private readonly RoomService $rooms = new RoomService(),
         private readonly EventService $events = new EventService(),
         private readonly ResourceService $resources = new ResourceService(),
+        private readonly RouteService $routes = new RouteService(),
         private readonly ?Database $database = null
     ) {
     }
 
-    public function importFile(string $entity, string $format, string $filePath, ?int $userId = null): array
+    public function importFile(string $entity, string $format, string $filePath, ?int $userId = null, array $context = []): array
     {
         $jobId = $this->startJob('import', $format, $entity, $filePath, $userId);
 
@@ -25,12 +26,12 @@ class ImportService
             $result = match ($format) {
                 'csv' => $this->importRows($entity, $this->csv->parseFile($filePath), $userId),
                 'xml' => $this->importRows($entity, $this->xml->parseFile($filePath, $this->xmlRowTag($entity)), $userId),
-                'ascii', 'txt' => $this->importAscii($entity, $filePath, $userId),
+                'ascii', 'txt' => $this->importAscii($entity, $filePath, $userId, $context),
                 'json' => $this->importRows($entity, $this->decodeJsonFile($filePath), $userId),
                 default => throw new InvalidArgumentException('Unsupported import format.'),
             };
 
-            $this->finishJob($jobId, 'completed', sprintf('Imported %d record(s).', (int) ($result['imported'] ?? 0)));
+            $this->finishJob($jobId, 'completed', $this->summaryMessage($result));
 
             return ['success' => true, 'job_id' => $jobId] + $result;
         } catch (Throwable $exception) {
@@ -57,6 +58,7 @@ class ImportService
                 'rooms' => $this->rooms->create($row, [], $userId),
                 'events' => $this->events->create($row, null, $userId),
                 'resources' => $this->resources->create($row, $userId),
+                'routes' => $this->routes->create($row, [], $userId),
                 default => throw new InvalidArgumentException('Unsupported import entity.'),
             };
 
@@ -71,25 +73,30 @@ class ImportService
         return ['imported' => $imported, 'failed' => count($errors), 'errors' => $errors];
     }
 
-    public function importAscii(string $entity, string $filePath, ?int $userId = null): array
+    public function importAscii(string $entity, string $filePath, ?int $userId = null, array $context = []): array
     {
         if ($entity !== 'floors') {
             throw new InvalidArgumentException('ASCII import is supported only for floor plans.');
         }
 
-        $content = file_get_contents($filePath);
-        if ($content === false) {
-            throw new RuntimeException('ASCII file could not be read.');
+        $floorId = isset($context['floor_id']) ? (int) $context['floor_id'] : 0;
+        if ($floorId <= 0) {
+            throw new InvalidArgumentException('ASCII import requires a target floor_id.');
         }
 
-        $parsed = $this->ascii->parse($content);
+        $result = $this->floors->importAsciiPlan($floorId, $filePath, $userId);
+        if (!($result['success'] ?? false)) {
+            throw new RuntimeException($this->flattenErrors((array) ($result['errors'] ?? [])));
+        }
 
         return [
             'imported' => 1,
             'failed' => 0,
             'errors' => [],
-            'parsed_plan' => $parsed,
-            'note' => 'ASCII plan parsed successfully. Use FloorService::savePlan to persist it to a specific floor.',
+            'floor_id' => $floorId,
+            'floor' => $result['floor'] instanceof Floor ? $result['floor']->toArray() : null,
+            'parsed_plan' => $result['parsed_plan'] ?? null,
+            'note' => 'ASCII plan imported and persisted successfully.',
         ];
     }
 
@@ -116,8 +123,22 @@ class ImportService
             'rooms' => 'room',
             'events' => 'event',
             'resources' => 'resource',
+            'routes' => 'route',
             default => 'row',
         };
+    }
+
+    private function summaryMessage(array $result): string
+    {
+        if (isset($result['floor_id'])) {
+            return sprintf('Imported ASCII plan for floor %d.', (int) $result['floor_id']);
+        }
+
+        return sprintf(
+            'Imported %d record(s), failed %d.',
+            (int) ($result['imported'] ?? 0),
+            (int) ($result['failed'] ?? 0)
+        );
     }
 
     private function startJob(string $type, string $format, string $entity, ?string $filePath, ?int $userId): string

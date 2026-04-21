@@ -12,6 +12,8 @@ class ExportService
         private readonly FloorRepository $floors = new FloorRepository(),
         private readonly RoomRepository $rooms = new RoomRepository(),
         private readonly EventRepository $events = new EventRepository(),
+        private readonly ResourceRepository $resources = new ResourceRepository(),
+        private readonly RouteRepository $routes = new RouteRepository(),
         private readonly ScheduleRepository $schedules = new ScheduleRepository(),
         private readonly ?Database $database = null
     ) {
@@ -99,6 +101,8 @@ class ExportService
             'floors' => $this->mapModels($entityId === null ? Floor::all('building_id', 'ASC') : array_filter([$this->floors->find($entityId)])),
             'rooms' => $this->mapModels($entityId === null ? Room::all('code', 'ASC') : array_filter([$this->rooms->find($entityId)])),
             'events' => $this->mapModels($entityId === null ? $this->events->all() : array_filter([$this->events->find($entityId)])),
+            'resources' => $this->mapModels($entityId === null ? $this->resources->all() : array_filter([$this->resources->find($entityId)])),
+            'routes' => $this->mapModels($entityId === null ? $this->routes->all() : array_filter([$this->routes->find($entityId)])),
             'schedules' => $this->mapModels($entityId === null ? $this->schedules->all() : array_filter([$this->schedules->find($entityId)])),
             default => throw new InvalidArgumentException('Unsupported export entity.'),
         };
