@@ -131,6 +131,14 @@ class ScheduleRepository
         );
     }
 
+    public function clearEvents(int $scheduleId): int
+    {
+        return $this->db()->execute(
+            'DELETE FROM schedule_events WHERE schedule_id = :schedule_id',
+            ['schedule_id' => $scheduleId]
+        );
+    }
+
     public function detachEvent(int $scheduleId, int $eventId): int
     {
         return $this->db()->execute(

@@ -97,6 +97,25 @@ class ScheduleService
         $this->schedules->attachEvent($scheduleId, $eventId, $roomId, $allocationStatus, $notes);
     }
 
+    public function replaceEvents(int $scheduleId, array $items): void
+    {
+        $this->schedules->clearEvents($scheduleId);
+
+        foreach ($items as $item) {
+            if (!is_array($item) || (int) ($item['event_id'] ?? 0) <= 0) {
+                continue;
+            }
+
+            $this->schedules->attachEvent(
+                $scheduleId,
+                (int) $item['event_id'],
+                isset($item['assigned_room_id']) && $item['assigned_room_id'] !== '' ? (int) $item['assigned_room_id'] : null,
+                (string) ($item['allocation_status'] ?? 'manual'),
+                isset($item['conflict_notes']) && $item['conflict_notes'] !== '' ? (string) $item['conflict_notes'] : null
+            );
+        }
+    }
+
     public function detachEvent(int $scheduleId, int $eventId): int
     {
         return $this->schedules->detachEvent($scheduleId, $eventId);

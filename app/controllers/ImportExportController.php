@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 class ImportExportController extends Controller
 {
-    private array $importEntities = ['buildings', 'floors', 'rooms', 'events', 'resources', 'routes', 'courses', 'student_groups', 'students', 'allocation_parameters'];
+    private array $importEntities = ['buildings', 'floors', 'rooms', 'events', 'resources', 'routes', 'schedules', 'courses', 'student_groups', 'students', 'allocation_parameters'];
     private array $exportEntities = ['buildings', 'floors', 'rooms', 'events', 'resources', 'routes', 'schedules', 'courses', 'student_groups', 'students', 'allocation_parameters'];
 
     public function import(): mixed

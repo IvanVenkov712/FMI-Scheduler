@@ -14,11 +14,13 @@ class ImportService
         private readonly EventService $events = new EventService(),
         private readonly ResourceService $resources = new ResourceService(),
         private readonly RouteService $routes = new RouteService(),
+        private readonly ScheduleService $schedules = new ScheduleService(),
         private readonly CourseService $courses = new CourseService(),
         private readonly StudentGroupService $studentGroups = new StudentGroupService(),
         private readonly AllocationParameterService $allocationParameters = new AllocationParameterService(),
         private readonly UserService $users = new UserService(),
         private readonly UserRepository $userRepository = new UserRepository(),
+        private readonly ScheduleRepository $scheduleRepository = new ScheduleRepository(),
         private readonly CourseRepository $courseRepository = new CourseRepository(),
         private readonly StudentGroupRepository $studentGroupRepository = new StudentGroupRepository(),
         private readonly AllocationParameterRepository $allocationParameterRepository = new AllocationParameterRepository(),
@@ -69,6 +71,7 @@ class ImportService
                 'events' => $this->events->create($row, null, $userId),
                 'resources' => $this->resources->create($row, $userId),
                 'routes' => $this->routes->create($row, [], $userId),
+                'schedules' => $this->importSchedule($row, $userId),
                 'courses' => $this->importCourse($row, $userId),
                 'student_groups' => $this->importStudentGroup($row, $userId),
                 'students' => $this->importStudent($row, $userId),
@@ -138,12 +141,41 @@ class ImportService
             'events' => 'event',
             'resources' => 'resource',
             'routes' => 'route',
+            'schedules' => 'schedule',
             'courses' => 'course',
             'student_groups' => 'student_group',
             'students' => 'student',
             'allocation_parameters' => 'allocation_parameter',
             default => 'row',
         };
+    }
+
+    private function importSchedule(array $row, ?int $userId): array
+    {
+        $items = $this->scheduleItemsFromRow($row);
+        unset($row['items'], $row['schedule_events'], $row['events_count']);
+
+        $existing = $this->findExistingSchedule($row);
+
+        $result = $existing === null
+            ? $this->schedules->create($row, $userId)
+            : $this->schedules->update((int) $existing->get('id'), $row, $userId);
+
+        if (!($result['success'] ?? false)) {
+            return $result;
+        }
+
+        /** @var Schedule|null $schedule */
+        $schedule = $result['schedule'] ?? null;
+        if (!$schedule instanceof Schedule) {
+            return ['success' => false, 'errors' => ['schedule' => ['Schedule record could not be loaded.']]];
+        }
+
+        if ($items !== []) {
+            $this->schedules->replaceEvents((int) $schedule->get('id'), $items);
+        }
+
+        return ['success' => true, 'schedule' => $schedule];
     }
 
     private function importCourse(array $row, ?int $userId): array
@@ -250,6 +282,82 @@ class ImportService
         }
 
         return array_values(array_filter(array_map('strval', (array) $value)));
+    }
+
+    private function findExistingSchedule(array $row): ?Schedule
+    {
+        $scheduleId = isset($row['id']) ? (int) $row['id'] : 0;
+        if ($scheduleId > 0) {
+            $schedule = $this->scheduleRepository->find($scheduleId);
+            if ($schedule !== null) {
+                return $schedule;
+            }
+        }
+
+        $name = trim((string) ($row['name'] ?? ''));
+        $startsOn = trim((string) ($row['starts_on'] ?? ''));
+        $endsOn = trim((string) ($row['ends_on'] ?? ''));
+
+        if ($name === '' || $startsOn === '' || $endsOn === '') {
+            return null;
+        }
+
+        foreach ($this->scheduleRepository->all() as $schedule) {
+            if (
+                (string) $schedule->get('name') === $name
+                && (string) $schedule->get('starts_on') === $startsOn
+                && (string) $schedule->get('ends_on') === $endsOn
+            ) {
+                return $schedule;
+            }
+        }
+
+        return null;
+    }
+
+    private function scheduleItemsFromRow(array $row): array
+    {
+        $raw = $row['items'] ?? $row['schedule_events'] ?? [];
+
+        if (is_string($raw) && trim($raw) !== '') {
+            $decoded = json_decode($raw, true);
+            $raw = is_array($decoded) ? $decoded : [];
+        }
+
+        if (!is_array($raw)) {
+            return [];
+        }
+
+        if (!$this->isList($raw)) {
+            $raw = [$raw];
+        }
+
+        $items = [];
+
+        foreach ($raw as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $eventId = (int) ($item['event_id'] ?? 0);
+            if ($eventId <= 0) {
+                continue;
+            }
+
+            $items[] = [
+                'event_id' => $eventId,
+                'assigned_room_id' => isset($item['assigned_room_id']) && $item['assigned_room_id'] !== '' ? (int) $item['assigned_room_id'] : null,
+                'allocation_status' => (string) ($item['allocation_status'] ?? 'manual'),
+                'conflict_notes' => isset($item['conflict_notes']) && $item['conflict_notes'] !== '' ? (string) $item['conflict_notes'] : null,
+            ];
+        }
+
+        return $items;
+    }
+
+    private function isList(array $value): bool
+    {
+        return function_exists('array_is_list') ? array_is_list($value) : array_keys($value) === range(0, count($value) - 1);
     }
 
     private function summaryMessage(array $result): string

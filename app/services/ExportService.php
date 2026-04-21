@@ -29,6 +29,10 @@ class ExportService
 
         try {
             $rows = $this->rowsForEntity($entity, $entityId);
+            if ($format === 'csv') {
+                $rows = $this->flattenRowsForCsv($rows);
+            }
+
             $content = match ($format) {
                 'csv' => $this->csv->toString($rows),
                 'xml' => $this->xml->toString($rows, $entity, rtrim($entity, 's')),
@@ -107,13 +111,33 @@ class ExportService
             'events' => $this->mapModels($entityId === null ? $this->events->all() : array_filter([$this->events->find($entityId)])),
             'resources' => $this->mapModels($entityId === null ? $this->resources->all() : array_filter([$this->resources->find($entityId)])),
             'routes' => $this->mapModels($entityId === null ? $this->routes->all() : array_filter([$this->routes->find($entityId)])),
-            'schedules' => $this->mapModels($entityId === null ? $this->schedules->all() : array_filter([$this->schedules->find($entityId)])),
+            'schedules' => $this->scheduleRows($entityId),
             'courses' => $this->mapModels($entityId === null ? $this->courses->all() : array_filter([$this->courses->find($entityId)])),
             'student_groups' => $this->mapRows($entityId === null ? $this->studentGroups->exportRows() : $this->filterById($this->studentGroups->exportRows(), $entityId)),
             'students' => $this->mapRows($entityId === null ? $this->users->allStudents() : $this->filterById($this->users->allStudents(), $entityId)),
             'allocation_parameters' => $this->mapRows($entityId === null ? $this->allocationParameters->exportRows() : $this->filterById($this->allocationParameters->exportRows(), $entityId)),
             default => throw new InvalidArgumentException('Unsupported export entity.'),
         };
+    }
+
+    private function scheduleRows(?int $entityId): array
+    {
+        $schedules = $entityId === null ? $this->schedules->all() : array_filter([$this->schedules->find($entityId)]);
+
+        return array_values(array_map(function (Schedule $schedule): array {
+            $row = SensitiveData::strip($schedule->toArray());
+            $row['items'] = array_values(array_map(static function (array $item): array {
+                return [
+                    'event_id' => (int) ($item['event_id'] ?? 0),
+                    'assigned_room_id' => isset($item['assigned_room_id']) && $item['assigned_room_id'] !== '' ? (int) $item['assigned_room_id'] : null,
+                    'allocation_status' => (string) ($item['allocation_status'] ?? 'manual'),
+                    'conflict_notes' => $item['conflict_notes'] ?? null,
+                ];
+            }, $schedule->items()));
+            $row['events_count'] = count($row['items']);
+
+            return $row;
+        }, array_filter($schedules)));
     }
 
     private function mapModels(array $models): array
@@ -132,6 +156,19 @@ class ExportService
     private function filterById(array $rows, int $entityId): array
     {
         return array_values(array_filter($rows, static fn (array $row): bool => (int) ($row['id'] ?? 0) === $entityId));
+    }
+
+    private function flattenRowsForCsv(array $rows): array
+    {
+        return array_values(array_map(function (array $row): array {
+            foreach ($row as $key => $value) {
+                if (is_array($value)) {
+                    $row[$key] = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                }
+            }
+
+            return $row;
+        }, $rows));
     }
 
     private function toText(string $entity, array $rows): string
