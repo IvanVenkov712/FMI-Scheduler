@@ -81,8 +81,13 @@ class RequestService
             return ['success' => false, 'errors' => ['status' => ['Request cannot be reviewed in its current state.']]];
         }
 
-        if (!in_array($status, ['approved', 'rejected', 'scheduled', 'cancelled'], true)) {
+        if (!in_array($status, ['approved', 'rejected', 'cancelled'], true)) {
             return ['success' => false, 'errors' => ['status' => ['Invalid request status.']]];
+        }
+
+        $currentStatus = (string) $request->get('status', 'pending');
+        if (!$this->canTransition($currentStatus, $status)) {
+            return ['success' => false, 'errors' => ['status' => ['Invalid workflow transition for this request.']]];
         }
 
         $old = $request->toArray();
@@ -99,8 +104,13 @@ class RequestService
             return ['success' => false, 'errors' => ['request' => ['Request not found.']]];
         }
 
-        if ($request->get('status') === 'rejected' || $request->get('status') === 'cancelled') {
-            return ['success' => false, 'errors' => ['request' => ['Rejected or cancelled requests cannot be scheduled.']]];
+        $status = (string) $request->get('status', 'pending');
+        if ($status !== 'approved') {
+            return ['success' => false, 'errors' => ['request' => ['Only approved requests can be scheduled.']]];
+        }
+
+        if ($request->get('event_id') !== null) {
+            return ['success' => false, 'errors' => ['request' => ['This request is already linked to an event.']]];
         }
 
         $eventPayload = [
@@ -122,7 +132,12 @@ class RequestService
         }
 
         $event = $eventResult['event'];
-        $this->requests->update($id, ['event_id' => $event->get('id'), 'status' => 'scheduled']);
+        $this->requests->update($id, [
+            'event_id' => $event->get('id'),
+            'status' => 'scheduled',
+            'reviewed_by' => $userId,
+            'reviewed_at' => date('Y-m-d H:i:s'),
+        ]);
         $this->auditLogs->record('schedule', 'exam_request', $id, $request->toArray(), ['event_id' => $event->get('id')], $userId);
 
         return ['success' => true, 'request' => $this->requests->find($id), 'event' => $event];
@@ -149,5 +164,15 @@ class RequestService
         }
 
         return $errors;
+    }
+
+    private function canTransition(string $from, string $to): bool
+    {
+        $transitions = [
+            'pending' => ['approved', 'rejected', 'cancelled'],
+            'approved' => ['cancelled'],
+        ];
+
+        return in_array($to, $transitions[$from] ?? [], true);
     }
 }

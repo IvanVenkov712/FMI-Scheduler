@@ -86,6 +86,7 @@ $router->put('/requests/{id}', 'RequestController@update', array_merge($auth, $m
 $router->delete('/requests/{id}', 'RequestController@delete', array_merge($auth, $managersOrTeachers));
 $router->get('/requests/{id}/review', 'RequestController@review', array_merge($auth, $scheduleManagers));
 $router->post('/requests/{id}/review', 'RequestController@review', array_merge($auth, $scheduleManagers));
+$router->post('/requests/{id}/schedule', 'RequestController@schedule', array_merge($auth, $scheduleManagers));
 
 $router->get('/resources', 'ResourceController@index', array_merge($auth, $technicalStaff));
 $router->get('/resources/create', 'ResourceController@create', array_merge($auth, $technicalStaff));

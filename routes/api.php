@@ -41,6 +41,7 @@ $router->put('/api/events/{id}', 'EventController@update', array_merge($auth, $s
 $router->get('/api/requests', 'RequestController@index', array_merge($auth, $managersOrTeachers));
 $router->post('/api/requests', 'RequestController@store', array_merge($auth, $managersOrTeachers));
 $router->post('/api/requests/{id}/review', 'RequestController@review', array_merge($auth, $scheduleManagers));
+$router->post('/api/requests/{id}/schedule', 'RequestController@schedule', array_merge($auth, $scheduleManagers));
 
 $router->get('/api/resources', 'ResourceController@index', array_merge($auth, $technicalStaff));
 $router->post('/api/resources', 'ResourceController@store', array_merge($auth, $technicalStaff));

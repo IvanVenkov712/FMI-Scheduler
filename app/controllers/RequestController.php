@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 class RequestController extends CrudController
 {
+    public function __construct(
+        array $request = [],
+        private readonly RequestService $requests = new RequestService()
+    ) {
+        parent::__construct($request);
+    }
+
     protected string $table = 'exam_requests';
     protected string $viewPath = 'requests';
     protected string $entityName = 'request';
@@ -81,28 +88,76 @@ class RequestController extends CrudController
     public function review(int|string $id): mixed
     {
         $this->authorizeReview();
+        $request = $this->findOrFail($id);
 
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-            return $this->respond('requests/review', ['request' => $this->findOrFail($id)]);
+            return $this->respond('requests/review', ['request' => $request]);
         }
 
         $data = $this->payload();
         $status = (string) ($data['status'] ?? '');
 
-        if (!in_array($status, ['approved', 'rejected', 'scheduled', 'cancelled'], true)) {
+        if (!in_array($status, ['approved', 'rejected', 'cancelled'], true)) {
             return $this->validationResponse(['status' => 'Invalid review status.'], $data, 'requests/review', [
-                'request' => $this->findOrFail($id),
+                'request' => $request,
             ]);
         }
 
-        $this->updateRow($id, [
-            'status' => $status,
-            'reviewed_by' => $this->currentUserId(),
-            'reviewed_at' => date('Y-m-d H:i:s'),
-            'notes' => $data['notes'] ?? $this->findOrFail($id)['notes'],
-        ]);
+        $result = $this->requests->review(
+            $id,
+            $status,
+            $this->currentUserId(),
+            isset($data['notes']) ? (string) $data['notes'] : (string) ($request['notes'] ?? '')
+        );
 
-        return $this->updatedResponse($this->findOrFail($id));
+        if (!($result['success'] ?? false)) {
+            return $this->validationResponse((array) ($result['errors'] ?? ['status' => 'Unable to review request.']), $data, 'requests/review', [
+                'request' => $request,
+            ]);
+        }
+
+        /** @var ExamRequest|null $updated */
+        $updated = $result['request'] ?? null;
+
+        if ($updated === null) {
+            throw new RuntimeException('Reviewed request could not be loaded.');
+        }
+
+        return $this->updatedResponse($updated->toArray());
+    }
+
+    public function schedule(int|string $id): mixed
+    {
+        $this->authorizeReview();
+
+        $result = $this->requests->createEventFromRequest($id, $this->currentUserId());
+        if (!($result['success'] ?? false)) {
+            $request = $this->findOrFail($id);
+
+            return $this->validationResponse((array) ($result['errors'] ?? ['request' => 'Unable to schedule request.']), [], 'requests/review', [
+                'request' => $request,
+            ]);
+        }
+
+        /** @var ExamRequest|null $updated */
+        $updated = $result['request'] ?? null;
+
+        if ($updated === null) {
+            throw new RuntimeException('Scheduled request could not be loaded.');
+        }
+
+        if ($this->wantsJson()) {
+            /** @var Event|null $event */
+            $event = $result['event'] ?? null;
+
+            return [
+                'request' => $updated->toArray(),
+                'event' => $event?->toArray(),
+                'message' => 'Request scheduled successfully.',
+            ];
+        }
+
+        return $this->redirect($this->indexUrl());
     }
 
     protected function formData(): array
