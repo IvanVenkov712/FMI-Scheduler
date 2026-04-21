@@ -4,42 +4,47 @@ declare(strict_types=1);
 
 class ImportExportController extends Controller
 {
-    private array $entities = [
-        'buildings' => ['code', 'name', 'address', 'description', 'floors_count', 'orientation', 'schematic_description', 'status'],
-        'floors' => ['building_id', 'number', 'name', 'description', 'plan_data', 'ascii_plan', 'capacity', 'width_units', 'height_units', 'status'],
-        'rooms' => ['floor_id', 'room_type_id', 'code', 'name', 'description', 'capacity', 'covid_capacity', 'x', 'y', 'width', 'height', 'online_url', 'access_key', 'status'],
-        'events' => ['created_by', 'room_id', 'title', 'type', 'description', 'course_name', 'group_name', 'students_count', 'starts_at', 'ends_at', 'delivery_mode', 'status'],
-        'routes' => ['from_room_id', 'to_room_id', 'from_building_id', 'to_building_id', 'name', 'description', 'movement_type', 'distance_meters', 'duration_minutes', 'path_data', 'is_accessible', 'status'],
-    ];
+    private array $importEntities = ['buildings', 'floors', 'rooms', 'events', 'resources'];
+    private array $exportEntities = ['buildings', 'floors', 'rooms', 'events', 'schedules'];
 
     public function import(): mixed
     {
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-            return $this->render('import-export/import', ['entities' => array_keys($this->entities)]);
+            return $this->render('import-export/import', ['entities' => $this->importEntities]);
         }
 
         $entity = (string) $this->input('entity', '');
         $format = (string) $this->input('format', 'csv');
 
-        if (!isset($this->entities[$entity])) {
+        if (!in_array($entity, $this->importEntities, true)) {
             return $this->fail('Unsupported import entity.', 422);
         }
 
-        $path = $_FILES['file']['tmp_name'] ?? null;
-        if (!is_string($path) || !is_uploaded_file($path)) {
+        if (!isset($_FILES['file']) || !is_array($_FILES['file'])) {
             return $this->fail('Import file is required.', 422);
         }
 
-        $jobId = $this->createJob('import', $format, $entity, $_FILES['file']['name'] ?? null);
-
         try {
-            $rows = $this->readRows($path, $format);
-            $count = $this->insertRows($entity, $rows);
-            $this->completeJob($jobId, "Imported {$count} rows.");
+            $upload = $this->uploader()->upload(
+                $_FILES['file'],
+                $this->importsDirectory(),
+                $this->allowedImportExtensions(),
+                $this->maxUploadSize()
+            );
 
-            return $this->success(['job_id' => $jobId, 'imported' => $count]);
+            $result = $this->importService()->importFile(
+                $entity,
+                $format,
+                $upload['path'],
+                $this->currentUserId()
+            );
+
+            if (!($result['success'] ?? false)) {
+                return $this->fail($this->resultMessage($result, 'Import failed.'), 422, $result);
+            }
+
+            return $this->success($result, $this->resultMessage($result, 'Import finished successfully.'));
         } catch (Throwable $exception) {
-            $this->failJob($jobId, $exception->getMessage());
             return $this->fail($exception->getMessage(), 500);
         }
     }
@@ -49,29 +54,42 @@ class ImportExportController extends Controller
         $entity = (string) $this->input('entity', 'rooms');
         $format = (string) $this->input('format', 'csv');
 
-        if (!isset($this->entities[$entity])) {
+        if (!in_array($entity, $this->exportEntities, true)) {
             return $this->fail('Unsupported export entity.', 422);
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'GET' && $this->input('download') === null) {
-            return $this->render('import-export/export', ['entities' => array_keys($this->entities)]);
+            return $this->render('import-export/export', ['entities' => $this->exportEntities]);
         }
 
-        $rows = $this->database()->fetchAll('SELECT * FROM ' . $entity . ' ORDER BY id ASC');
-        $directory = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'exports';
+        try {
+            $entityId = $this->normalizeEntityId($this->input('entity_id'));
+            $targetPath = $this->exportTargetPath($entity, $format);
 
-        if (!is_dir($directory)) {
-            mkdir($directory, 0775, true);
+            $result = $this->exportService()->exportEntity(
+                $entity,
+                $format,
+                $entityId,
+                $targetPath,
+                $this->currentUserId()
+            );
+
+            if (!($result['success'] ?? false)) {
+                return $this->fail($this->resultMessage($result, 'Export failed.'), 422, $result);
+            }
+
+            if (!$this->wantsJson() && $this->input('download') !== null && is_string($result['path'] ?? null)) {
+                Response::download(
+                    $result['path'],
+                    basename($result['path']),
+                    $this->contentTypeForFormat($format)
+                );
+            }
+
+            return $this->success($result, $this->resultMessage($result, 'Export finished successfully.'));
+        } catch (Throwable $exception) {
+            return $this->fail($exception->getMessage(), 500);
         }
-
-        $fileName = $entity . '-' . date('Ymd-His') . '.' . $format;
-        $path = $directory . DIRECTORY_SEPARATOR . $fileName;
-        $this->writeRows($path, $rows, $format);
-
-        $jobId = $this->createJob('export', $format, $entity, $path);
-        $this->completeJob($jobId, 'Export completed.');
-
-        return $this->success(['job_id' => $jobId, 'file' => $path, 'rows' => count($rows)]);
     }
 
     public function history(): string
@@ -81,165 +99,172 @@ class ImportExportController extends Controller
         ]);
     }
 
-    private function readRows(string $path, string $format): array
+    private function success(array $data, string $message): mixed
     {
-        if ($format === 'json') {
-            $rows = json_decode((string) file_get_contents($path), true);
-            return is_array($rows) ? $rows : [];
+        if ($this->wantsJson()) {
+            return [
+                'message' => $message,
+                'result' => $data,
+            ];
         }
 
-        if ($format === 'xml') {
-            $xml = simplexml_load_file($path);
-            if ($xml === false) {
-                throw new RuntimeException('Invalid XML import file.');
-            }
-
-            $rows = [];
-            foreach ($xml->row as $row) {
-                $rows[] = json_decode(json_encode($row, JSON_THROW_ON_ERROR), true, 512, JSON_THROW_ON_ERROR);
-            }
-
-            return $rows;
-        }
-
-        if ($format === 'txt' || $format === 'ascii') {
-            return [['ascii_plan' => file_get_contents($path)]];
-        }
-
-        $handle = fopen($path, 'rb');
-        if ($handle === false) {
-            throw new RuntimeException('Cannot read import file.');
-        }
-
-        $headers = fgetcsv($handle) ?: [];
-        $rows = [];
-
-        while (($row = fgetcsv($handle)) !== false) {
-            $rows[] = array_combine($headers, $row) ?: [];
-        }
-
-        fclose($handle);
-
-        return $rows;
+        return $this->render('import-export/history', [
+            'message' => $message,
+            'result' => $data,
+            'jobs' => $this->database()->fetchAll('SELECT * FROM import_export_jobs ORDER BY created_at DESC LIMIT 100'),
+        ]);
     }
 
-    private function insertRows(string $entity, array $rows): int
-    {
-        $count = 0;
-        $columns = $this->entities[$entity];
-
-        foreach ($rows as $row) {
-            if (!is_array($row)) {
-                continue;
-            }
-
-            $data = array_intersect_key($row, array_flip($columns));
-            if ($data === []) {
-                continue;
-            }
-
-            $names = array_keys($data);
-            $placeholders = array_map(static fn (string $name): string => ':' . $name, $names);
-            $this->database()->insert(
-                sprintf('INSERT INTO %s (%s) VALUES (%s)', $entity, implode(', ', $names), implode(', ', $placeholders)),
-                $data
-            );
-            $count++;
-        }
-
-        return $count;
-    }
-
-    private function writeRows(string $path, array $rows, string $format): void
-    {
-        if ($format === 'json') {
-            file_put_contents($path, json_encode($rows, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-            return;
-        }
-
-        if ($format === 'xml') {
-            $xml = new SimpleXMLElement('<rows/>');
-
-            foreach ($rows as $row) {
-                $item = $xml->addChild('row');
-
-                foreach ($row as $key => $value) {
-                    $item->addChild((string) $key, htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
-                }
-            }
-
-            $xml->asXML($path);
-            return;
-        }
-
-        if ($format === 'txt' || $format === 'ascii') {
-            $lines = array_map(
-                static fn (array $row): string => $row['ascii_plan'] ?? json_encode($row, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                $rows
-            );
-            file_put_contents($path, implode(PHP_EOL . PHP_EOL, $lines));
-            return;
-        }
-
-        $handle = fopen($path, 'wb');
-        if ($handle === false) {
-            throw new RuntimeException('Cannot create export file.');
-        }
-
-        if ($rows !== []) {
-            fputcsv($handle, array_keys($rows[0]));
-            foreach ($rows as $row) {
-                fputcsv($handle, $row);
-            }
-        }
-
-        fclose($handle);
-    }
-
-    private function createJob(string $type, string $format, string $entity, ?string $filePath): string
-    {
-        return $this->database()->insert(
-            'INSERT INTO import_export_jobs (user_id, type, format, entity, file_path, status)
-             VALUES (:user_id, :type, :format, :entity, :file_path, "processing")',
-            [
-                'user_id' => $_SESSION['user']['id'] ?? null,
-                'type' => $type,
-                'format' => $format,
-                'entity' => $entity,
-                'file_path' => $filePath,
-            ]
-        );
-    }
-
-    private function completeJob(int|string $id, string $message): void
-    {
-        $this->database()->execute(
-            'UPDATE import_export_jobs SET status = "completed", message = :message, completed_at = NOW() WHERE id = :id',
-            ['id' => $id, 'message' => $message]
-        );
-    }
-
-    private function failJob(int|string $id, string $message): void
-    {
-        $this->database()->execute(
-            'UPDATE import_export_jobs SET status = "failed", message = :message, completed_at = NOW() WHERE id = :id',
-            ['id' => $id, 'message' => $message]
-        );
-    }
-
-    private function success(array $data): mixed
-    {
-        return $this->wantsJson() ? $data : $this->render('import-export/history', $data);
-    }
-
-    private function fail(string $message, int $status): mixed
+    private function fail(string $message, int $status, array $result = []): mixed
     {
         http_response_code($status);
-        return $this->wantsJson() ? ['error' => $message] : $this->render('import-export/import', ['error' => $message]);
+
+        if ($this->wantsJson()) {
+            return ['error' => $message, 'result' => $result];
+        }
+
+        return $this->render('import-export/import', [
+            'error' => $message,
+            'entities' => $this->importEntities,
+            'result' => $result,
+        ]);
     }
 
     private function wantsJson(): bool
     {
         return str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') || $this->input('format') === 'json';
+    }
+
+    private function currentUserId(): ?int
+    {
+        return isset($_SESSION['user']['id']) ? (int) $_SESSION['user']['id'] : null;
+    }
+
+    private function importService(): ImportService
+    {
+        return new ImportService();
+    }
+
+    private function exportService(): ExportService
+    {
+        return new ExportService();
+    }
+
+    private function uploader(): FileUploader
+    {
+        return new FileUploader();
+    }
+
+    private function appConfig(): array
+    {
+        static $config = null;
+
+        if (is_array($config)) {
+            return $config;
+        }
+
+        $path = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'app.php';
+        $loaded = is_file($path) ? require $path : [];
+        $config = is_array($loaded) ? $loaded : [];
+
+        return $config;
+    }
+
+    private function importsDirectory(): string
+    {
+        $config = $this->appConfig();
+
+        return (string) ($config['paths']['imports'] ?? dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'imports');
+    }
+
+    private function exportsDirectory(): string
+    {
+        $config = $this->appConfig();
+
+        return (string) ($config['paths']['exports'] ?? dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'exports');
+    }
+
+    private function allowedImportExtensions(): array
+    {
+        $config = $this->appConfig();
+
+        return (array) ($config['uploads']['allowed_import_extensions'] ?? ['csv', 'json', 'xml', 'txt', 'ascii']);
+    }
+
+    private function maxUploadSize(): int
+    {
+        $config = $this->appConfig();
+
+        return (int) ($config['uploads']['max_file_size'] ?? 5 * 1024 * 1024);
+    }
+
+    private function exportTargetPath(string $entity, string $format): string
+    {
+        $directory = $this->exportsDirectory();
+
+        if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
+            throw new RuntimeException('Export directory could not be created.');
+        }
+
+        return rtrim($directory, DIRECTORY_SEPARATOR)
+            . DIRECTORY_SEPARATOR
+            . $entity
+            . '-'
+            . date('Ymd-His')
+            . '.'
+            . $format;
+    }
+
+    private function normalizeEntityId(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return (int) $value > 0 ? (int) $value : null;
+    }
+
+    private function resultMessage(array $result, string $fallback): string
+    {
+        if (!empty($result['errors']) && is_array($result['errors'])) {
+            $messages = [];
+
+            foreach ($result['errors'] as $error) {
+                if (is_array($error) && isset($error['message'])) {
+                    $messages[] = (string) $error['message'];
+                } elseif (is_string($error)) {
+                    $messages[] = $error;
+                }
+            }
+
+            if ($messages !== []) {
+                return implode('; ', $messages);
+            }
+        }
+
+        if (isset($result['imported'])) {
+            return sprintf(
+                'Imported %d record(s), failed %d.',
+                (int) $result['imported'],
+                (int) ($result['failed'] ?? 0)
+            );
+        }
+
+        if (isset($result['rows'])) {
+            return sprintf('Exported %d record(s).', (int) $result['rows']);
+        }
+
+        return $fallback;
+    }
+
+    private function contentTypeForFormat(string $format): string
+    {
+        return match (strtolower($format)) {
+            'csv' => 'text/csv; charset=utf-8',
+            'xml' => 'application/xml; charset=utf-8',
+            'json' => 'application/json; charset=utf-8',
+            'txt', 'ascii' => 'text/plain; charset=utf-8',
+            default => 'application/octet-stream',
+        };
     }
 }
