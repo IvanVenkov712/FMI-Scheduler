@@ -19,7 +19,6 @@ $router->post('/login', 'AuthController@authenticate');
 $router->get('/register', 'AuthController@register');
 $router->post('/register', 'AuthController@storeRegistration');
 $router->post('/logout', 'AuthController@logout', $auth);
-$router->get('/logout', 'AuthController@logout', $auth);
 
 $router->get('/buildings', 'BuildingController@index', $auth);
 $router->get('/buildings/create', 'BuildingController@create', $admin);

@@ -87,6 +87,7 @@ class Router
                 'body' => $_POST,
             ];
 
+            $this->runGlobalMiddleware($request);
             $this->runMiddleware($route['middleware'], $request);
 
             return $this->send($this->callAction($route['action'], $request, $params));
@@ -158,6 +159,21 @@ class Router
                 $this->abort(403, 'Access denied.');
             }
         }
+    }
+
+    private function runGlobalMiddleware(array $request): void
+    {
+        if (!class_exists('CsrfMiddleware')) {
+            return;
+        }
+
+        $method = strtoupper((string) ($request['method'] ?? 'GET'));
+        if (in_array($method, ['GET', 'HEAD', 'OPTIONS'], true)) {
+            return;
+        }
+
+        $middleware = new CsrfMiddleware();
+        $middleware->handle($request);
     }
 
     private function send(mixed $response): mixed

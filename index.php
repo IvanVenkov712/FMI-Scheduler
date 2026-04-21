@@ -41,6 +41,21 @@ function bootstrapEnvironment(string $rootPath): void
         mb_internal_encoding((string) ($config['encoding'] ?? 'UTF-8'));
     }
 
+    $debug = filter_var($config['debug'] ?? false, FILTER_VALIDATE_BOOLEAN);
+    $logsPath = $config['paths']['logs'] ?? ($rootPath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs');
+    $errorLogFile = $config['logging']['error_file'] ?? ($logsPath . DIRECTORY_SEPARATOR . 'error.log');
+
+    if (is_string($logsPath) && $logsPath !== '' && !is_dir($logsPath)) {
+        mkdir($logsPath, 0775, true);
+    }
+
+    if (is_string($errorLogFile) && $errorLogFile !== '') {
+        ini_set('log_errors', '1');
+        ini_set('error_log', $errorLogFile);
+    }
+
+    ini_set('display_errors', $debug ? '1' : '0');
+
     if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
         $session = $config['session'] ?? [];
 
@@ -96,17 +111,66 @@ function failEarly(string $message, int $statusCode = 500, ?Throwable $exception
 {
     http_response_code($statusCode);
 
-    $logMessage = $exception ? (string) $exception : $message;
-    error_log($logMessage);
+    logBootstrapFailure($message, $statusCode, $exception);
 
-    $debug = filter_var(getenv('APP_DEBUG') ?: true, FILTER_VALIDATE_BOOLEAN);
+    $debug = loadDebugFlag();
 
     if ($debug) {
         header('Content-Type: text/plain; charset=utf-8');
-        echo $exception ? (string) $exception : $message;
+        echo $statusCode === 404 ? 'Page not found.' : 'Internal server error.';
         exit;
     }
 
     echo $statusCode === 404 ? 'Page not found.' : 'Internal server error.';
     exit;
+}
+
+function loadDebugFlag(): bool
+{
+    static $debug = null;
+
+    if (is_bool($debug)) {
+        return $debug;
+    }
+
+    $configFile = ROOT_PATH . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'app.php';
+    $config = is_file($configFile) ? require $configFile : [];
+    $debug = filter_var($config['debug'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+    return $debug;
+}
+
+function logBootstrapFailure(string $message, int $statusCode, ?Throwable $exception = null): void
+{
+    $configFile = ROOT_PATH . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'app.php';
+    $config = is_file($configFile) ? require $configFile : [];
+    $logsPath = $config['paths']['logs'] ?? (ROOT_PATH . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs');
+    $errorLogFile = $config['logging']['error_file'] ?? ($logsPath . DIRECTORY_SEPARATOR . 'error.log');
+
+    if (is_string($logsPath) && $logsPath !== '' && !is_dir($logsPath)) {
+        mkdir($logsPath, 0775, true);
+    }
+
+    $details = $exception
+        ? sprintf("%s\n%s", get_class($exception) . ': ' . $exception->getMessage(), $exception->getTraceAsString())
+        : $message;
+
+    $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'CLI';
+    $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+    $line = sprintf(
+        "[%s] %s %s | HTTP %d | %s%s",
+        date('Y-m-d H:i:s'),
+        $requestMethod,
+        $requestUri,
+        $statusCode,
+        $message,
+        $details !== $message ? PHP_EOL . $details : ''
+    );
+
+    if (is_string($errorLogFile) && $errorLogFile !== '') {
+        error_log($line . PHP_EOL, 3, $errorLogFile);
+        return;
+    }
+
+    error_log($line);
 }

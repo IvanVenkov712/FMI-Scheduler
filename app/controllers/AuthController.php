@@ -112,6 +112,10 @@ class AuthController extends Controller
 
     public function logout(): mixed
     {
+        if (strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            return $this->redirect('/dashboard', 302);
+        }
+
         unset($_SESSION['user']);
 
         if ($this->wantsJson()) {

@@ -9,7 +9,7 @@ return [
     'name' => getenv('APP_NAME') ?: 'Schedule Management System',
     'description' => 'System for managing schedules, buildings, floors, rooms, routes, resources and movement constraints.',
     'environment' => getenv('APP_ENV') ?: 'local',
-    'debug' => filter_var(getenv('APP_DEBUG') ?: true, FILTER_VALIDATE_BOOLEAN),
+    'debug' => filter_var(getenv('APP_DEBUG') ?: false, FILTER_VALIDATE_BOOLEAN),
     'url' => rtrim($baseUrl, '/'),
     'timezone' => getenv('APP_TIMEZONE') ?: 'Europe/Sofia',
     'locale' => getenv('APP_LOCALE') ?: 'bg',
@@ -35,6 +35,12 @@ return [
     'session' => [
         'name' => getenv('SESSION_NAME') ?: 'schedule_management_session',
         'lifetime_minutes' => (int) (getenv('SESSION_LIFETIME') ?: 120),
+    ],
+
+    'logging' => [
+        'channel' => getenv('LOG_CHANNEL') ?: 'file',
+        'level' => getenv('LOG_LEVEL') ?: 'error',
+        'error_file' => $rootPath . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'error.log',
     ],
 
     'features' => [

@@ -85,17 +85,20 @@ class App
 
     private function registerErrorHandling(): void
     {
-        $debug = (bool) ($this->config['debug'] ?? true);
+        $debug = filter_var($this->config['debug'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $errorLogFile = (string) ($this->config['logging']['error_file'] ?? $this->path('storage/logs/error.log'));
 
         ini_set('display_errors', $debug ? '1' : '0');
+        ini_set('log_errors', '1');
+        ini_set('error_log', $errorLogFile);
         error_reporting(E_ALL);
 
         set_exception_handler(function (Throwable $exception) use ($debug): void {
             http_response_code(500);
-            error_log((string) $exception);
+            $this->logException($exception);
 
             if ($debug) {
-                echo '<pre>' . htmlspecialchars((string) $exception, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</pre>';
+                echo 'Internal server error.';
                 return;
             }
 
@@ -154,6 +157,7 @@ class App
         $this->router->middleware('auth', 'AuthMiddleware');
         $this->router->middleware('admin', 'AdminMiddleware');
         $this->router->middleware('role', 'RoleMiddleware');
+        $this->router->middleware('csrf', 'CsrfMiddleware');
     }
 
     private function routerIsEmpty(): bool
@@ -163,5 +167,25 @@ class App
         $property->setAccessible(true);
 
         return $property->getValue($this->router) === [];
+    }
+
+    private function logException(Throwable $exception): void
+    {
+        $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'CLI';
+        $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+
+        $message = sprintf(
+            "[%s] %s %s | %s: %s in %s:%d\n%s\n",
+            date('Y-m-d H:i:s'),
+            $requestMethod,
+            $requestUri,
+            get_class($exception),
+            $exception->getMessage(),
+            $exception->getFile(),
+            $exception->getLine(),
+            $exception->getTraceAsString()
+        );
+
+        error_log($message);
     }
 }
