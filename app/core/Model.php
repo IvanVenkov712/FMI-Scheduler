@@ -147,4 +147,19 @@ abstract class Model
             ARRAY_FILTER_USE_KEY
         );
     }
+
+    protected function db(): Database
+    {
+        return Database::getInstance(Database::configFromFile());
+    }
+
+    protected function exists(): bool
+    {
+        return isset($this->attributes[$this->primaryKey]);
+    }
+
+    protected function primaryValue(): int|string|null
+    {
+        return $this->attributes[$this->primaryKey] ?? null;
+    }
 }
