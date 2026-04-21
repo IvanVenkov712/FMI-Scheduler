@@ -56,6 +56,18 @@ class EventController extends CrudController
         return $this->updatedResponse($event?->toArray() ?? $this->findOrFail($id));
     }
 
+    public function delete(int|string $id): mixed
+    {
+        $deleted = $this->events->delete($id, $this->currentUserId());
+
+        if (!$deleted) {
+            http_response_code(404);
+            throw new RuntimeException('Event not found.');
+        }
+
+        return $this->deletedResponse();
+    }
+
     protected function domainErrors(array $data): array
     {
         $errors = [];

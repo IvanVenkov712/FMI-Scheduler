@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 class AuthController extends Controller
 {
+    public function __construct(
+        array $request = [],
+        private readonly AuthService $auth = new AuthService()
+    ) {
+        parent::__construct($request);
+    }
+
     public function login(): string
     {
         return $this->render('auth/login');
@@ -14,32 +21,15 @@ class AuthController extends Controller
         $data = $this->body();
         $login = trim((string) ($data['login'] ?? $data['email'] ?? $data['username'] ?? ''));
         $password = (string) ($data['password'] ?? '');
+        $result = $this->auth->attempt($login, $password);
 
-        if ($login === '' || $password === '') {
-            return $this->authError('Email/username and password are required.');
+        if (!($result['success'] ?? false)) {
+            $errors = (array) ($result['errors'] ?? []);
+            $message = (string) (($errors['login'][0] ?? null) ?? 'Invalid credentials.');
+            return $this->authError($message);
         }
 
-        $user = $this->database()->fetch(
-            'SELECT users.*, roles.slug AS role_slug, roles.name AS role_name
-             FROM users
-             LEFT JOIN roles ON roles.id = users.role_id
-             WHERE users.email = :login OR users.username = :login
-             LIMIT 1',
-            ['login' => $login]
-        );
-
-        if ($user === null || !password_verify($password, (string) $user['password_hash'])) {
-            return $this->authError('Invalid credentials.');
-        }
-
-        if ($user['status'] !== 'active') {
-            return $this->authError('This account is not active.', 403);
-        }
-
-        $this->database()->execute('UPDATE users SET last_login_at = NOW() WHERE id = :id', ['id' => $user['id']]);
-        unset($user['password_hash'], $user['remember_token']);
-
-        $_SESSION['user'] = $user;
+        $user = (array) ($result['user'] ?? []);
 
         if ($this->wantsJson()) {
             return ['user' => $user, 'message' => 'Logged in successfully.'];
@@ -56,51 +46,16 @@ class AuthController extends Controller
     public function storeRegistration(): mixed
     {
         $data = $this->body();
-        $errors = $this->requireFields($data, ['username', 'email', 'password', 'first_name', 'last_name']);
-
-        if (($data['password'] ?? '') !== ($data['password_confirmation'] ?? $data['password'] ?? null)) {
-            $errors['password_confirmation'] = 'Password confirmation does not match.';
-        }
-
-        if ($errors !== []) {
+        $result = $this->auth->registerForRoleSlug($data, ROLE_STUDENT);
+        if (!($result['success'] ?? false)) {
+            $errors = (array) ($result['errors'] ?? []);
             http_response_code(422);
             return $this->wantsJson()
                 ? ['errors' => $errors]
                 : $this->render('auth/register', ['errors' => $errors, 'old' => $data]);
         }
-
-        $role = $this->database()->fetch("SELECT id FROM roles WHERE slug = 'student' LIMIT 1");
-
-        if ($role === null) {
-            return $this->authError('Student role is not configured.', 500);
-        }
-
-        $id = $this->database()->insert(
-            'INSERT INTO users (role_id, username, email, password_hash, first_name, last_name, phone, faculty_number, department, status)
-             VALUES (:role_id, :username, :email, :password_hash, :first_name, :last_name, :phone, :faculty_number, :department, :status)',
-            [
-                'role_id' => $role['id'],
-                'username' => trim((string) $data['username']),
-                'email' => trim((string) $data['email']),
-                'password_hash' => password_hash((string) $data['password'], PASSWORD_DEFAULT),
-                'first_name' => trim((string) $data['first_name']),
-                'last_name' => trim((string) $data['last_name']),
-                'phone' => $data['phone'] ?? null,
-                'faculty_number' => $data['faculty_number'] ?? null,
-                'department' => $data['department'] ?? null,
-                'status' => 'active',
-            ]
-        );
-
-        $user = $this->database()->fetch(
-            'SELECT users.id, users.role_id, users.username, users.email, users.first_name, users.last_name, users.status,
-                    roles.slug AS role_slug, roles.name AS role_name
-             FROM users
-             LEFT JOIN roles ON roles.id = users.role_id
-             WHERE users.id = :id',
-            ['id' => $id]
-        );
-        $_SESSION['user'] = $user;
+        $user = (array) ($result['user'] ?? []);
+        SessionHelper::login($user);
 
         if ($this->wantsJson()) {
             http_response_code(201);
@@ -116,7 +71,7 @@ class AuthController extends Controller
             return $this->redirect('/dashboard', 302);
         }
 
-        unset($_SESSION['user']);
+        $this->auth->logout();
 
         if ($this->wantsJson()) {
             return ['message' => 'Logged out successfully.'];

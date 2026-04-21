@@ -84,6 +84,22 @@ class AuthService
         return ['success' => true, 'user' => $user->publicData()];
     }
 
+    public function registerForRoleSlug(array $data, string $roleSlug): array
+    {
+        $role = Database::getInstance(Database::configFromFile())->fetch(
+            'SELECT id FROM roles WHERE slug = :slug LIMIT 1',
+            ['slug' => $roleSlug]
+        );
+
+        if ($role === null) {
+            return ['success' => false, 'errors' => ['role' => ['Requested role is not configured.']]];
+        }
+
+        $data['role_id'] = (int) $role['id'];
+
+        return $this->register($data);
+    }
+
     public function logout(): void
     {
         $user = SessionHelper::user();

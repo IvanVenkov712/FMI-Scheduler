@@ -28,8 +28,18 @@ class RequestController extends CrudController
     public function store(): mixed
     {
         $this->authorizeCreate();
-        $_POST['requested_by'] ??= $this->currentUserId();
-        return parent::store();
+        $data = $this->payload();
+        $data['requested_by'] ??= $this->currentUserId();
+        $result = $this->requests->create($this->normalize($data), $this->currentUserId());
+
+        if (!($result['success'] ?? false)) {
+            return $this->validationResponse((array) ($result['errors'] ?? []), $data, $this->viewPath . '/create', $this->formData());
+        }
+
+        /** @var ExamRequest|null $request */
+        $request = $result['request'] ?? null;
+
+        return $this->storedResponse($request?->toArray() ?? []);
     }
 
     public function index(): mixed
@@ -73,16 +83,33 @@ class RequestController extends CrudController
     {
         $request = $this->findOrFail($id);
         $this->authorizeRequestAccess($request);
+        $data = $this->payload();
+        $result = $this->requests->update($id, $this->normalize($data), $this->currentUserId());
 
-        return parent::update($id);
+        if (!($result['success'] ?? false)) {
+            return $this->validationResponse((array) ($result['errors'] ?? []), $data, $this->viewPath . '/edit', array_merge($this->formData(), [
+                $this->entityName => array_merge($request, $data),
+            ]));
+        }
+
+        /** @var ExamRequest|null $updated */
+        $updated = $result['request'] ?? null;
+
+        return $this->updatedResponse($updated?->toArray() ?? $this->findOrFail($id));
     }
 
     public function delete(int|string $id): mixed
     {
         $request = $this->findOrFail($id);
         $this->authorizeRequestAccess($request);
+        $deleted = $this->requests->delete($id, $this->currentUserId());
 
-        return parent::delete($id);
+        if (!$deleted) {
+            http_response_code(404);
+            throw new RuntimeException('Request not found.');
+        }
+
+        return $this->deletedResponse();
     }
 
     public function review(int|string $id): mixed

@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 class ScheduleController extends CrudController
 {
+    public function __construct(
+        array $request = [],
+        private readonly ScheduleService $schedulesService = new ScheduleService()
+    ) {
+        parent::__construct($request);
+    }
+
     protected string $table = 'schedules';
     protected string $viewPath = 'schedules';
     protected string $entityName = 'schedule';
@@ -15,8 +22,47 @@ class ScheduleController extends CrudController
 
     public function store(): mixed
     {
-        $_POST['created_by'] ??= $this->currentUserId();
-        return parent::store();
+        $data = $this->payload();
+        $data['created_by'] ??= $this->currentUserId();
+        $result = $this->schedulesService->create($this->normalize($data), $this->currentUserId());
+
+        if (!($result['success'] ?? false)) {
+            return $this->validationResponse((array) ($result['errors'] ?? []), $data, $this->viewPath . '/create');
+        }
+
+        /** @var Schedule|null $schedule */
+        $schedule = $result['schedule'] ?? null;
+
+        return $this->storedResponse($schedule?->toArray() ?? []);
+    }
+
+    public function update(int|string $id): mixed
+    {
+        $data = $this->payload();
+        $result = $this->schedulesService->update($id, $this->normalize($data), $this->currentUserId());
+
+        if (!($result['success'] ?? false)) {
+            return $this->validationResponse((array) ($result['errors'] ?? []), $data, $this->viewPath . '/edit', [
+                $this->entityName => array_merge($this->findOrFail($id), $data),
+            ]);
+        }
+
+        /** @var Schedule|null $schedule */
+        $schedule = $result['schedule'] ?? null;
+
+        return $this->updatedResponse($schedule?->toArray() ?? $this->findOrFail($id));
+    }
+
+    public function delete(int|string $id): mixed
+    {
+        $deleted = $this->schedulesService->delete($id, $this->currentUserId());
+
+        if (!$deleted) {
+            http_response_code(404);
+            throw new RuntimeException('Schedule not found.');
+        }
+
+        return $this->deletedResponse();
     }
 
     public function calendar(int|string|null $id = null): mixed
@@ -53,16 +99,11 @@ class ScheduleController extends CrudController
             return $this->validationResponse($errors, $data, 'schedules/details');
         }
 
-        $this->database()->insert(
-            'INSERT INTO schedule_events (schedule_id, event_id, assigned_room_id, allocation_status)
-             VALUES (:schedule_id, :event_id, :assigned_room_id, :allocation_status)
-             ON DUPLICATE KEY UPDATE assigned_room_id = VALUES(assigned_room_id), allocation_status = VALUES(allocation_status)',
-            [
-                'schedule_id' => $id,
-                'event_id' => $data['event_id'],
-                'assigned_room_id' => $data['assigned_room_id'] ?? null,
-                'allocation_status' => $data['allocation_status'] ?? 'manual',
-            ]
+        $this->schedulesService->attachEvent(
+            (int) $id,
+            (int) $data['event_id'],
+            isset($data['assigned_room_id']) && $data['assigned_room_id'] !== '' ? (int) $data['assigned_room_id'] : null,
+            (string) ($data['allocation_status'] ?? 'manual')
         );
 
         return $this->updatedResponse($this->findOrFail($id));

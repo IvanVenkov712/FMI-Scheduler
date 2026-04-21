@@ -31,17 +31,7 @@ abstract class CrudController extends Controller
 
     public function store(): mixed
     {
-        $data = $this->payload();
-        $errors = $this->validate($data);
-
-        if ($errors !== []) {
-            return $this->validationResponse($errors, $data, $this->viewPath . '/create');
-        }
-
-        $id = $this->insert($this->normalize($data));
-        $record = $this->findOrFail($id);
-
-        return $this->storedResponse($this->sanitize($record));
+        throw new BadMethodCallException(static::class . ' must implement store() via a service layer.');
     }
 
     public function details(int|string $id): mixed
@@ -65,29 +55,12 @@ abstract class CrudController extends Controller
 
     public function update(int|string $id): mixed
     {
-        $data = $this->payload();
-        $errors = $this->validate($data, true);
-
-        if ($errors !== []) {
-            return $this->validationResponse($errors, $data, $this->viewPath . '/edit', [
-                $this->entityName => $this->sanitize(array_merge($this->findOrFail($id), $data)),
-            ]);
-        }
-
-        $this->updateRow($id, $this->normalize($data));
-        $record = $this->findOrFail($id);
-
-        return $this->updatedResponse($this->sanitize($record));
+        throw new BadMethodCallException(static::class . ' must implement update() via a service layer.');
     }
 
     public function delete(int|string $id): mixed
     {
-        $this->database()->execute(
-            sprintf('DELETE FROM %s WHERE %s = :id', $this->table, $this->primaryKey),
-            ['id' => $id]
-        );
-
-        return $this->deletedResponse();
+        throw new BadMethodCallException(static::class . ' must implement delete() via a service layer.');
     }
 
     public function destroy(int|string $id): mixed
@@ -126,28 +99,12 @@ abstract class CrudController extends Controller
 
     protected function insert(array $data): string
     {
-        $columns = array_keys($data);
-        $placeholders = array_map(static fn (string $column): string => ':' . $column, $columns);
-
-        return $this->database()->insert(
-            sprintf('INSERT INTO %s (%s) VALUES (%s)', $this->table, implode(', ', $columns), implode(', ', $placeholders)),
-            $data
-        );
+        throw new BadMethodCallException(static::class . ' must not insert directly; use a service layer.');
     }
 
     protected function updateRow(int|string $id, array $data): void
     {
-        if ($data === []) {
-            return;
-        }
-
-        $assignments = array_map(static fn (string $column): string => "{$column} = :{$column}", array_keys($data));
-        $data['record_id'] = $id;
-
-        $this->database()->execute(
-            sprintf('UPDATE %s SET %s WHERE %s = :record_id', $this->table, implode(', ', $assignments), $this->primaryKey),
-            $data
-        );
+        throw new BadMethodCallException(static::class . ' must not update rows directly; use a service layer.');
     }
 
     protected function payload(): array

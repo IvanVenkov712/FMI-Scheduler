@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 class RouteController extends CrudController
 {
+    public function __construct(
+        array $request = [],
+        private readonly RouteService $routesService = new RouteService()
+    ) {
+        parent::__construct($request);
+    }
+
     protected string $table = 'routes';
     protected string $viewPath = 'routes';
     protected string $entityName = 'route';
@@ -21,6 +28,50 @@ class RouteController extends CrudController
     protected array $jsonFields = ['path_data'];
     protected array $listFilters = ['status', 'is_accessible', 'from_building_id', 'to_building_id'];
     protected string $defaultOrder = 'LEAST(IFNULL(walking_duration_minutes, 65535), IFNULL(car_duration_minutes, 65535), IFNULL(public_transport_duration_minutes, 65535)) ASC, name ASC';
+
+    public function store(): mixed
+    {
+        $data = $this->payload();
+        $result = $this->routesService->create($this->normalize($data), [], $this->currentUserId());
+
+        if (!($result['success'] ?? false)) {
+            return $this->validationResponse((array) ($result['errors'] ?? []), $data, $this->viewPath . '/create', $this->formData());
+        }
+
+        /** @var Route|null $route */
+        $route = $result['route'] ?? null;
+
+        return $this->storedResponse($route?->toArray() ?? []);
+    }
+
+    public function update(int|string $id): mixed
+    {
+        $data = $this->payload();
+        $result = $this->routesService->update($id, $this->normalize($data), null, $this->currentUserId());
+
+        if (!($result['success'] ?? false)) {
+            return $this->validationResponse((array) ($result['errors'] ?? []), $data, $this->viewPath . '/edit', array_merge($this->formData(), [
+                $this->entityName => array_merge($this->findOrFail($id), $data),
+            ]));
+        }
+
+        /** @var Route|null $route */
+        $route = $result['route'] ?? null;
+
+        return $this->updatedResponse($route?->toArray() ?? $this->findOrFail($id));
+    }
+
+    public function delete(int|string $id): mixed
+    {
+        $deleted = $this->routesService->delete($id, $this->currentUserId());
+
+        if (!$deleted) {
+            http_response_code(404);
+            throw new RuntimeException('Route not found.');
+        }
+
+        return $this->deletedResponse();
+    }
 
     public function map(int|string|null $id = null): mixed
     {
@@ -45,31 +96,7 @@ class RouteController extends CrudController
     public function saveSteps(int|string $id): mixed
     {
         $steps = (array) ($this->payload()['steps'] ?? []);
-
-        $this->database()->transaction(function (Database $db) use ($id, $steps): void {
-            $db->execute('DELETE FROM route_steps WHERE route_id = :route_id', ['route_id' => $id]);
-
-            foreach ($steps as $index => $step) {
-                if (!is_array($step) || empty($step['instruction'])) {
-                    continue;
-                }
-
-                $db->insert(
-                    'INSERT INTO route_steps (route_id, step_order, instruction, point_type, room_id, floor_point_id, building_id, duration_minutes)
-                     VALUES (:route_id, :step_order, :instruction, :point_type, :room_id, :floor_point_id, :building_id, :duration_minutes)',
-                    [
-                        'route_id' => $id,
-                        'step_order' => (int) ($step['step_order'] ?? ($index + 1)),
-                        'instruction' => $step['instruction'],
-                        'point_type' => $step['point_type'] ?? 'text',
-                        'room_id' => $step['room_id'] ?? null,
-                        'floor_point_id' => $step['floor_point_id'] ?? null,
-                        'building_id' => $step['building_id'] ?? null,
-                        'duration_minutes' => (int) ($step['duration_minutes'] ?? 0),
-                    ]
-                );
-            }
-        });
+        $this->routesService->saveSteps((int) $id, $steps);
 
         return $this->updatedResponse($this->findOrFail($id));
     }

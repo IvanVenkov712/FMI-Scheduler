@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 class FloorController extends CrudController
 {
+    public function __construct(
+        array $request = [],
+        private readonly FloorService $floorsService = new FloorService()
+    ) {
+        parent::__construct($request);
+    }
+
     protected string $table = 'floors';
     protected string $viewPath = 'floors';
     protected string $entityName = 'floor';
@@ -15,6 +22,50 @@ class FloorController extends CrudController
     protected array $integerFields = ['building_id', 'number', 'capacity', 'width_units', 'height_units'];
     protected array $listFilters = ['building_id', 'status'];
     protected string $defaultOrder = 'building_id ASC, number ASC';
+
+    public function store(): mixed
+    {
+        $data = $this->payload();
+        $result = $this->floorsService->create($this->normalize($data), $this->currentUserId());
+
+        if (!($result['success'] ?? false)) {
+            return $this->validationResponse((array) ($result['errors'] ?? []), $data, $this->viewPath . '/create', $this->formData());
+        }
+
+        /** @var Floor|null $floor */
+        $floor = $result['floor'] ?? null;
+
+        return $this->storedResponse($floor?->toArray() ?? []);
+    }
+
+    public function update(int|string $id): mixed
+    {
+        $data = $this->payload();
+        $result = $this->floorsService->update($id, $this->normalize($data), $this->currentUserId());
+
+        if (!($result['success'] ?? false)) {
+            return $this->validationResponse((array) ($result['errors'] ?? []), $data, $this->viewPath . '/edit', array_merge($this->formData(), [
+                $this->entityName => array_merge($this->findOrFail($id), $data),
+            ]));
+        }
+
+        /** @var Floor|null $floor */
+        $floor = $result['floor'] ?? null;
+
+        return $this->updatedResponse($floor?->toArray() ?? $this->findOrFail($id));
+    }
+
+    public function delete(int|string $id): mixed
+    {
+        $deleted = $this->floorsService->delete($id, $this->currentUserId());
+
+        if (!$deleted) {
+            http_response_code(404);
+            throw new RuntimeException('Floor not found.');
+        }
+
+        return $this->deletedResponse();
+    }
 
     public function rooms(int|string $id): mixed
     {
@@ -36,13 +87,23 @@ class FloorController extends CrudController
     public function updatePlan(int|string $id): mixed
     {
         $data = $this->payload();
-        $this->updateRow($id, $this->normalize($data));
+        $asciiPlan = (string) ($data['ascii_plan'] ?? '');
+        $planData = array_key_exists('plan_data', $data) ? $this->jsonValue($data['plan_data']) : null;
+        $points = isset($data['points']) && is_array($data['points']) ? $data['points'] : [];
 
-        if (isset($data['points']) && is_array($data['points'])) {
-            $this->replacePoints($id, $data['points']);
+        $result = $this->floorsService->savePlan((int) $id, $asciiPlan, $points, $planData, $this->currentUserId());
+        if (!($result['success'] ?? false)) {
+            return $this->validationResponse((array) ($result['errors'] ?? []), $data, 'floors/edit', [
+                'floor' => array_merge($this->findOrFail($id), $data),
+                'rooms' => $this->rows('SELECT * FROM rooms WHERE floor_id = :id ORDER BY code ASC', ['id' => $id]),
+                'points' => $points,
+            ]);
         }
 
-        return $this->updatedResponse($this->findOrFail($id));
+        /** @var Floor|null $floor */
+        $floor = $result['floor'] ?? null;
+
+        return $this->updatedResponse($floor?->toArray() ?? $this->findOrFail($id));
     }
 
     protected function formData(): array
@@ -50,32 +111,5 @@ class FloorController extends CrudController
         return [
             'buildings' => $this->database()->fetchAll('SELECT id, name, code FROM buildings ORDER BY name ASC'),
         ];
-    }
-
-    private function replacePoints(int|string $floorId, array $points): void
-    {
-        $this->database()->transaction(function (Database $db) use ($floorId, $points): void {
-            $db->execute('DELETE FROM floor_points WHERE floor_id = :floor_id', ['floor_id' => $floorId]);
-
-            foreach ($points as $point) {
-                if (!is_array($point) || empty($point['code']) || empty($point['name']) || empty($point['type'])) {
-                    continue;
-                }
-
-                $db->insert(
-                    'INSERT INTO floor_points (floor_id, code, name, type, x, y, is_accessible)
-                     VALUES (:floor_id, :code, :name, :type, :x, :y, :is_accessible)',
-                    [
-                        'floor_id' => $floorId,
-                        'code' => $point['code'],
-                        'name' => $point['name'],
-                        'type' => $point['type'],
-                        'x' => (int) ($point['x'] ?? 0),
-                        'y' => (int) ($point['y'] ?? 0),
-                        'is_accessible' => empty($point['is_accessible']) ? 0 : 1,
-                    ]
-                );
-            }
-        });
     }
 }

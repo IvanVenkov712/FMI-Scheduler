@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 class RoomController extends CrudController
 {
+    public function __construct(
+        array $request = [],
+        private readonly RoomService $roomsService = new RoomService()
+    ) {
+        parent::__construct($request);
+    }
+
     protected string $table = 'rooms';
     protected string $viewPath = 'rooms';
     protected string $entityName = 'room';
@@ -15,6 +22,50 @@ class RoomController extends CrudController
     protected array $integerFields = ['floor_id', 'room_type_id', 'capacity', 'covid_capacity', 'x', 'y', 'width', 'height'];
     protected array $listFilters = ['floor_id', 'room_type_id', 'status'];
     protected string $defaultOrder = 'code ASC';
+
+    public function store(): mixed
+    {
+        $data = $this->payload();
+        $result = $this->roomsService->create($this->normalize($data), [], $this->currentUserId());
+
+        if (!($result['success'] ?? false)) {
+            return $this->validationResponse((array) ($result['errors'] ?? []), $data, $this->viewPath . '/create', $this->formData());
+        }
+
+        /** @var Room|null $room */
+        $room = $result['room'] ?? null;
+
+        return $this->storedResponse($room?->toArray() ?? []);
+    }
+
+    public function update(int|string $id): mixed
+    {
+        $data = $this->payload();
+        $result = $this->roomsService->update($id, $this->normalize($data), null, $this->currentUserId());
+
+        if (!($result['success'] ?? false)) {
+            return $this->validationResponse((array) ($result['errors'] ?? []), $data, $this->viewPath . '/edit', array_merge($this->formData(), [
+                $this->entityName => array_merge($this->findOrFail($id), $data),
+            ]));
+        }
+
+        /** @var Room|null $room */
+        $room = $result['room'] ?? null;
+
+        return $this->updatedResponse($room?->toArray() ?? $this->findOrFail($id));
+    }
+
+    public function delete(int|string $id): mixed
+    {
+        $deleted = $this->roomsService->delete($id, $this->currentUserId());
+
+        if (!$deleted) {
+            http_response_code(404);
+            throw new RuntimeException('Room not found.');
+        }
+
+        return $this->deletedResponse();
+    }
 
     public function availability(int|string $id): mixed
     {

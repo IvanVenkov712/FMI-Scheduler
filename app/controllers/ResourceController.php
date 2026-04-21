@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 class ResourceController extends CrudController
 {
+    public function __construct(
+        array $request = [],
+        private readonly ResourceService $resourcesService = new ResourceService()
+    ) {
+        parent::__construct($request);
+    }
+
     protected string $table = 'resources';
     protected string $viewPath = 'resources';
     protected string $entityName = 'resource';
@@ -11,6 +18,50 @@ class ResourceController extends CrudController
     protected array $required = ['name', 'slug'];
     protected array $booleanFields = ['is_consumable'];
     protected string $defaultOrder = 'name ASC';
+
+    public function store(): mixed
+    {
+        $data = $this->payload();
+        $result = $this->resourcesService->create($this->normalize($data), $this->currentUserId());
+
+        if (!($result['success'] ?? false)) {
+            return $this->validationResponse((array) ($result['errors'] ?? []), $data, $this->viewPath . '/create');
+        }
+
+        /** @var Resource|null $resource */
+        $resource = $result['resource'] ?? null;
+
+        return $this->storedResponse($resource?->toArray() ?? []);
+    }
+
+    public function update(int|string $id): mixed
+    {
+        $data = $this->payload();
+        $result = $this->resourcesService->update($id, $this->normalize($data), $this->currentUserId());
+
+        if (!($result['success'] ?? false)) {
+            return $this->validationResponse((array) ($result['errors'] ?? []), $data, $this->viewPath . '/edit', [
+                $this->entityName => array_merge($this->findOrFail($id), $data),
+            ]);
+        }
+
+        /** @var Resource|null $resource */
+        $resource = $result['resource'] ?? null;
+
+        return $this->updatedResponse($resource?->toArray() ?? $this->findOrFail($id));
+    }
+
+    public function delete(int|string $id): mixed
+    {
+        $deleted = $this->resourcesService->delete($id, $this->currentUserId());
+
+        if (!$deleted) {
+            http_response_code(404);
+            throw new RuntimeException('Resource not found.');
+        }
+
+        return $this->deletedResponse();
+    }
 
     public function manage(int|string|null $roomId = null): mixed
     {
@@ -29,17 +80,12 @@ class ResourceController extends CrudController
             return $this->validationResponse($errors, $data, 'resources/manage');
         }
 
-        $this->database()->insert(
-            'INSERT INTO room_resources (room_id, resource_id, quantity, status, notes)
-             VALUES (:room_id, :resource_id, :quantity, :status, :notes)
-             ON DUPLICATE KEY UPDATE quantity = VALUES(quantity), status = VALUES(status), notes = VALUES(notes)',
-            [
-                'room_id' => $data['room_id'],
-                'resource_id' => $data['resource_id'],
-                'quantity' => (int) $data['quantity'],
-                'status' => $data['status'] ?? 'available',
-                'notes' => $data['notes'] ?? null,
-            ]
+        $this->resourcesService->assignToRoom(
+            (int) $data['room_id'],
+            (int) $data['resource_id'],
+            (int) $data['quantity'],
+            (string) ($data['status'] ?? 'available'),
+            isset($data['notes']) ? (string) $data['notes'] : null
         );
 
         return $this->wantsJson()

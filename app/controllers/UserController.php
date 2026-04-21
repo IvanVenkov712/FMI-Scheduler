@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 class UserController extends CrudController
 {
+    public function __construct(
+        array $request = [],
+        private readonly UserService $usersService = new UserService()
+    ) {
+        parent::__construct($request);
+    }
+
     protected string $table = 'users';
     protected string $viewPath = 'users';
     protected string $entityName = 'user';
@@ -34,24 +41,46 @@ class UserController extends CrudController
 
     public function store(): mixed
     {
-        $data = $this->body() + $this->input();
+        $data = $this->payload();
+        $result = $this->usersService->create($data, $this->currentUserId());
 
-        if (!empty($data['password'])) {
-            $_POST['password_hash'] = password_hash((string) $data['password'], PASSWORD_DEFAULT);
+        if (!($result['success'] ?? false)) {
+            return $this->validationResponse((array) ($result['errors'] ?? []), $data, $this->viewPath . '/create', $this->formData());
         }
 
-        return parent::store();
+        /** @var User|null $user */
+        $user = $result['user'] ?? null;
+
+        return $this->storedResponse($user?->publicData() ?? []);
     }
 
     public function update(int|string $id): mixed
     {
-        $data = $this->body() + $this->input();
+        $data = $this->payload();
+        $result = $this->usersService->update($id, $data, $this->currentUserId());
 
-        if (!empty($data['password'])) {
-            $_POST['password_hash'] = password_hash((string) $data['password'], PASSWORD_DEFAULT);
+        if (!($result['success'] ?? false)) {
+            return $this->validationResponse((array) ($result['errors'] ?? []), $data, $this->viewPath . '/edit', array_merge($this->formData(), [
+                $this->entityName => array_merge($this->findOrFail($id), $data),
+            ]));
         }
 
-        return parent::update($id);
+        /** @var User|null $user */
+        $user = $result['user'] ?? null;
+
+        return $this->updatedResponse($user?->publicData() ?? $this->publicUser($this->findOrFail($id)));
+    }
+
+    public function delete(int|string $id): mixed
+    {
+        $deleted = $this->usersService->delete($id, $this->currentUserId());
+
+        if (!$deleted) {
+            http_response_code(404);
+            throw new RuntimeException('User not found.');
+        }
+
+        return $this->deletedResponse();
     }
 
     public function details(int|string $id): mixed

@@ -143,6 +143,21 @@ class RequestService
         return ['success' => true, 'request' => $this->requests->find($id), 'event' => $event];
     }
 
+    public function delete(int|string $id, ?int $userId = null): bool
+    {
+        $request = $this->requests->find($id);
+        if ($request === null) {
+            return false;
+        }
+
+        $deleted = $this->requests->delete($id);
+        if ($deleted) {
+            $this->auditLogs->record('delete', 'exam_request', $id, $request->toArray(), null, $userId);
+        }
+
+        return $deleted;
+    }
+
     private function validateRequestData(array $data): array
     {
         $result = $this->validation->validate($data, [
