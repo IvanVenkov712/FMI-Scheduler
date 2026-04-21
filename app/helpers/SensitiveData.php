@@ -6,10 +6,12 @@ class SensitiveData
 {
     private const REMOVED_KEYS = [
         'access_key',
+        'access_password',
     ];
 
     private const REDACTED_KEYS = [
         'access_key',
+        'access_password',
     ];
 
     public static function strip(mixed $value): mixed

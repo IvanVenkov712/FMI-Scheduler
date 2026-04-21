@@ -153,7 +153,10 @@ class EventRepository
             'platform' => $data['platform'] ?? 'Zoom',
             'url' => $data['url'] ?? '',
             'access_key' => $data['access_key'] ?? null,
+            'access_password' => $data['access_password'] ?? null,
             'host_user_id' => $data['host_user_id'] ?? null,
+            'moderator_name' => $data['moderator_name'] ?? null,
+            'access_instructions' => $data['access_instructions'] ?? null,
             'starts_at' => $data['starts_at'] ?? null,
             'ends_at' => $data['ends_at'] ?? null,
         ];
@@ -175,6 +178,24 @@ class EventRepository
         $session->save();
 
         return $session;
+    }
+
+    public function findOnlineSession(int $eventId): ?OnlineSession
+    {
+        $row = $this->db()->fetch(
+            'SELECT * FROM online_sessions WHERE event_id = :event_id LIMIT 1',
+            ['event_id' => $eventId]
+        );
+
+        return $row === null ? null : new OnlineSession($row);
+    }
+
+    public function deleteOnlineSession(int $eventId): int
+    {
+        return $this->db()->execute(
+            'DELETE FROM online_sessions WHERE event_id = :event_id',
+            ['event_id' => $eventId]
+        );
     }
 
     private function db(): Database

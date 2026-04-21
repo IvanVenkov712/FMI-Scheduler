@@ -36,6 +36,7 @@ $router->post('/api/schedules/{id}/events', 'ScheduleController@attachEvent', ar
 
 $router->get('/api/events', 'EventController@index', array_merge($auth, $scheduleManagers));
 $router->post('/api/events', 'EventController@store', array_merge($auth, $scheduleManagers));
+$router->get('/api/events/{id}', 'EventController@details', array_merge($auth, $scheduleManagers));
 $router->put('/api/events/{id}', 'EventController@update', array_merge($auth, $scheduleManagers));
 
 $router->get('/api/requests', 'RequestController@index', array_merge($auth, $managersOrTeachers));

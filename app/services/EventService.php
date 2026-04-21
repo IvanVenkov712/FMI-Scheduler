@@ -35,8 +35,10 @@ class EventService
         $data['delivery_mode'] = $data['delivery_mode'] ?? 'physical';
         $data['created_by'] = $data['created_by'] ?? $userId;
         $data = $this->validation->normalizeIntegers($data, ['created_by', 'room_id', 'students_count']);
+        $onlineSession = $this->normalizeOnlineSession($onlineSession);
 
         $errors = $this->validateEventData($data);
+        $errors = array_merge_recursive($errors, $this->validateOnlineSession($data, $onlineSession));
         if ($errors !== []) {
             return ['success' => false, 'errors' => $errors];
         }
@@ -69,8 +71,11 @@ class EventService
         }
 
         $payload = $this->validation->normalizeIntegers($data, ['created_by', 'room_id', 'students_count']);
+        $onlineSession = $this->normalizeOnlineSession($onlineSession);
+        $existingSession = $event->onlineSession()?->toArray() ?? [];
         $merged = $payload + $event->toArray();
         $errors = $this->validateEventData($merged, (int) $event->get('id'));
+        $errors = array_merge_recursive($errors, $this->validateOnlineSession($merged, $onlineSession, $existingSession));
 
         if ($errors !== []) {
             return ['success' => false, 'errors' => $errors];
@@ -89,7 +94,12 @@ class EventService
                 $updated = $this->events->update($id, $payload);
 
                 if ($updated !== null && $updated->requiresOnlineSession()) {
-                    $this->events->upsertOnlineSession((int) $updated->get('id'), $this->onlineSessionPayload($updated, $onlineSession ?? []));
+                    $this->events->upsertOnlineSession(
+                        (int) $updated->get('id'),
+                        $this->onlineSessionPayload($updated, $onlineSession ?? [], $existingSession)
+                    );
+                } elseif ($updated !== null) {
+                    $this->events->deleteOnlineSession((int) $updated->get('id'));
                 }
 
                 return $updated;
@@ -198,16 +208,61 @@ class EventService
         return $errors;
     }
 
-    private function onlineSessionPayload(Event $event, array $session): array
+    private function onlineSessionPayload(Event $event, array $session, array $existingSession = []): array
     {
         return [
-            'platform' => $session['platform'] ?? 'Zoom',
-            'url' => $session['url'] ?? (string) $event->get('online_url', ''),
-            'access_key' => $session['access_key'] ?? $event->get('access_key'),
-            'host_user_id' => $session['host_user_id'] ?? $event->get('created_by'),
-            'starts_at' => $session['starts_at'] ?? $event->get('starts_at'),
-            'ends_at' => $session['ends_at'] ?? $event->get('ends_at'),
+            'platform' => $session['platform'] ?? $existingSession['platform'] ?? 'Zoom',
+            'url' => $session['url'] ?? $existingSession['url'] ?? (string) $event->get('online_url', ''),
+            'access_key' => $session['access_key'] ?? $existingSession['access_key'] ?? $event->get('access_key'),
+            'access_password' => $session['access_password'] ?? $existingSession['access_password'] ?? null,
+            'host_user_id' => $session['host_user_id'] ?? $existingSession['host_user_id'] ?? $event->get('created_by'),
+            'moderator_name' => $session['moderator_name'] ?? $existingSession['moderator_name'] ?? null,
+            'access_instructions' => $session['access_instructions'] ?? $existingSession['access_instructions'] ?? null,
+            'starts_at' => $session['starts_at'] ?? $existingSession['starts_at'] ?? $event->get('starts_at'),
+            'ends_at' => $session['ends_at'] ?? $existingSession['ends_at'] ?? $event->get('ends_at'),
         ];
+    }
+
+    private function normalizeOnlineSession(?array $session): array
+    {
+        if (!is_array($session)) {
+            return [];
+        }
+
+        return $this->validation->normalizeIntegers($session, ['host_user_id']);
+    }
+
+    private function validateOnlineSession(array $eventData, array $session, array $existingSession = []): array
+    {
+        $deliveryMode = (string) ($eventData['delivery_mode'] ?? 'physical');
+        if (!in_array($deliveryMode, ['online', 'hybrid'], true)) {
+            return [];
+        }
+
+        $session = $this->onlineSessionPayload(new Event($eventData), $session, $existingSession);
+        $result = $this->validation->validate($session, [
+            'platform' => 'required|string|max:100',
+            'url' => 'nullable|string|max:500',
+            'access_key' => 'nullable|string|max:255',
+            'access_password' => 'nullable|string|max:255',
+            'host_user_id' => 'nullable|integer|min:1',
+            'moderator_name' => 'nullable|string|max:160',
+            'access_instructions' => 'nullable|string',
+            'starts_at' => 'required|date',
+            'ends_at' => 'required|date',
+        ]);
+
+        $errors = $result['errors'];
+        $errors = array_merge_recursive(
+            $errors,
+            $this->validation->validateDateRange((string) ($session['starts_at'] ?? ''), (string) ($session['ends_at'] ?? ''), 'online_starts_at', 'online_ends_at')
+        );
+
+        if (($session['url'] ?? '') === '' && ($session['access_key'] ?? '') === '') {
+            $errors['online_access'][] = 'Online events require at least a join URL or an access key.';
+        }
+
+        return $errors;
     }
 
     private function guardRoomBooking(Database $db, array $data, ?int $ignoreEventId): void

@@ -10,7 +10,10 @@ class OnlineSession extends Model
         'platform',
         'url',
         'access_key',
+        'access_password',
         'host_user_id',
+        'moderator_name',
+        'access_instructions',
         'starts_at',
         'ends_at',
     ];
