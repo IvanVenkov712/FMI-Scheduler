@@ -184,7 +184,8 @@ class RequestController extends CrudController
             ];
         }
 
-        return $this->redirect($this->indexUrl());
+        $this->redirect($this->indexUrl());
+        return null;
     }
 
     protected function formData(): array

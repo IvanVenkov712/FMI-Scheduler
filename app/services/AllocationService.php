@@ -41,6 +41,8 @@ class AllocationService
                 'room' => $room,
                 'score' => $score['score'],
                 'explanation' => $score['explanation'],
+                'blocked' => $score['blocked'],
+                'blocked_reason' => $score['blocked_reason'],
             ];
         }
 
@@ -102,6 +104,8 @@ class AllocationService
 
         $resourceIds = $this->extractRequiredResourceIds($event);
         $rankedRooms = $this->searchAvailableRooms([
+            'event_id' => $eventId,
+            'schedule_id' => $scheduleId,
             'students_count' => (int) $event->get('students_count', 0),
             'starts_at' => (string) $event->get('starts_at'),
             'ends_at' => (string) $event->get('ends_at'),
@@ -126,6 +130,18 @@ class AllocationService
             /** @var Room $room */
             $room = $selected['room'];
             $roomId = (int) $room->get('id');
+
+            if (!empty($selected['blocked'])) {
+                $alternatives[] = [
+                    'room_id' => $roomId,
+                    'room_code' => (string) $room->get('code'),
+                    'score' => (int) ($selected['score'] ?? 0),
+                    'explanation' => (string) ($selected['explanation'] ?? ''),
+                    'reason' => (string) ($selected['blocked_reason'] ?? 'Movement constraints reject this room.'),
+                ];
+                continue;
+            }
+
             $assignResult = $this->eventService->assignRoom($eventId, $roomId, $userId);
 
             if (!($assignResult['success'] ?? false)) {
@@ -168,6 +184,8 @@ class AllocationService
     {
         $score = 1000;
         $explanations = [];
+        $blocked = false;
+        $blockedReason = null;
         $effectiveCapacity = $this->constraints->effectiveRoomCapacity($room);
 
         $score -= max(0, $effectiveCapacity - $capacity);
@@ -208,9 +226,142 @@ class AllocationService
             $explanations[] = sprintf('buffer penalty %d', $bufferPenalty);
         }
 
+        $movement = $this->movementAssessment($room, $criteria);
+        $score += (int) ($movement['score_delta'] ?? 0);
+
+        foreach ((array) ($movement['notes'] ?? []) as $note) {
+            $explanations[] = (string) $note;
+        }
+
+        if (!empty($movement['blocked'])) {
+            $blocked = true;
+            $blockedReason = (string) ($movement['blocked_reason'] ?? 'Movement constraints reject this room.');
+            $score = -100000;
+            $explanations[] = $blockedReason;
+        }
+
         return [
             'score' => $score,
             'explanation' => implode('; ', $explanations),
+            'blocked' => $blocked,
+            'blocked_reason' => $blockedReason,
+        ];
+    }
+
+    private function movementAssessment(Room $candidateRoom, array $criteria): array
+    {
+        $eventId = isset($criteria['event_id']) ? (int) $criteria['event_id'] : 0;
+        $scheduleId = isset($criteria['schedule_id']) ? (int) $criteria['schedule_id'] : 0;
+        $studentsCount = (int) ($criteria['students_count'] ?? $criteria['capacity'] ?? 0);
+        $movementType = (string) ($criteria['movement_type'] ?? 'walking');
+        $notes = [];
+        $scoreDelta = 0;
+
+        foreach ($this->adjacentScheduledEvents($scheduleId, $eventId) as $adjacent) {
+            $otherRoomId = (int) ($adjacent['room_id'] ?? 0);
+            if ($otherRoomId <= 0 || $otherRoomId === (int) $candidateRoom->get('id')) {
+                continue;
+            }
+
+            $fromRoomId = $adjacent['direction'] === 'before' ? $otherRoomId : (int) $candidateRoom->get('id');
+            $toRoomId = $adjacent['direction'] === 'before' ? (int) $candidateRoom->get('id') : $otherRoomId;
+            $routeDecision = $this->routes->recommended($fromRoomId, $toRoomId, true, $movementType);
+
+            if ($routeDecision === null) {
+                return [
+                    'blocked' => true,
+                    'blocked_reason' => sprintf(
+                        'No allowed %s route between %s and %s.',
+                        $movementType,
+                        $adjacent['room_code'] ?? ('room #' . $otherRoomId),
+                        (string) $candidateRoom->get('code')
+                    ),
+                    'notes' => $notes,
+                    'score_delta' => $scoreDelta,
+                ];
+            }
+
+            /** @var Route $route */
+            $route = $routeDecision['route'];
+            if (!$this->constraints->routeAllowed($route)) {
+                return [
+                    'blocked' => true,
+                    'blocked_reason' => sprintf('Route "%s" is restricted by movement constraints.', (string) $route->get('name')),
+                    'notes' => $notes,
+                    'score_delta' => $scoreDelta,
+                ];
+            }
+
+            $travelMinutes = (int) ($route->durationFor($movementType) ?? $route->durationFor() ?? 0);
+            $otherRoom = Room::find($otherRoomId);
+            $bufferMinutes = max(
+                $this->constraints->recommendedBufferMinutes($candidateRoom),
+                $otherRoom instanceof Room ? $this->constraints->recommendedBufferMinutes($otherRoom) : 0
+            );
+            $availableGap = (int) ($adjacent['gap_minutes'] ?? 0);
+            $requiredGap = $travelMinutes + $bufferMinutes;
+
+            $notes[] = sprintf(
+                '%s route %s requires %d min travel + %d min buffer (gap %d min)',
+                $adjacent['direction'] === 'before' ? 'incoming' : 'outgoing',
+                (string) $route->get('name'),
+                $travelMinutes,
+                $bufferMinutes,
+                $availableGap
+            );
+
+            if ($availableGap < $requiredGap) {
+                return [
+                    'blocked' => true,
+                    'blocked_reason' => sprintf(
+                        'Movement conflict: %s gap of %d min is below required %d min for route "%s".',
+                        $adjacent['direction'] === 'before' ? 'incoming' : 'outgoing',
+                        $availableGap,
+                        $requiredGap,
+                        (string) $route->get('name')
+                    ),
+                    'notes' => $notes,
+                    'score_delta' => $scoreDelta,
+                ];
+            }
+
+            $scoreDelta -= $travelMinutes * 3;
+            if ($availableGap < $requiredGap + 10) {
+                $scoreDelta -= 40;
+                $notes[] = 'tight movement window penalty applied';
+            }
+
+            $flowLimit = $this->movementFlowLimit($candidateRoom, $route);
+            $movingPeople = $studentsCount + (int) ($adjacent['students_count'] ?? 0);
+
+            if ($flowLimit !== null) {
+                $notes[] = sprintf('movement flow %d/%d people', $movingPeople, $flowLimit);
+
+                if ($movingPeople > $flowLimit) {
+                    return [
+                        'blocked' => true,
+                        'blocked_reason' => sprintf(
+                            'Movement conflict: %d moving people exceed flow limit %d.',
+                            $movingPeople,
+                            $flowLimit
+                        ),
+                        'notes' => $notes,
+                        'score_delta' => $scoreDelta,
+                    ];
+                }
+
+                if ($movingPeople > (int) floor($flowLimit * 0.8)) {
+                    $scoreDelta -= 60;
+                    $notes[] = 'high movement load penalty applied';
+                }
+            }
+        }
+
+        return [
+            'blocked' => false,
+            'blocked_reason' => null,
+            'notes' => $notes,
+            'score_delta' => $scoreDelta,
         ];
     }
 
@@ -259,6 +410,137 @@ class AllocationService
         }
 
         return array_values(array_unique(array_filter($resourceIds)));
+    }
+
+    private function adjacentScheduledEvents(int $scheduleId, int $eventId): array
+    {
+        if ($scheduleId <= 0 || $eventId <= 0) {
+            return [];
+        }
+
+        $calendar = $this->schedules->calendar($scheduleId);
+        $currentIndex = null;
+
+        foreach ($calendar as $index => $entry) {
+            if ((int) ($entry['id'] ?? 0) === $eventId) {
+                $currentIndex = $index;
+                break;
+            }
+        }
+
+        if ($currentIndex === null) {
+            return [];
+        }
+
+        $current = $calendar[$currentIndex];
+        $adjacent = [];
+
+        for ($i = $currentIndex - 1; $i >= 0; $i--) {
+            $entry = $calendar[$i];
+            $roomId = (int) ($entry['assigned_room_id'] ?? $entry['room_id'] ?? 0);
+
+            if ($roomId <= 0) {
+                continue;
+            }
+
+            $gap = $this->minutesBetween((string) ($entry['ends_at'] ?? ''), (string) ($current['starts_at'] ?? ''));
+            if ($gap === null) {
+                continue;
+            }
+
+            $adjacent[] = [
+                'direction' => 'before',
+                'event_id' => (int) ($entry['id'] ?? 0),
+                'room_id' => $roomId,
+                'room_code' => $entry['room_code'] ?? null,
+                'students_count' => (int) ($entry['students_count'] ?? 0),
+                'gap_minutes' => $gap,
+            ];
+            break;
+        }
+
+        for ($i = $currentIndex + 1, $count = count($calendar); $i < $count; $i++) {
+            $entry = $calendar[$i];
+            $roomId = (int) ($entry['assigned_room_id'] ?? $entry['room_id'] ?? 0);
+
+            if ($roomId <= 0) {
+                continue;
+            }
+
+            $gap = $this->minutesBetween((string) ($current['ends_at'] ?? ''), (string) ($entry['starts_at'] ?? ''));
+            if ($gap === null) {
+                continue;
+            }
+
+            $adjacent[] = [
+                'direction' => 'after',
+                'event_id' => (int) ($entry['id'] ?? 0),
+                'room_id' => $roomId,
+                'room_code' => $entry['room_code'] ?? null,
+                'students_count' => (int) ($entry['students_count'] ?? 0),
+                'gap_minutes' => $gap,
+            ];
+            break;
+        }
+
+        return $adjacent;
+    }
+
+    private function movementFlowLimit(Room $room, Route $route): ?int
+    {
+        $limits = [];
+        $buildingId = (int) ($room->floor()?->get('building_id') ?? 0);
+        $floorId = (int) ($room->get('floor_id') ?? 0);
+        $roomId = (int) ($room->get('id') ?? 0);
+        $routeId = (int) ($route->get('id') ?? 0);
+
+        foreach ($this->constraints->active() as $constraint) {
+            $ruleData = $constraint->ruleData();
+            $limit = $this->extractMovementLimit($ruleData);
+
+            if ($limit === null) {
+                continue;
+            }
+
+            $scope = (string) $constraint->get('scope', 'global');
+            $matches = match ($scope) {
+                'global' => true,
+                'building' => (int) $constraint->get('building_id') === $buildingId,
+                'floor' => (int) $constraint->get('floor_id') === $floorId,
+                'room' => (int) $constraint->get('room_id') === $roomId,
+                'route' => (int) $constraint->get('route_id') === $routeId,
+                default => false,
+            };
+
+            if ($matches) {
+                $limits[] = $limit;
+            }
+        }
+
+        return $limits === [] ? null : min($limits);
+    }
+
+    private function extractMovementLimit(array $ruleData): ?int
+    {
+        foreach (['max_people_in_motion', 'max_simultaneous_people', 'max_flow', 'max_group_size'] as $key) {
+            if (isset($ruleData[$key]) && (int) $ruleData[$key] > 0) {
+                return (int) $ruleData[$key];
+            }
+        }
+
+        return null;
+    }
+
+    private function minutesBetween(string $from, string $to): ?int
+    {
+        $fromTs = strtotime($from);
+        $toTs = strtotime($to);
+
+        if ($fromTs === false || $toTs === false) {
+            return null;
+        }
+
+        return (int) floor(($toTs - $fromTs) / 60);
     }
 
     private function markAllocation(?int $scheduleId, int $eventId, ?int $roomId, string $status, ?string $notes): void
