@@ -358,7 +358,7 @@ $value = static function (string $key) use ($old): string {
 
                 <div class="actions">
                     <button type="submit">Вход в системата</button>
-                    <p class="switch">Нямате акаунт? <a href="/app/views/auth/register.php">Регистрация</a></p>
+                    <p class="switch">Акаунтите се създават от администратор. Ако нямате достъп, свържете се с него.</p>
                 </div>
             </form>
 

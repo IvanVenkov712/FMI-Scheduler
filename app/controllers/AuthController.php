@@ -40,29 +40,26 @@ class AuthController extends Controller
 
     public function register(): string
     {
-        return $this->render('auth/register');
+        http_response_code(403);
+
+        return $this->render('errors/403', [
+            'message' => 'Self-service registration is disabled. Accounts are created and managed by administrators.',
+        ]);
     }
 
     public function storeRegistration(): mixed
     {
-        $data = $this->body();
-        $result = $this->auth->registerForRoleSlug($data, ROLE_STUDENT);
-        if (!($result['success'] ?? false)) {
-            $errors = (array) ($result['errors'] ?? []);
-            http_response_code(422);
-            return $this->wantsJson()
-                ? ['errors' => $errors]
-                : $this->render('auth/register', ['errors' => $errors, 'old' => $data]);
-        }
-        $user = (array) ($result['user'] ?? []);
-        SessionHelper::login($user);
+        http_response_code(403);
 
         if ($this->wantsJson()) {
-            http_response_code(201);
-            return ['user' => $user, 'message' => 'Registration completed.'];
+            return [
+                'error' => 'Self-service registration is disabled. Please contact an administrator for account creation or activation.',
+            ];
         }
 
-        return $this->redirect('/dashboard');
+        return $this->render('errors/403', [
+            'message' => 'Self-service registration is disabled. Please contact an administrator for account creation or activation.',
+        ]);
     }
 
     public function logout(): mixed

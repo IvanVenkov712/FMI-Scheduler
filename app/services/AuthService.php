@@ -76,7 +76,7 @@ class AuthService
         unset($data['password_confirmation']);
         $data['password_hash'] = password_hash((string) $data['password'], PASSWORD_DEFAULT);
         unset($data['password']);
-        $data['status'] = $data['status'] ?? 'active';
+        $data['status'] = $data['status'] ?? 'inactive';
 
         $user = $this->users->create($data);
         $this->auditLogs->record('register', 'user', $user->get('id'), null, $user->publicData(), (int) $user->get('id'));

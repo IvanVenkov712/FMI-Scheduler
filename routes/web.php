@@ -16,8 +16,6 @@ $router->get('/dashboard', 'DashboardController@index', $auth);
 
 $router->get('/login', 'AuthController@login');
 $router->post('/login', 'AuthController@authenticate');
-$router->get('/register', 'AuthController@register');
-$router->post('/register', 'AuthController@storeRegistration');
 $router->post('/logout', 'AuthController@logout', $auth);
 
 $router->get('/buildings', 'BuildingController@index', $auth);
