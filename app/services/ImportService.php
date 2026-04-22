@@ -28,7 +28,7 @@ class ImportService
         private readonly CourseRepository $courseRepository = new CourseRepository(),
         private readonly StudentGroupRepository $studentGroupRepository = new StudentGroupRepository(),
         private readonly AllocationParameterRepository $allocationParameterRepository = new AllocationParameterRepository(),
-        private readonly ?Database $database = null
+        private readonly ImportExportJobRepository $jobs = new ImportExportJobRepository()
     ) {
     }
 
@@ -300,11 +300,7 @@ class ImportService
 
     private function appendStudentToGroup(int $groupId, int $userId): void
     {
-        $members = $this->db()->fetchAll(
-            'SELECT user_id FROM student_group_members WHERE student_group_id = :group_id',
-            ['group_id' => $groupId]
-        );
-        $userIds = array_map(static fn (array $row): int => (int) $row['user_id'], $members);
+        $userIds = $this->studentGroupRepository->memberIds($groupId);
         $userIds[] = $userId;
         $this->studentGroupRepository->syncMembers($groupId, $userIds);
     }
@@ -437,32 +433,12 @@ class ImportService
 
     private function startJob(string $type, string $format, string $entity, ?string $filePath, ?int $userId): string
     {
-        return $this->db()->insert(
-            'INSERT INTO import_export_jobs (user_id, type, format, entity, file_path, status, message)
-             VALUES (:user_id, :type, :format, :entity, :file_path, :status, :message)',
-            [
-                'user_id' => $userId,
-                'type' => $type,
-                'format' => $format,
-                'entity' => $entity,
-                'file_path' => $filePath,
-                'status' => 'processing',
-                'message' => null,
-            ]
-        );
+        return $this->jobs->start($type, $format, $entity, $filePath, $userId);
     }
 
     private function finishJob(string $jobId, string $status, ?string $message): void
     {
-        $this->db()->execute(
-            'UPDATE import_export_jobs SET status = :status, message = :message, completed_at = :completed_at WHERE id = :id',
-            [
-                'id' => $jobId,
-                'status' => $status,
-                'message' => $message,
-                'completed_at' => date('Y-m-d H:i:s'),
-            ]
-        );
+        $this->jobs->finish($jobId, $status, $message);
     }
 
     private function flattenErrors(array $errors): string
@@ -476,11 +452,6 @@ class ImportService
         }
 
         return implode('; ', $messages);
-    }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
     }
 
     private function importBuildingAsciiDocuments(string $content, ?int $userId): array

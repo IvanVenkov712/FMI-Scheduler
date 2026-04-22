@@ -31,6 +31,28 @@ class FloorRepository
         return array_map(static fn (array $row): Floor => new Floor($row), $rows);
     }
 
+    public function listing(array $filters = []): array
+    {
+        $sql = 'SELECT * FROM floors WHERE 1=1';
+        $params = [];
+
+        if (!empty($filters['building_id'])) {
+            $sql .= ' AND building_id = :building_id';
+            $params['building_id'] = (int) $filters['building_id'];
+        }
+
+        if (!empty($filters['status'])) {
+            $sql .= ' AND status = :status';
+            $params['status'] = $filters['status'];
+        }
+
+        $sql .= ' ORDER BY building_id ASC, number ASC, id ASC';
+
+        $rows = $this->db()->fetchAll($sql, $params);
+
+        return array_map(static fn (array $row): Floor => new Floor($row), $rows);
+    }
+
     public function create(array $data): Floor
     {
         $floor = new Floor($data);

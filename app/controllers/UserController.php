@@ -124,15 +124,7 @@ class UserController extends CrudController
 
     protected function rows(?string $sql = null, array $params = []): array
     {
-        $rows = parent::rows(
-            $sql ?? 'SELECT users.id, users.role_id, users.username, users.email, users.first_name,
-                            users.last_name, users.phone, users.faculty_number, users.department,
-                            users.status, users.last_login_at, users.created_at, roles.name AS role_name
-                     FROM users
-                     LEFT JOIN roles ON roles.id = users.role_id
-                     ORDER BY users.last_name ASC, users.first_name ASC',
-            $params
-        );
+        $rows = parent::rows($sql, $params);
 
         return array_map(fn (array $user): array => $this->publicUser($user), $rows);
     }
@@ -140,12 +132,16 @@ class UserController extends CrudController
     protected function formData(): array
     {
         return [
-            'roles' => $this->database()->fetchAll('SELECT id, name, slug FROM roles ORDER BY name ASC'),
+            'roles' => $this->usersService->roles(),
         ];
     }
 
     private function publicUser(array $user): array
     {
+        if (!isset($user['role_name']) && isset($user['role_id'])) {
+            $user['role_name'] = (new User($user))->role()?->get('name');
+        }
+
         unset($user['password_hash'], $user['remember_token']);
 
         return $user;
@@ -160,5 +156,15 @@ class UserController extends CrudController
         }
 
         return $returnTo;
+    }
+
+    protected function listRecords(array $filters = []): array
+    {
+        return $this->usersService->listing($filters);
+    }
+
+    protected function findRecord(int|string $id): ?array
+    {
+        return $this->usersService->find($id)?->toArray();
     }
 }

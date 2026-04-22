@@ -11,7 +11,7 @@ class AllocationService
         private readonly ScheduleRepository $schedules = new ScheduleRepository(),
         private readonly RouteService $routes = new RouteService(),
         private readonly CovidConstraintService $constraints = new CovidConstraintService(),
-        private readonly ?Database $database = null,
+        private readonly AllocationRunRepository $runs = new AllocationRunRepository(),
         private readonly AuditLogRepository $auditLogs = new AuditLogRepository()
     ) {
     }
@@ -294,7 +294,7 @@ class AllocationService
             }
 
             $travelMinutes = (int) ($route->durationFor($movementType) ?? $route->durationFor() ?? 0);
-            $otherRoom = Room::find($otherRoomId);
+            $otherRoom = $this->rooms->find($otherRoomId);
             $bufferMinutes = max(
                 $this->constraints->recommendedBufferMinutes($candidateRoom),
                 $otherRoom instanceof Room ? $this->constraints->recommendedBufferMinutes($otherRoom) : 0
@@ -572,32 +572,12 @@ class AllocationService
 
     private function createRun(?int $scheduleId, array $input, ?int $userId): string
     {
-        return $this->db()->insert(
-            'INSERT INTO allocation_runs (schedule_id, requested_by, input_data, status, started_at)
-             VALUES (:schedule_id, :requested_by, :input_data, :status, :started_at)',
-            [
-                'schedule_id' => $scheduleId,
-                'requested_by' => $userId,
-                'input_data' => json_encode($input, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                'status' => 'running',
-                'started_at' => date('Y-m-d H:i:s'),
-            ]
-        );
+        return $this->runs->create($scheduleId, $input, $userId);
     }
 
     private function finishRun(string $runId, array $result, string $status): void
     {
-        $this->db()->execute(
-            'UPDATE allocation_runs
-             SET result_data = :result_data, status = :status, finished_at = :finished_at
-             WHERE id = :id',
-            [
-                'id' => $runId,
-                'result_data' => json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                'status' => $status,
-                'finished_at' => date('Y-m-d H:i:s'),
-            ]
-        );
+        $this->runs->finish($runId, $result, $status);
     }
 
     private function flattenErrors(array $errors): string
@@ -613,8 +593,8 @@ class AllocationService
         return $messages === [] ? 'Allocation failed.' : implode('; ', $messages);
     }
 
-    private function db(): Database
+    public function run(int|string $id): ?array
     {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
+        return $this->runs->find($id);
     }
 }

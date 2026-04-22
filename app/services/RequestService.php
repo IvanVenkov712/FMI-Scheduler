@@ -27,6 +27,11 @@ class RequestService
         return $this->requests->find($id);
     }
 
+    public function forUser(int $userId): array
+    {
+        return $this->requests->forUser($userId);
+    }
+
     public function create(array $data, ?int $userId = null): array
     {
         $data['status'] = $data['status'] ?? 'pending';

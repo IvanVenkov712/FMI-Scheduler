@@ -71,23 +71,18 @@ abstract class CrudController extends Controller
     protected function rows(?string $sql = null, array $params = []): array
     {
         if ($sql !== null) {
-            return $this->database()->fetchAll($sql, $params);
+            throw new BadMethodCallException(static::class . ' must not query rows directly; use a service layer.');
         }
 
-        [$where, $params] = $this->whereFromFilters();
-
-        return $this->database()->fetchAll(
-            sprintf('SELECT * FROM %s%s ORDER BY %s', $this->table, $where, $this->defaultOrder),
-            $params
+        return array_map(
+            fn (mixed $record): array => $this->recordToArray($record),
+            $this->listRecords($this->filters())
         );
     }
 
     protected function findOrFail(int|string $id): array
     {
-        $record = $this->database()->fetch(
-            sprintf('SELECT * FROM %s WHERE %s = :id LIMIT 1', $this->table, $this->primaryKey),
-            ['id' => $id]
-        );
+        $record = $this->findRecord($id);
 
         if ($record === null) {
             http_response_code(404);
@@ -165,6 +160,16 @@ abstract class CrudController extends Controller
     protected function formData(): array
     {
         return [];
+    }
+
+    protected function listRecords(array $filters = []): array
+    {
+        throw new BadMethodCallException(static::class . ' must implement listRecords() via a service layer.');
+    }
+
+    protected function findRecord(int|string $id): ?array
+    {
+        throw new BadMethodCallException(static::class . ' must implement findRecord() via a service layer.');
     }
 
     protected function respond(string $view, array $data = []): mixed
@@ -291,5 +296,21 @@ abstract class CrudController extends Controller
         }
 
         return [$conditions === [] ? '' : ' WHERE ' . implode(' AND ', $conditions), $params];
+    }
+
+    private function recordToArray(mixed $record): array
+    {
+        if (is_array($record)) {
+            return $record;
+        }
+
+        if (is_object($record) && method_exists($record, 'toArray')) {
+            /** @var array $array */
+            $array = $record->toArray();
+
+            return $array;
+        }
+
+        return (array) $record;
     }
 }

@@ -72,7 +72,10 @@ class BuildingController extends CrudController
     {
         return $this->respond('floors/index', [
             'building' => $this->findOrFail($id),
-            'floors' => $this->rows('SELECT * FROM floors WHERE building_id = :id ORDER BY number ASC', ['id' => $id]),
+            'floors' => array_map(
+                static fn (Floor $floor): array => $floor->toArray(),
+                $this->buildings->floors((int) $id)
+            ),
         ]);
     }
 
@@ -87,5 +90,15 @@ class BuildingController extends CrudController
             'orientation' => $orientation,
             'vertical_view' => $building['vertical_view_' . $orientation] ?? $building['schematic_description'] ?? '',
         ]);
+    }
+
+    protected function listRecords(array $filters = []): array
+    {
+        return $this->buildings->listing($filters);
+    }
+
+    protected function findRecord(int|string $id): ?array
+    {
+        return $this->buildings->find($id)?->toArray();
     }
 }

@@ -67,26 +67,9 @@ class ScheduleController extends CrudController
 
     public function calendar(int|string|null $id = null): mixed
     {
-        $params = [];
-        $where = '';
-
-        if ($id !== null) {
-            $where = 'WHERE schedule_events.schedule_id = :schedule_id';
-            $params['schedule_id'] = $id;
-        }
-
         return $this->respond('schedules/calendar', [
             'schedule' => $id === null ? null : $this->findOrFail($id),
-            'events' => $this->database()->fetchAll(
-                'SELECT events.*, schedule_events.schedule_id, schedule_events.assigned_room_id,
-                        schedule_events.allocation_status, rooms.code AS room_code
-                 FROM schedule_events
-                 INNER JOIN events ON events.id = schedule_events.event_id
-                 LEFT JOIN rooms ON rooms.id = COALESCE(schedule_events.assigned_room_id, events.room_id)
-                 ' . $where . '
-                 ORDER BY events.starts_at ASC',
-                $params
-            ),
+            'events' => $this->schedulesService->calendar($id === null ? null : (int) $id),
         ]);
     }
 
@@ -122,5 +105,15 @@ class ScheduleController extends CrudController
         }
 
         return [];
+    }
+
+    protected function listRecords(array $filters = []): array
+    {
+        return $this->schedulesService->all($filters);
+    }
+
+    protected function findRecord(int|string $id): ?array
+    {
+        return $this->schedulesService->find($id)?->toArray();
     }
 }

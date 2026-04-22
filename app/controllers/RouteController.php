@@ -6,7 +6,9 @@ class RouteController extends CrudController
 {
     public function __construct(
         array $request = [],
-        private readonly RouteService $routesService = new RouteService()
+        private readonly RouteService $routesService = new RouteService(),
+        private readonly BuildingService $buildings = new BuildingService(),
+        private readonly RoomService $rooms = new RoomService()
     ) {
         parent::__construct($request);
     }
@@ -78,7 +80,10 @@ class RouteController extends CrudController
         return $this->respond('routes/map', [
             'route' => $id === null ? null : $this->findOrFail($id),
             'routes' => $this->rows(),
-            'buildings' => $this->database()->fetchAll('SELECT id, code, name FROM buildings ORDER BY name ASC'),
+            'buildings' => array_map(
+                static fn (Building $building): array => $building->toArray(),
+                $this->buildings->listing()
+            ),
         ]);
     }
 
@@ -86,10 +91,7 @@ class RouteController extends CrudController
     {
         return $this->respond('routes/details', [
             'route' => $this->findOrFail($id),
-            'steps' => $this->database()->fetchAll(
-                'SELECT * FROM route_steps WHERE route_id = :route_id ORDER BY step_order ASC',
-                ['route_id' => $id]
-            ),
+            'steps' => $this->routesService->steps((int) $id),
         ]);
     }
 
@@ -104,8 +106,14 @@ class RouteController extends CrudController
     protected function formData(): array
     {
         return [
-            'rooms' => $this->database()->fetchAll('SELECT id, code, name FROM rooms ORDER BY code ASC'),
-            'buildings' => $this->database()->fetchAll('SELECT id, code, name FROM buildings ORDER BY name ASC'),
+            'rooms' => array_map(
+                static fn (Room $room): array => $room->toArray(),
+                $this->rooms->listing()
+            ),
+            'buildings' => array_map(
+                static fn (Building $building): array => $building->toArray(),
+                $this->buildings->listing()
+            ),
         ];
     }
 
@@ -160,5 +168,15 @@ class RouteController extends CrudController
         }
 
         return $errors;
+    }
+
+    protected function listRecords(array $filters = []): array
+    {
+        return $this->routesService->listing($filters);
+    }
+
+    protected function findRecord(int|string $id): ?array
+    {
+        return $this->routesService->find($id)?->toArray();
     }
 }

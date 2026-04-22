@@ -64,6 +64,36 @@ class UserRepository
         return array_map(static fn (array $row): User => new User($row), $rows);
     }
 
+    public function listing(array $filters = []): array
+    {
+        $sql = 'SELECT users.*
+                FROM users
+                LEFT JOIN roles ON roles.id = users.role_id
+                WHERE 1=1';
+        $params = [];
+
+        if (!empty($filters['role_id'])) {
+            $sql .= ' AND users.role_id = :role_id';
+            $params['role_id'] = (int) $filters['role_id'];
+        }
+
+        if (!empty($filters['status'])) {
+            $sql .= ' AND users.status = :status';
+            $params['status'] = $filters['status'];
+        }
+
+        if (!empty($filters['department'])) {
+            $sql .= ' AND users.department = :department';
+            $params['department'] = $filters['department'];
+        }
+
+        $sql .= ' ORDER BY users.last_name ASC, users.first_name ASC, users.id ASC';
+
+        $rows = $this->db()->fetchAll($sql, $params);
+
+        return array_map(static fn (array $row): User => new User($row), $rows);
+    }
+
     public function create(array $data): User
     {
         $user = new User($data);

@@ -73,6 +73,20 @@ class EventRepository
         return $event;
     }
 
+    public function createWithOnlineSession(array $data, ?array $onlineSession = null): Event
+    {
+        return $this->db()->transaction(function (Database $db) use ($data, $onlineSession): Event {
+            $this->guardRoomBooking($db, $data, null);
+            $event = $this->create($data);
+
+            if ($event->requiresOnlineSession()) {
+                $this->upsertOnlineSession((int) $event->get('id'), $onlineSession ?? []);
+            }
+
+            return $event;
+        });
+    }
+
     public function update(int|string $id, array $data): ?Event
     {
         $event = $this->find($id);
@@ -89,6 +103,27 @@ class EventRepository
         $event->save();
 
         return $event;
+    }
+
+    public function updateWithOnlineSession(int|string $id, array $data, ?array $onlineSession = null): ?Event
+    {
+        return $this->db()->transaction(function (Database $db) use ($id, $data, $onlineSession): ?Event {
+            $lockedEvent = $db->fetch('SELECT * FROM events WHERE id = :id LIMIT 1 FOR UPDATE', ['id' => $id]);
+            if ($lockedEvent === null) {
+                return null;
+            }
+
+            $this->guardRoomBooking($db, $data + $lockedEvent, (int) $id);
+            $updated = $this->update($id, $data);
+
+            if ($updated !== null && $updated->requiresOnlineSession()) {
+                $this->upsertOnlineSession((int) $updated->get('id'), $onlineSession ?? []);
+            } elseif ($updated !== null) {
+                $this->deleteOnlineSession((int) $updated->get('id'));
+            }
+
+            return $updated;
+        });
     }
 
     public function delete(int|string $id): bool
@@ -204,6 +239,75 @@ class EventRepository
             'DELETE FROM online_sessions WHERE event_id = :event_id',
             ['event_id' => $eventId]
         );
+    }
+
+    private function guardRoomBooking(Database $db, array $data, ?int $ignoreEventId): void
+    {
+        $roomId = isset($data['room_id']) ? (int) $data['room_id'] : 0;
+        if ($roomId <= 0) {
+            return;
+        }
+
+        $room = $db->fetch(
+            'SELECT id, status, capacity, covid_capacity FROM rooms WHERE id = :id LIMIT 1 FOR UPDATE',
+            ['id' => $roomId]
+        );
+
+        if ($room === null) {
+            throw new RuntimeException('Room not found.');
+        }
+
+        if (($room['status'] ?? 'available') !== 'available') {
+            throw new RuntimeException('Room is not available.');
+        }
+
+        $effectiveCapacity = $room['covid_capacity'] ?? $room['capacity'] ?? 0;
+        if ((int) $effectiveCapacity < (int) ($data['students_count'] ?? 0)) {
+            throw new RuntimeException('Room capacity is insufficient.');
+        }
+
+        $params = [
+            'room_id' => $roomId,
+            'starts_at' => (string) ($data['starts_at'] ?? ''),
+            'ends_at' => (string) ($data['ends_at'] ?? ''),
+        ];
+
+        $sql = 'SELECT id
+                FROM events
+                WHERE room_id = :room_id
+                  AND starts_at < :ends_at
+                  AND ends_at > :starts_at
+                  AND status <> "cancelled"';
+
+        if ($ignoreEventId !== null) {
+            $sql .= ' AND id <> :ignore_id';
+            $params['ignore_id'] = $ignoreEventId;
+        }
+
+        $sql .= ' LIMIT 1 FOR UPDATE';
+
+        $conflict = $db->fetch($sql, $params);
+        if ($conflict !== null) {
+            throw new RuntimeException('Room is busy in the selected interval.');
+        }
+
+        $blocked = $db->fetch(
+            'SELECT id
+             FROM room_unavailability
+             WHERE room_id = :room_id
+               AND starts_at < :ends_at
+               AND ends_at > :starts_at
+             LIMIT 1 FOR UPDATE',
+            [
+                'room_id' => $roomId,
+                'starts_at' => (string) ($data['starts_at'] ?? ''),
+                'ends_at' => (string) ($data['ends_at'] ?? ''),
+            ]
+        );
+
+        if ($blocked !== null) {
+            throw new RuntimeException('Room is unavailable in the selected interval.');
+        }
     }
 
     private function db(): Database

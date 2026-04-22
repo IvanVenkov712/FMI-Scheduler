@@ -6,7 +6,9 @@ class RequestController extends CrudController
 {
     public function __construct(
         array $request = [],
-        private readonly RequestService $requests = new RequestService()
+        private readonly RequestService $requests = new RequestService(),
+        private readonly RoomService $rooms = new RoomService(),
+        private readonly ResourceService $resources = new ResourceService()
     ) {
         parent::__construct($request);
     }
@@ -51,8 +53,8 @@ class RequestController extends CrudController
         if ($this->isTeacher($user)) {
             return $this->respond($this->viewPath . '/index', [
                 $this->collectionKey() => $this->rows(
-                    'SELECT * FROM exam_requests WHERE requested_by = :requested_by ORDER BY created_at DESC',
-                    ['requested_by' => $this->currentUserId()]
+                    null,
+                    []
                 ),
                 'filters' => $this->filters(),
             ]);
@@ -193,8 +195,14 @@ class RequestController extends CrudController
     protected function formData(): array
     {
         return [
-            'rooms' => $this->database()->fetchAll('SELECT id, code, name, capacity FROM rooms ORDER BY code ASC'),
-            'resources' => $this->database()->fetchAll('SELECT * FROM resources ORDER BY name ASC'),
+            'rooms' => array_map(
+                static fn (Room $room): array => $room->toArray(),
+                $this->rooms->listing()
+            ),
+            'resources' => array_map(
+                static fn (Resource $resource): array => $resource->toArray(),
+                $this->resources->listing()
+            ),
         ];
     }
 
@@ -259,5 +267,21 @@ class RequestController extends CrudController
 
         echo $this->render('errors/403', ['message' => $message]);
         exit;
+    }
+
+    protected function listRecords(array $filters = []): array
+    {
+        $user = $this->currentUser();
+
+        if ($this->isTeacher($user) && $this->currentUserId() !== null) {
+            return $this->requests->forUser((int) $this->currentUserId());
+        }
+
+        return $this->requests->all($filters);
+    }
+
+    protected function findRecord(int|string $id): ?array
+    {
+        return $this->requests->find($id)?->toArray();
     }
 }

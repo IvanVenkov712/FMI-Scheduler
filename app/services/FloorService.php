@@ -23,6 +23,11 @@ class FloorService
         return $this->floors->find($id);
     }
 
+    public function listing(array $filters = []): array
+    {
+        return $this->floors->listing($filters);
+    }
+
     public function create(array $data, ?int $userId = null): array
     {
         $data['status'] = $data['status'] ?? 'active';

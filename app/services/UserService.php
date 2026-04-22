@@ -6,14 +6,25 @@ class UserService
 {
     public function __construct(
         private readonly UserRepository $users = new UserRepository(),
+        private readonly RoleRepository $roles = new RoleRepository(),
         private readonly AuditLogRepository $auditLogs = new AuditLogRepository(),
         private readonly ValidationService $validation = new ValidationService()
     ) {
     }
 
+    public function listing(array $filters = []): array
+    {
+        return $this->users->listing($filters);
+    }
+
     public function find(int|string $id): ?User
     {
         return $this->users->find($id);
+    }
+
+    public function roles(): array
+    {
+        return $this->roles->all();
     }
 
     public function create(array $data, ?int $userId = null): array

@@ -41,6 +41,23 @@ class ResourceRepository
         return array_map(static fn (array $row): Resource => new Resource($row), $rows);
     }
 
+    public function listing(array $filters = []): array
+    {
+        $sql = 'SELECT * FROM resources WHERE 1=1';
+        $params = [];
+
+        if (array_key_exists('is_consumable', $filters) && $filters['is_consumable'] !== '' && $filters['is_consumable'] !== null) {
+            $sql .= ' AND is_consumable = :is_consumable';
+            $params['is_consumable'] = (int) $filters['is_consumable'];
+        }
+
+        $sql .= ' ORDER BY name ASC, id ASC';
+
+        $rows = $this->db()->fetchAll($sql, $params);
+
+        return array_map(static fn (array $row): Resource => new Resource($row), $rows);
+    }
+
     public function create(array $data): Resource
     {
         $resource = new Resource($data);
@@ -79,6 +96,18 @@ class ResourceRepository
              WHERE room_resources.resource_id = :resource_id
              ORDER BY rooms.code ASC',
             ['resource_id' => $resourceId]
+        );
+    }
+
+    public function resourcesForRoom(int|string $roomId): array
+    {
+        return $this->db()->fetchAll(
+            'SELECT room_resources.*, resources.name, resources.slug, resources.unit
+             FROM room_resources
+             INNER JOIN resources ON resources.id = room_resources.resource_id
+             WHERE room_resources.room_id = :room_id
+             ORDER BY resources.name ASC',
+            ['room_id' => $roomId]
         );
     }
 

@@ -6,7 +6,8 @@ class EventController extends CrudController
 {
     public function __construct(
         array $request = [],
-        private readonly EventService $events = new EventService()
+        private readonly EventService $events = new EventService(),
+        private readonly RoomService $rooms = new RoomService()
     ) {
         parent::__construct($request);
     }
@@ -113,7 +114,10 @@ class EventController extends CrudController
     protected function formData(): array
     {
         return [
-            'rooms' => $this->database()->fetchAll('SELECT id, code, name, capacity, status FROM rooms ORDER BY code ASC'),
+            'rooms' => array_map(
+                static fn (Room $room): array => $room->toArray(),
+                $this->rooms->listing()
+            ),
         ];
     }
 
@@ -168,24 +172,21 @@ class EventController extends CrudController
 
     private function roomHasConflict(array $data): bool
     {
-        $params = [
-            'room_id' => $data['room_id'],
-            'starts_at' => $data['starts_at'],
-            'ends_at' => $data['ends_at'],
-            'event_id' => $data['id'] ?? 0,
-        ];
-
-        $conflict = $this->database()->fetch(
-            'SELECT id FROM events
-             WHERE room_id = :room_id
-               AND id <> :event_id
-               AND starts_at < :ends_at
-               AND ends_at > :starts_at
-               AND status <> "cancelled"
-             LIMIT 1',
-            $params
+        return $this->events->hasRoomConflict(
+            (int) ($data['room_id'] ?? 0),
+            (string) ($data['starts_at'] ?? ''),
+            (string) ($data['ends_at'] ?? ''),
+            isset($data['id']) ? (int) $data['id'] : null
         );
+    }
 
-        return $conflict !== null;
+    protected function listRecords(array $filters = []): array
+    {
+        return $this->events->all($filters);
+    }
+
+    protected function findRecord(int|string $id): ?array
+    {
+        return $this->events->find($id)?->toArray();
     }
 }

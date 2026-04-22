@@ -87,6 +87,16 @@ class StudentGroupRepository
         );
     }
 
+    public function memberIds(int $groupId): array
+    {
+        $rows = $this->db()->fetchAll(
+            'SELECT user_id FROM student_group_members WHERE student_group_id = :group_id',
+            ['group_id' => $groupId]
+        );
+
+        return array_map(static fn (array $row): int => (int) $row['user_id'], $rows);
+    }
+
     private function db(): Database
     {
         return $this->database ?? Database::getInstance(Database::configFromFile());

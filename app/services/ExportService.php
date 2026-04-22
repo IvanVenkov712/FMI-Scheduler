@@ -20,7 +20,7 @@ class ExportService
         private readonly AllocationParameterRepository $allocationParameters = new AllocationParameterRepository(),
         private readonly RequestRepository $requests = new RequestRepository(),
         private readonly UserRepository $users = new UserRepository(),
-        private readonly ?Database $database = null
+        private readonly ImportExportJobRepository $jobs = new ImportExportJobRepository()
     ) {
     }
 
@@ -345,36 +345,11 @@ class ExportService
 
     private function startJob(string $type, string $format, string $entity, ?string $filePath, ?int $userId): string
     {
-        return $this->db()->insert(
-            'INSERT INTO import_export_jobs (user_id, type, format, entity, file_path, status, message)
-             VALUES (:user_id, :type, :format, :entity, :file_path, :status, :message)',
-            [
-                'user_id' => $userId,
-                'type' => $type,
-                'format' => $format,
-                'entity' => $entity,
-                'file_path' => $filePath,
-                'status' => 'processing',
-                'message' => null,
-            ]
-        );
+        return $this->jobs->start($type, $format, $entity, $filePath, $userId);
     }
 
     private function finishJob(string $jobId, string $status, ?string $message): void
     {
-        $this->db()->execute(
-            'UPDATE import_export_jobs SET status = :status, message = :message, completed_at = :completed_at WHERE id = :id',
-            [
-                'id' => $jobId,
-                'status' => $status,
-                'message' => $message,
-                'completed_at' => date('Y-m-d H:i:s'),
-            ]
-        );
-    }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
+        $this->jobs->finish($jobId, $status, $message);
     }
 }

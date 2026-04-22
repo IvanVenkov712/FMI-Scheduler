@@ -81,7 +81,7 @@ class AllocationController extends Controller
 
     private function run(int|string $id): array
     {
-        $run = $this->database()->fetch('SELECT * FROM allocation_runs WHERE id = :id', ['id' => $id]);
+        $run = $this->allocation->run($id);
 
         if ($run === null) {
             throw new RuntimeException('Allocation run not found.');

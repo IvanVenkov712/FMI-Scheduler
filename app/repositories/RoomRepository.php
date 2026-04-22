@@ -41,6 +41,38 @@ class RoomRepository
         return array_map(static fn (array $row): Room => new Room($row), $rows);
     }
 
+    public function listing(array $filters = []): array
+    {
+        $sql = 'SELECT * FROM rooms WHERE 1=1';
+        $params = [];
+
+        if (!empty($filters['floor_id'])) {
+            $sql .= ' AND floor_id = :floor_id';
+            $params['floor_id'] = (int) $filters['floor_id'];
+        }
+
+        if (!empty($filters['room_type_id'])) {
+            $sql .= ' AND room_type_id = :room_type_id';
+            $params['room_type_id'] = (int) $filters['room_type_id'];
+        }
+
+        if (!empty($filters['status'])) {
+            $sql .= ' AND status = :status';
+            $params['status'] = $filters['status'];
+        }
+
+        $sql .= ' ORDER BY code ASC, id ASC';
+
+        $rows = $this->db()->fetchAll($sql, $params);
+
+        return array_map(static fn (array $row): Room => new Room($row), $rows);
+    }
+
+    public function roomTypes(): array
+    {
+        return $this->db()->fetchAll('SELECT * FROM room_types ORDER BY name ASC');
+    }
+
     public function create(array $data): Room
     {
         $room = new Room($data);

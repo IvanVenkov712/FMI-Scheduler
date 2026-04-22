@@ -6,7 +6,8 @@ class FloorController extends CrudController
 {
     public function __construct(
         array $request = [],
-        private readonly FloorService $floorsService = new FloorService()
+        private readonly FloorService $floorsService = new FloorService(),
+        private readonly BuildingService $buildings = new BuildingService()
     ) {
         parent::__construct($request);
     }
@@ -71,7 +72,10 @@ class FloorController extends CrudController
     {
         return $this->respond('rooms/index', [
             'floor' => $this->findOrFail($id),
-            'rooms' => $this->rows('SELECT * FROM rooms WHERE floor_id = :id ORDER BY code ASC', ['id' => $id]),
+            'rooms' => array_map(
+                static fn (Room $room): array => $room->toArray(),
+                $this->floorsService->rooms((int) $id)
+            ),
         ]);
     }
 
@@ -79,8 +83,11 @@ class FloorController extends CrudController
     {
         return $this->respond('floors/edit', [
             'floor' => $this->findOrFail($id),
-            'rooms' => $this->rows('SELECT * FROM rooms WHERE floor_id = :id ORDER BY code ASC', ['id' => $id]),
-            'points' => $this->rows('SELECT * FROM floor_points WHERE floor_id = :id ORDER BY type ASC, code ASC', ['id' => $id]),
+            'rooms' => array_map(
+                static fn (Room $room): array => $room->toArray(),
+                $this->floorsService->rooms((int) $id)
+            ),
+            'points' => $this->floorsService->points((int) $id),
         ]);
     }
 
@@ -95,7 +102,10 @@ class FloorController extends CrudController
         if (!($result['success'] ?? false)) {
             return $this->validationResponse((array) ($result['errors'] ?? []), $data, 'floors/edit', [
                 'floor' => array_merge($this->findOrFail($id), $data),
-                'rooms' => $this->rows('SELECT * FROM rooms WHERE floor_id = :id ORDER BY code ASC', ['id' => $id]),
+                'rooms' => array_map(
+                    static fn (Room $room): array => $room->toArray(),
+                    $this->floorsService->rooms((int) $id)
+                ),
                 'points' => $points,
             ]);
         }
@@ -109,7 +119,20 @@ class FloorController extends CrudController
     protected function formData(): array
     {
         return [
-            'buildings' => $this->database()->fetchAll('SELECT id, name, code FROM buildings ORDER BY name ASC'),
+            'buildings' => array_map(
+                static fn (Building $building): array => $building->toArray(),
+                $this->buildings->listing()
+            ),
         ];
+    }
+
+    protected function listRecords(array $filters = []): array
+    {
+        return $this->floorsService->listing($filters);
+    }
+
+    protected function findRecord(int|string $id): ?array
+    {
+        return $this->floorsService->find($id)?->toArray();
     }
 }

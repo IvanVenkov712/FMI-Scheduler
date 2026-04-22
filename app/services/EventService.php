@@ -8,8 +8,7 @@ class EventService
         private readonly EventRepository $events = new EventRepository(),
         private readonly RoomRepository $rooms = new RoomRepository(),
         private readonly AuditLogRepository $auditLogs = new AuditLogRepository(),
-        private readonly ValidationService $validation = new ValidationService(),
-        private readonly ?Database $database = null
+        private readonly ValidationService $validation = new ValidationService()
     ) {
     }
 
@@ -28,6 +27,15 @@ class EventService
         return $this->events->find($id);
     }
 
+    public function hasRoomConflict(int $roomId, string $startsAt, string $endsAt, ?int $ignoreEventId = null): bool
+    {
+        if ($roomId <= 0 || $startsAt === '' || $endsAt === '') {
+            return false;
+        }
+
+        return $this->events->overlapsForRoom($roomId, $startsAt, $endsAt, $ignoreEventId) !== [];
+    }
+
     public function create(array $data, ?array $onlineSession = null, ?int $userId = null): array
     {
         $data['status'] = $data['status'] ?? 'draft';
@@ -44,16 +52,7 @@ class EventService
         }
 
         try {
-            $event = $this->db()->transaction(function (Database $db) use ($data, $onlineSession): Event {
-                $this->guardRoomBooking($db, $data, null);
-                $event = $this->events->create($data);
-
-                if ($event->requiresOnlineSession()) {
-                    $this->events->upsertOnlineSession((int) $event->get('id'), $this->onlineSessionPayload($event, $onlineSession ?? []));
-                }
-
-                return $event;
-            });
+            $event = $this->events->createWithOnlineSession($data, $onlineSession === null ? null : $this->onlineSessionPayload(new Event($data), $onlineSession));
         } catch (RuntimeException $exception) {
             return ['success' => false, 'errors' => ['room_id' => [$exception->getMessage()]]];
         }
@@ -84,26 +83,11 @@ class EventService
         $old = $event->toArray();
 
         try {
-            $updated = $this->db()->transaction(function (Database $db) use ($id, $payload, $onlineSession): ?Event {
-                $lockedEvent = $db->fetch('SELECT * FROM events WHERE id = :id LIMIT 1 FOR UPDATE', ['id' => $id]);
-                if ($lockedEvent === null) {
-                    return null;
-                }
-
-                $this->guardRoomBooking($db, $payload + $lockedEvent, (int) $id);
-                $updated = $this->events->update($id, $payload);
-
-                if ($updated !== null && $updated->requiresOnlineSession()) {
-                    $this->events->upsertOnlineSession(
-                        (int) $updated->get('id'),
-                        $this->onlineSessionPayload($updated, $onlineSession ?? [], $existingSession)
-                    );
-                } elseif ($updated !== null) {
-                    $this->events->deleteOnlineSession((int) $updated->get('id'));
-                }
-
-                return $updated;
-            });
+            $updated = $this->events->updateWithOnlineSession(
+                $id,
+                $payload,
+                $this->onlineSessionPayload($event, $onlineSession ?? [], $existingSession)
+            );
         } catch (RuntimeException $exception) {
             return ['success' => false, 'errors' => ['room_id' => [$exception->getMessage()]]];
         }
@@ -315,75 +299,6 @@ class EventService
         return $errors;
     }
 
-    private function guardRoomBooking(Database $db, array $data, ?int $ignoreEventId): void
-    {
-        $roomId = isset($data['room_id']) ? (int) $data['room_id'] : 0;
-        if ($roomId <= 0) {
-            return;
-        }
-
-        $room = $db->fetch(
-            'SELECT id, status, capacity, covid_capacity FROM rooms WHERE id = :id LIMIT 1 FOR UPDATE',
-            ['id' => $roomId]
-        );
-
-        if ($room === null) {
-            throw new RuntimeException('Room not found.');
-        }
-
-        if (($room['status'] ?? 'available') !== 'available') {
-            throw new RuntimeException('Room is not available.');
-        }
-
-        $effectiveCapacity = $room['covid_capacity'] ?? $room['capacity'] ?? 0;
-        if ((int) $effectiveCapacity < (int) ($data['students_count'] ?? 0)) {
-            throw new RuntimeException('Room capacity is insufficient.');
-        }
-
-        $params = [
-            'room_id' => $roomId,
-            'starts_at' => (string) ($data['starts_at'] ?? ''),
-            'ends_at' => (string) ($data['ends_at'] ?? ''),
-        ];
-
-        $sql = 'SELECT id
-                FROM events
-                WHERE room_id = :room_id
-                  AND starts_at < :ends_at
-                  AND ends_at > :starts_at
-                  AND status <> "cancelled"';
-
-        if ($ignoreEventId !== null) {
-            $sql .= ' AND id <> :ignore_id';
-            $params['ignore_id'] = $ignoreEventId;
-        }
-
-        $sql .= ' LIMIT 1 FOR UPDATE';
-
-        $conflict = $db->fetch($sql, $params);
-        if ($conflict !== null) {
-            throw new RuntimeException('Room is busy in the selected interval.');
-        }
-
-        $blocked = $db->fetch(
-            'SELECT id
-             FROM room_unavailability
-             WHERE room_id = :room_id
-               AND starts_at < :ends_at
-               AND ends_at > :starts_at
-             LIMIT 1 FOR UPDATE',
-            [
-                'room_id' => $roomId,
-                'starts_at' => (string) ($data['starts_at'] ?? ''),
-                'ends_at' => (string) ($data['ends_at'] ?? ''),
-            ]
-        );
-
-        if ($blocked !== null) {
-            throw new RuntimeException('Room is unavailable in the selected interval.');
-        }
-    }
-
     private function roomSatisfiesRequiredResources(Room $room, array $requiredResources): bool
     {
         $requirements = ResourceRequirementHelper::normalize($requiredResources);
@@ -393,10 +308,5 @@ class EventService
         }
 
         return ResourceRequirementHelper::satisfies($room->resources(), $requirements);
-    }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
     }
 }

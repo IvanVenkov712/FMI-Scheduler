@@ -39,6 +39,28 @@ class BuildingRepository
         return array_map(static fn (array $row): Building => new Building($row), $rows);
     }
 
+    public function listing(array $filters = []): array
+    {
+        $sql = 'SELECT * FROM buildings WHERE 1=1';
+        $params = [];
+
+        if (!empty($filters['status'])) {
+            $sql .= ' AND status = :status';
+            $params['status'] = $filters['status'];
+        }
+
+        if (!empty($filters['orientation'])) {
+            $sql .= ' AND orientation = :orientation';
+            $params['orientation'] = $filters['orientation'];
+        }
+
+        $sql .= ' ORDER BY name ASC, id ASC';
+
+        $rows = $this->db()->fetchAll($sql, $params);
+
+        return array_map(static fn (array $row): Building => new Building($row), $rows);
+    }
+
     public function create(array $data): Building
     {
         $building = new Building($data);

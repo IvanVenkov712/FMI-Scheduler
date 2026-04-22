@@ -21,6 +21,11 @@ class ResourceService
         return $this->resources->find($id);
     }
 
+    public function listing(array $filters = []): array
+    {
+        return $this->resources->listing($filters);
+    }
+
     public function create(array $data, ?int $userId = null): array
     {
         $data = $this->validation->normalizeBooleans($data, ['is_consumable']);
@@ -88,6 +93,11 @@ class ResourceService
     public function roomResources(int $resourceId): array
     {
         return $this->resources->roomResources($resourceId);
+    }
+
+    public function resourcesForRoom(int|string $roomId): array
+    {
+        return $this->resources->resourcesForRoom($roomId);
     }
 
     public function requestResource(array $data, ?int $userId = null): array

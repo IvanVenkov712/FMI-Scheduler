@@ -16,6 +16,11 @@ class BuildingService
         return $this->buildings->all($onlyActive);
     }
 
+    public function listing(array $filters = []): array
+    {
+        return $this->buildings->listing($filters);
+    }
+
     public function statistics(): array
     {
         return $this->buildings->withStatistics();

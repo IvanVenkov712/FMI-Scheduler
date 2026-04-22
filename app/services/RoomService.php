@@ -22,6 +22,16 @@ class RoomService
         return $this->rooms->find($id);
     }
 
+    public function listing(array $filters = []): array
+    {
+        return $this->rooms->listing($filters);
+    }
+
+    public function roomTypes(): array
+    {
+        return $this->rooms->roomTypes();
+    }
+
     public function create(array $data, array $resources = [], ?int $userId = null): array
     {
         $data['status'] = $data['status'] ?? 'available';

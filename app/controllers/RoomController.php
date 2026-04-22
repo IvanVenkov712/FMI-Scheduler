@@ -6,7 +6,9 @@ class RoomController extends CrudController
 {
     public function __construct(
         array $request = [],
-        private readonly RoomService $roomsService = new RoomService()
+        private readonly RoomService $roomsService = new RoomService(),
+        private readonly FloorService $floors = new FloorService(),
+        private readonly ResourceService $resources = new ResourceService()
     ) {
         parent::__construct($request);
     }
@@ -71,23 +73,14 @@ class RoomController extends CrudController
     {
         $from = (string) $this->input('from', date('Y-m-d 00:00:00'));
         $to = (string) $this->input('to', date('Y-m-d 23:59:59', strtotime('+7 days')));
+        $overview = $this->roomsService->availabilityOverview((int) $id, $from, $to);
 
         return $this->respond('rooms/availability', [
             'room' => $this->findOrFail($id),
             'from' => $from,
             'to' => $to,
-            'events' => $this->database()->fetchAll(
-                'SELECT * FROM events
-                 WHERE room_id = :room_id AND starts_at < :to_date AND ends_at > :from_date
-                 ORDER BY starts_at ASC',
-                ['room_id' => $id, 'from_date' => $from, 'to_date' => $to]
-            ),
-            'unavailability' => $this->database()->fetchAll(
-                'SELECT * FROM room_unavailability
-                 WHERE room_id = :room_id AND starts_at < :to_date AND ends_at > :from_date
-                 ORDER BY starts_at ASC',
-                ['room_id' => $id, 'from_date' => $from, 'to_date' => $to]
-            ),
+            'events' => array_map(static fn (Event $event): array => $event->toArray(), $overview['events']),
+            'unavailability' => $overview['unavailability'],
         ]);
     }
 
@@ -96,45 +89,13 @@ class RoomController extends CrudController
         $capacity = (int) $this->input('capacity', 0);
         $startsAt = (string) $this->input('starts_at', '');
         $endsAt = (string) $this->input('ends_at', '');
+        $deliveryMode = (string) $this->input('delivery_mode', 'physical');
         $resources = $this->resourceFilter();
 
-        $params = ['capacity' => $capacity, 'starts_at' => $startsAt, 'ends_at' => $endsAt];
-        $resourceClauses = '';
-
-        if ($resources !== []) {
-            foreach ($resources as $index => $resource) {
-                $resourceKey = 'resource_' . $index;
-                $quantityKey = 'resource_quantity_' . $index;
-
-                $resourceClauses .= '
-                   AND EXISTS (
-                       SELECT 1 FROM room_resources rr
-                       WHERE rr.room_id = rooms.id
-                         AND rr.status = "available"
-                         AND rr.resource_id = :' . $resourceKey . '
-                         AND rr.quantity >= :' . $quantityKey . '
-                   )';
-                $params[$resourceKey] = (int) ($resource['resource_id'] ?? 0);
-                $params[$quantityKey] = (int) ($resource['quantity'] ?? 1);
-            }
-        }
-
         return $this->respond('rooms/index', [
-            'rooms' => $this->database()->fetchAll(
-                'SELECT rooms.*
-                 FROM rooms
-                 WHERE rooms.status = "available"
-                   AND rooms.capacity >= :capacity
-                   ' . $resourceClauses . '
-                   AND NOT EXISTS (
-                       SELECT 1 FROM events
-                       WHERE events.room_id = rooms.id
-                         AND events.starts_at < :ends_at
-                         AND events.ends_at > :starts_at
-                         AND events.status <> "cancelled"
-                   )
-                 ORDER BY rooms.capacity ASC, rooms.code ASC',
-                $params
+            'rooms' => array_map(
+                static fn (Room $room): array => $room->toArray(),
+                $this->roomsService->availableBetween($capacity, $startsAt, $endsAt, $deliveryMode, $resources)
             ),
         ]);
     }
@@ -142,9 +103,15 @@ class RoomController extends CrudController
     protected function formData(): array
     {
         return [
-            'floors' => $this->database()->fetchAll('SELECT id, building_id, number, name FROM floors ORDER BY building_id ASC, number ASC'),
-            'room_types' => $this->database()->fetchAll('SELECT * FROM room_types ORDER BY name ASC'),
-            'resources' => $this->database()->fetchAll('SELECT * FROM resources ORDER BY name ASC'),
+            'floors' => array_map(
+                static fn (Floor $floor): array => $floor->toArray(),
+                $this->floors->listing()
+            ),
+            'room_types' => $this->roomsService->roomTypes(),
+            'resources' => array_map(
+                static fn (Resource $resource): array => $resource->toArray(),
+                $this->resources->listing()
+            ),
         ];
     }
 
@@ -164,5 +131,15 @@ class RoomController extends CrudController
         return ResourceRequirementHelper::normalize(
             is_array($resources) ? $resources + ['quantities' => (array) $quantities] : []
         );
+    }
+
+    protected function listRecords(array $filters = []): array
+    {
+        return $this->roomsService->listing($filters);
+    }
+
+    protected function findRecord(int|string $id): ?array
+    {
+        return $this->roomsService->find($id)?->toArray();
     }
 }

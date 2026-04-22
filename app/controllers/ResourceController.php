@@ -68,7 +68,10 @@ class ResourceController extends CrudController
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             return $this->respond('resources/manage', [
                 'room_id' => $roomId,
-                'resources' => $this->database()->fetchAll('SELECT * FROM resources ORDER BY name ASC'),
+                'resources' => array_map(
+                    static fn (Resource $resource): array => $resource->toArray(),
+                    $this->resourcesService->listing()
+                ),
                 'room_resources' => $roomId === null ? [] : $this->roomResources($roomId),
             ]);
         }
@@ -95,13 +98,16 @@ class ResourceController extends CrudController
 
     public function roomResources(int|string $roomId): array
     {
-        return $this->database()->fetchAll(
-            'SELECT room_resources.*, resources.name, resources.slug, resources.unit
-             FROM room_resources
-             INNER JOIN resources ON resources.id = room_resources.resource_id
-             WHERE room_resources.room_id = :room_id
-             ORDER BY resources.name ASC',
-            ['room_id' => $roomId]
-        );
+        return $this->resourcesService->resourcesForRoom($roomId);
+    }
+
+    protected function listRecords(array $filters = []): array
+    {
+        return $this->resourcesService->listing($filters);
+    }
+
+    protected function findRecord(int|string $id): ?array
+    {
+        return $this->resourcesService->find($id)?->toArray();
     }
 }

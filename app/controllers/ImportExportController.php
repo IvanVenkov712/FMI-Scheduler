@@ -7,6 +7,13 @@ class ImportExportController extends Controller
     private array $importEntities = ['buildings', 'floors', 'rooms', 'events', 'resources', 'routes', 'schedules', 'courses', 'student_groups', 'students', 'allocation_parameters', 'exam_requests', 'resource_requests', 'online_sessions', 'movement_constraints'];
     private array $exportEntities = ['buildings', 'floors', 'rooms', 'events', 'resources', 'routes', 'schedules', 'courses', 'student_groups', 'students', 'allocation_parameters', 'exam_requests', 'resource_requests', 'online_sessions', 'movement_constraints'];
 
+    public function __construct(
+        array $request = [],
+        private readonly ImportExportJobService $jobs = new ImportExportJobService()
+    ) {
+        parent::__construct($request);
+    }
+
     public function import(): mixed
     {
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -100,7 +107,7 @@ class ImportExportController extends Controller
     public function history(): string
     {
         return $this->render('import-export/history', [
-            'jobs' => $this->database()->fetchAll('SELECT * FROM import_export_jobs ORDER BY created_at DESC LIMIT 100'),
+            'jobs' => $this->jobs->history(),
         ]);
     }
 
@@ -116,7 +123,7 @@ class ImportExportController extends Controller
         return $this->render('import-export/history', [
             'message' => $message,
             'result' => $data,
-            'jobs' => $this->database()->fetchAll('SELECT * FROM import_export_jobs ORDER BY created_at DESC LIMIT 100'),
+            'jobs' => $this->jobs->history(),
         ]);
     }
 

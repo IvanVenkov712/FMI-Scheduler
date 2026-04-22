@@ -21,6 +21,27 @@ class RouteService
         return $this->routes->find($id);
     }
 
+    public function listing(array $filters = []): array
+    {
+        $onlyActive = !empty($filters['status']) && $filters['status'] === 'active';
+        $movementType = (string) ($filters['movement_type'] ?? '');
+        $routes = $this->routes->all($onlyActive, $movementType);
+
+        return array_values(array_filter($routes, static function (Route $route) use ($filters): bool {
+            foreach (['status', 'is_accessible', 'from_building_id', 'to_building_id'] as $field) {
+                if (!array_key_exists($field, $filters) || $filters[$field] === '' || $filters[$field] === null) {
+                    continue;
+                }
+
+                if ((string) $route->get($field) !== (string) $filters[$field]) {
+                    return false;
+                }
+            }
+
+            return true;
+        }));
+    }
+
     public function create(array $data, array $steps = [], ?int $userId = null): array
     {
         $data = $this->normalizeRouteIntegers($this->applyLegacyDurationInput($data));
@@ -119,6 +140,11 @@ class RouteService
     public function saveSteps(int $routeId, array $steps): void
     {
         $this->routes->saveSteps($routeId, $this->normalizeSteps($steps));
+    }
+
+    public function steps(int $routeId): array
+    {
+        return $this->routes->steps($routeId);
     }
 
     public function delete(int|string $id, ?int $userId = null): bool

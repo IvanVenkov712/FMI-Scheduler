@@ -5,7 +5,7 @@ declare(strict_types=1);
 class CovidConstraintService
 {
     public function __construct(
-        private readonly ?Database $database = null,
+        private readonly MovementConstraintRepository $constraints = new MovementConstraintRepository(),
         private readonly AuditLogRepository $auditLogs = new AuditLogRepository(),
         private readonly ValidationService $validation = new ValidationService()
     ) {
@@ -13,23 +13,12 @@ class CovidConstraintService
 
     public function active(?DateTimeInterface $at = null): array
     {
-        $at ??= new DateTimeImmutable();
-
-        $rows = $this->db()->fetchAll(
-            'SELECT * FROM movement_constraints
-             WHERE is_active = 1
-               AND (starts_at IS NULL OR starts_at <= :at)
-               AND (ends_at IS NULL OR ends_at >= :at)
-             ORDER BY type ASC, scope ASC, id ASC',
-            ['at' => $at->format('Y-m-d H:i:s')]
-        );
-
-        return array_map(static fn (array $row): MovementConstraint => new MovementConstraint($row), $rows);
+        return $this->constraints->active($at);
     }
 
     public function find(int|string $id): ?MovementConstraint
     {
-        return MovementConstraint::find($id);
+        return $this->constraints->find($id);
     }
 
     public function create(array $data, ?int $userId = null): array
@@ -41,33 +30,8 @@ class CovidConstraintService
             return ['success' => false, 'errors' => $errors];
         }
 
-        $payload = $data;
-        $payload['rule_data'] = json_encode($data['rule_data'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-
-        $id = $this->db()->insert(
-            'INSERT INTO movement_constraints
-             (name, type, scope, building_id, floor_id, room_id, route_id, rule_data, description, starts_at, ends_at, is_active, created_by)
-             VALUES
-             (:name, :type, :scope, :building_id, :floor_id, :room_id, :route_id, :rule_data, :description, :starts_at, :ends_at, :is_active, :created_by)',
-            [
-                'name' => $payload['name'],
-                'type' => $payload['type'],
-                'scope' => $payload['scope'],
-                'building_id' => $payload['building_id'] ?? null,
-                'floor_id' => $payload['floor_id'] ?? null,
-                'room_id' => $payload['room_id'] ?? null,
-                'route_id' => $payload['route_id'] ?? null,
-                'rule_data' => $payload['rule_data'],
-                'description' => $payload['description'] ?? null,
-                'starts_at' => $payload['starts_at'] ?? null,
-                'ends_at' => $payload['ends_at'] ?? null,
-                'is_active' => $payload['is_active'],
-                'created_by' => $payload['created_by'] ?? null,
-            ]
-        );
-
-        $constraint = MovementConstraint::find((int) $id);
-        $this->auditLogs->record('create', 'movement_constraint', $id, null, $constraint?->toArray(), $userId);
+        $constraint = $this->constraints->create($data);
+        $this->auditLogs->record('create', 'movement_constraint', $constraint->get('id'), null, $constraint->toArray(), $userId);
 
         return ['success' => true, 'constraint' => $constraint];
     }
@@ -86,23 +50,8 @@ class CovidConstraintService
         }
 
         $old = $constraint->toArray();
-        $constraint->fill([
-            'name' => $payload['name'],
-            'type' => $payload['type'],
-            'scope' => $payload['scope'],
-            'building_id' => $payload['building_id'] ?? null,
-            'floor_id' => $payload['floor_id'] ?? null,
-            'room_id' => $payload['room_id'] ?? null,
-            'route_id' => $payload['route_id'] ?? null,
-            'rule_data' => json_encode($payload['rule_data'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-            'description' => $payload['description'] ?? null,
-            'starts_at' => $payload['starts_at'] ?? null,
-            'ends_at' => $payload['ends_at'] ?? null,
-            'is_active' => $payload['is_active'] ?? 1,
-            'created_by' => $payload['created_by'] ?? null,
-        ]);
-        $constraint->save();
-        $this->auditLogs->record('update', 'movement_constraint', $id, $old, $constraint->toArray(), $userId);
+        $constraint = $this->constraints->update($id, $payload);
+        $this->auditLogs->record('update', 'movement_constraint', $id, $old, $constraint?->toArray(), $userId);
 
         return ['success' => true, 'constraint' => $constraint];
     }
@@ -218,8 +167,4 @@ class CovidConstraintService
         return $errors;
     }
 
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
-    }
 }

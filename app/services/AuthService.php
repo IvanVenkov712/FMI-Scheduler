@@ -6,6 +6,7 @@ class AuthService
 {
     public function __construct(
         private readonly UserRepository $users = new UserRepository(),
+        private readonly RoleRepository $roles = new RoleRepository(),
         private readonly AuditLogRepository $auditLogs = new AuditLogRepository(),
         private readonly ValidationService $validation = new ValidationService()
     ) {
@@ -86,16 +87,12 @@ class AuthService
 
     public function registerForRoleSlug(array $data, string $roleSlug): array
     {
-        $role = Database::getInstance(Database::configFromFile())->fetch(
-            'SELECT id FROM roles WHERE slug = :slug LIMIT 1',
-            ['slug' => $roleSlug]
-        );
-
-        if ($role === null) {
+        $roleId = $this->roles->findIdBySlug($roleSlug);
+        if ($roleId === null) {
             return ['success' => false, 'errors' => ['role' => ['Requested role is not configured.']]];
         }
 
-        $data['role_id'] = (int) $role['id'];
+        $data['role_id'] = $roleId;
 
         return $this->register($data);
     }
