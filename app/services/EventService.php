@@ -164,6 +164,14 @@ class EventService
         return $this->update($eventId, ['room_id' => $roomId, 'status' => 'scheduled'], null, $userId);
     }
 
+    public function validateRequestOnlineSession(array $session): array
+    {
+        return $this->validateOnlineSession(
+            ['delivery_mode' => 'online'],
+            $session
+        );
+    }
+
     private function validateEventData(array $data, ?int $ignoreEventId = null): array
     {
         $result = $this->validation->validate($data, [

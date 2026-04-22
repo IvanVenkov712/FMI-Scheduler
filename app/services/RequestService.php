@@ -31,7 +31,7 @@ class RequestService
     {
         $data['status'] = $data['status'] ?? 'pending';
         $data['requested_by'] = $data['requested_by'] ?? $userId;
-        $data = $this->validation->normalizeIntegers($data, ['requested_by', 'event_id', 'students_count', 'preferred_room_id']);
+        $data = $this->validation->normalizeIntegers($data, ['requested_by', 'event_id', 'students_count', 'preferred_room_id', 'online_host_user_id']);
 
         $errors = $this->validateRequestData($data);
 
@@ -56,7 +56,7 @@ class RequestService
             return ['success' => false, 'errors' => ['status' => ['This request can no longer be changed.']]];
         }
 
-        $payload = $this->validation->normalizeIntegers($data, ['requested_by', 'event_id', 'students_count', 'preferred_room_id', 'reviewed_by']);
+        $payload = $this->validation->normalizeIntegers($data, ['requested_by', 'event_id', 'students_count', 'preferred_room_id', 'reviewed_by', 'online_host_user_id']);
         $errors = $this->validateRequestData($payload + $request->toArray());
 
         if ($errors !== []) {
@@ -126,7 +126,9 @@ class RequestService
             'status' => 'requested',
         ];
 
-        $eventResult = $this->events->create($eventPayload, null, $userId);
+        $onlineSession = $this->onlineSessionPayload($request);
+
+        $eventResult = $this->events->create($eventPayload, $onlineSession, $userId);
         if (!$eventResult['success']) {
             return $eventResult;
         }
@@ -166,6 +168,13 @@ class RequestService
             'preferred_delivery_mode' => 'nullable|in:physical,online,hybrid',
             'preferred_starts_at' => 'nullable|date',
             'preferred_ends_at' => 'nullable|date',
+            'online_platform' => 'nullable|string|max:100',
+            'online_url' => 'nullable|string|max:500',
+            'online_access_key' => 'nullable|string|max:255',
+            'online_access_password' => 'nullable|string|max:255',
+            'online_host_user_id' => 'nullable|integer|min:1',
+            'online_moderator_name' => 'nullable|string|max:160',
+            'online_access_instructions' => 'nullable|string',
             'status' => 'nullable|in:pending,approved,rejected,scheduled,cancelled',
             'required_resources' => 'nullable|array',
         ]);
@@ -178,7 +187,40 @@ class RequestService
             );
         }
 
+        if (in_array((string) ($data['preferred_delivery_mode'] ?? 'physical'), ['online', 'hybrid'], true)) {
+            $onlineSession = $this->requestOnlineSessionData($data);
+            $sessionValidation = $this->events->validateRequestOnlineSession($onlineSession);
+            if ($sessionValidation !== []) {
+                $errors = array_merge_recursive($errors, $sessionValidation);
+            }
+        }
+
         return $errors;
+    }
+
+    private function requestOnlineSessionData(array $data): array
+    {
+        return [
+            'platform' => $data['online_platform'] ?? null,
+            'url' => $data['online_url'] ?? null,
+            'access_key' => $data['online_access_key'] ?? null,
+            'access_password' => $data['online_access_password'] ?? null,
+            'host_user_id' => $data['online_host_user_id'] ?? null,
+            'moderator_name' => $data['online_moderator_name'] ?? null,
+            'access_instructions' => $data['online_access_instructions'] ?? null,
+            'starts_at' => $data['preferred_starts_at'] ?? null,
+            'ends_at' => $data['preferred_ends_at'] ?? null,
+        ];
+    }
+
+    private function onlineSessionPayload(ExamRequest $request): ?array
+    {
+        $payload = array_filter(
+            $request->onlineSessionData(),
+            static fn (mixed $value): bool => $value !== null && $value !== ''
+        );
+
+        return $payload === [] ? null : $payload;
     }
 
     private function canTransition(string $from, string $to): bool

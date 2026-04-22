@@ -51,3 +51,4 @@ SOURCE migrations/011_create_audit_logs_table.sql;
 SOURCE migrations/012_alter_routes_multi_duration.sql;
 SOURCE migrations/013_create_catalog_import_tables.sql;
 SOURCE migrations/014_alter_online_sessions_access_fields.sql;
+SOURCE migrations/015_alter_exam_requests_online_fields.sql;

@@ -17,10 +17,12 @@ class RequestController extends CrudController
     protected array $fillable = [
         'requested_by', 'event_id', 'course_name', 'students_count', 'preferred_room_id',
         'preferred_delivery_mode', 'preferred_starts_at', 'preferred_ends_at',
+        'online_platform', 'online_url', 'online_access_key', 'online_access_password',
+        'online_host_user_id', 'online_moderator_name', 'online_access_instructions',
         'required_resources', 'notes', 'status', 'reviewed_by', 'reviewed_at',
     ];
     protected array $required = ['course_name', 'students_count'];
-    protected array $integerFields = ['requested_by', 'event_id', 'students_count', 'preferred_room_id', 'reviewed_by'];
+    protected array $integerFields = ['requested_by', 'event_id', 'students_count', 'preferred_room_id', 'reviewed_by', 'online_host_user_id'];
     protected array $jsonFields = ['required_resources'];
     protected array $listFilters = ['status', 'requested_by', 'preferred_delivery_mode'];
     protected string $defaultOrder = 'created_at DESC';

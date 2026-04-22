@@ -14,6 +14,13 @@ class ExamRequest extends Model
         'preferred_delivery_mode',
         'preferred_starts_at',
         'preferred_ends_at',
+        'online_platform',
+        'online_url',
+        'online_access_key',
+        'online_access_password',
+        'online_host_user_id',
+        'online_moderator_name',
+        'online_access_instructions',
         'required_resources',
         'notes',
         'status',
@@ -60,6 +67,21 @@ class ExamRequest extends Model
         $decoded = json_decode($value, true);
 
         return is_array($decoded) ? $decoded : [];
+    }
+
+    public function onlineSessionData(): array
+    {
+        return [
+            'platform' => $this->get('online_platform'),
+            'url' => $this->get('online_url'),
+            'access_key' => $this->get('online_access_key'),
+            'access_password' => $this->get('online_access_password'),
+            'host_user_id' => $this->get('online_host_user_id'),
+            'moderator_name' => $this->get('online_moderator_name'),
+            'access_instructions' => $this->get('online_access_instructions'),
+            'starts_at' => $this->get('preferred_starts_at'),
+            'ends_at' => $this->get('preferred_ends_at'),
+        ];
     }
 
     public function isPending(): bool
