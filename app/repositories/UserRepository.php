@@ -11,12 +11,20 @@ class UserRepository
 
     public function find(int|string $id): ?User
     {
-        return User::find($id);
+        return (new GenericModelRepository($this->database))->find(User::class, $id);
     }
 
     public function findByLogin(string $login): ?User
     {
-        return User::findByLogin($login);
+        $row = $this->db()->fetch(
+            'SELECT * FROM users WHERE email = :email_login OR username = :username_login LIMIT 1',
+            [
+                'email_login' => $login,
+                'username_login' => $login,
+            ]
+        );
+
+        return $row === null ? null : new User($row);
     }
 
     public function findByEmail(string $email): ?User
@@ -178,6 +186,36 @@ class UserRepository
         );
 
         return array_map(static fn (array $row): AuditLog => new AuditLog($row), $rows);
+    }
+
+    public function hostedSessions(int $userId): array
+    {
+        $rows = $this->db()->fetchAll(
+            'SELECT * FROM online_sessions WHERE host_user_id = :user_id ORDER BY created_at DESC',
+            ['user_id' => $userId]
+        );
+
+        return array_map(static fn (array $row): OnlineSession => new OnlineSession($row), $rows);
+    }
+
+    public function createdEvents(int $userId): array
+    {
+        $rows = $this->db()->fetchAll(
+            'SELECT * FROM events WHERE created_by = :user_id ORDER BY starts_at DESC',
+            ['user_id' => $userId]
+        );
+
+        return array_map(static fn (array $row): Event => new Event($row), $rows);
+    }
+
+    public function examRequests(int $userId): array
+    {
+        $rows = $this->db()->fetchAll(
+            'SELECT * FROM exam_requests WHERE requested_by = :user_id ORDER BY created_at DESC',
+            ['user_id' => $userId]
+        );
+
+        return array_map(static fn (array $row): ExamRequest => new ExamRequest($row), $rows);
     }
 
     private function db(): Database

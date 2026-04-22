@@ -11,7 +11,7 @@ class AllocationParameterRepository
 
     public function find(int|string $id): ?AllocationParameter
     {
-        return AllocationParameter::find($id);
+        return (new GenericModelRepository($this->database))->find(AllocationParameter::class, $id);
     }
 
     public function findByCode(string $code): ?AllocationParameter

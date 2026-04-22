@@ -46,85 +46,28 @@ abstract class Model
 
     public function save(): bool
     {
-        $data = $this->persistableAttributes();
-
-        if (isset($this->attributes[$this->primaryKey])) {
-            return $this->updateById($this->attributes[$this->primaryKey], $data);
-        }
-
-        $columns = array_keys($data);
-        $placeholders = array_map(static fn (string $column): string => ':' . $column, $columns);
-
-        $sql = sprintf(
-            'INSERT INTO %s (%s) VALUES (%s)',
-            $this->tableName(),
-            implode(', ', $columns),
-            implode(', ', $placeholders)
-        );
-
-        $id = Database::getInstance(Database::configFromFile())->insert($sql, $data);
-        $this->attributes[$this->primaryKey] = is_numeric($id) ? (int) $id : $id;
-
-        return true;
+        return (new GenericModelRepository())->save($this);
     }
 
     public function delete(): bool
     {
-        if (!isset($this->attributes[$this->primaryKey])) {
-            return false;
-        }
-
-        $count = Database::getInstance(Database::configFromFile())->execute(
-            sprintf('DELETE FROM %s WHERE %s = :id', $this->tableName(), $this->primaryKey),
-            ['id' => $this->attributes[$this->primaryKey]]
-        );
-
-        return $count > 0;
+        return (new GenericModelRepository())->delete($this);
     }
 
     public static function find(int|string $id): ?static
     {
-        $model = new static();
-        $row = Database::getInstance(Database::configFromFile())->fetch(
-            sprintf('SELECT * FROM %s WHERE %s = :id LIMIT 1', $model->tableName(), $model->primaryKey),
-            ['id' => $id]
-        );
+        /** @var static|null $model */
+        $model = (new GenericModelRepository())->find(static::class, $id);
 
-        return $row === null ? null : new static($row);
+        return $model;
     }
 
     public static function all(string $orderBy = 'id', string $direction = 'ASC'): array
     {
-        $model = new static();
-        $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+        /** @var array<static> $models */
+        $models = (new GenericModelRepository())->all(static::class, $orderBy, $direction);
 
-        $rows = Database::getInstance(Database::configFromFile())->fetchAll(
-            sprintf('SELECT * FROM %s ORDER BY %s %s', $model->tableName(), $orderBy, $direction)
-        );
-
-        return array_map(static fn (array $row): static => new static($row), $rows);
-    }
-
-    protected function updateById(int|string $id, array $data): bool
-    {
-        if ($data === []) {
-            return true;
-        }
-
-        $assignments = array_map(static fn (string $column): string => "{$column} = :{$column}", array_keys($data));
-        $data['model_id'] = $id;
-
-        $count = Database::getInstance(Database::configFromFile())->execute(
-            sprintf(
-                'UPDATE %s SET %s WHERE %s = :model_id',
-                $this->tableName(),
-                implode(', ', $assignments),
-                $this->primaryKey
-            ),
-            $data
-        );
-
-        return $count >= 0;
+        return $models;
     }
 
     protected function tableName(): string
@@ -139,7 +82,7 @@ abstract class Model
         return $snake . 's';
     }
 
-    protected function persistableAttributes(): array
+    public function repositoryPersistableAttributes(): array
     {
         return array_filter(
             $this->attributes,
@@ -148,9 +91,24 @@ abstract class Model
         );
     }
 
-    protected function db(): Database
+    public function repositoryTableName(): string
     {
-        return Database::getInstance(Database::configFromFile());
+        return $this->tableName();
+    }
+
+    public function repositoryPrimaryKey(): string
+    {
+        return $this->primaryKey;
+    }
+
+    public function repositoryPrimaryValue(): int|string|null
+    {
+        return $this->primaryValue();
+    }
+
+    public function repositoryAssignPrimaryValue(int|string $value): void
+    {
+        $this->attributes[$this->primaryKey] = $value;
     }
 
     protected function isAssignable(string $key): bool

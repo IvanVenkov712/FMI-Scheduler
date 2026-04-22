@@ -11,7 +11,7 @@ class RouteRepository
 
     public function find(int|string $id): ?Route
     {
-        return Route::find($id);
+        return (new GenericModelRepository($this->database))->find(Route::class, $id);
     }
 
     public function all(bool $onlyActive = false, string $movementType = ''): array

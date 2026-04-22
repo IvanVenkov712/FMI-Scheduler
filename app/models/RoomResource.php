@@ -17,14 +17,14 @@ class RoomResource extends Model
     {
         $roomId = $this->get('room_id');
 
-        return $roomId === null ? null : Room::find((int) $roomId);
+        return $roomId === null ? null : (new RoomRepository())->find((int) $roomId);
     }
 
     public function resource(): ?Resource
     {
         $resourceId = $this->get('resource_id');
 
-        return $resourceId === null ? null : Resource::find((int) $resourceId);
+        return $resourceId === null ? null : (new ResourceRepository())->find((int) $resourceId);
     }
 
     public function isAvailable(): bool

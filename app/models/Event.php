@@ -25,40 +25,24 @@ class Event extends Model
     {
         $createdBy = $this->get('created_by');
 
-        return $createdBy === null ? null : User::find((int) $createdBy);
+        return $createdBy === null ? null : (new UserRepository())->find((int) $createdBy);
     }
 
     public function room(): ?Room
     {
         $roomId = $this->get('room_id');
 
-        return $roomId === null ? null : Room::find((int) $roomId);
+        return $roomId === null ? null : (new RoomRepository())->find((int) $roomId);
     }
 
     public function onlineSession(): ?OnlineSession
     {
-        if (!$this->exists()) {
-            return null;
-        }
-
-        $row = $this->db()->fetch(
-            'SELECT * FROM online_sessions WHERE event_id = :event_id LIMIT 1',
-            ['event_id' => $this->primaryValue()]
-        );
-
-        return $row === null ? null : new OnlineSession($row);
+        return $this->exists() ? (new OnlineSessionRepository())->findByEventId((int) $this->primaryValue()) : null;
     }
 
     public function scheduleLinks(): array
     {
-        if (!$this->exists()) {
-            return [];
-        }
-
-        return $this->db()->fetchAll(
-            'SELECT * FROM schedule_events WHERE event_id = :event_id ORDER BY id ASC',
-            ['event_id' => $this->primaryValue()]
-        );
+        return $this->exists() ? (new EventRepository())->scheduleLinks((int) $this->primaryValue()) : [];
     }
 
     public function requiredResources(): array
@@ -100,10 +84,6 @@ class Event extends Model
 
     public static function upcoming(int $limit = 10): array
     {
-        $rows = Database::getInstance(Database::configFromFile())->fetchAll(
-            'SELECT * FROM events WHERE starts_at >= NOW() ORDER BY starts_at ASC LIMIT ' . max(1, $limit)
-        );
-
-        return array_map(static fn (array $row): self => new self($row), $rows);
+        return (new EventRepository())->upcoming($limit);
     }
 }

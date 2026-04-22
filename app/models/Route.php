@@ -26,40 +26,33 @@ class Route extends Model
     {
         $roomId = $this->get('from_room_id');
 
-        return $roomId === null ? null : Room::find((int) $roomId);
+        return $roomId === null ? null : (new RoomRepository())->find((int) $roomId);
     }
 
     public function toRoom(): ?Room
     {
         $roomId = $this->get('to_room_id');
 
-        return $roomId === null ? null : Room::find((int) $roomId);
+        return $roomId === null ? null : (new RoomRepository())->find((int) $roomId);
     }
 
     public function fromBuilding(): ?Building
     {
         $buildingId = $this->get('from_building_id');
 
-        return $buildingId === null ? null : Building::find((int) $buildingId);
+        return $buildingId === null ? null : (new BuildingRepository())->find((int) $buildingId);
     }
 
     public function toBuilding(): ?Building
     {
         $buildingId = $this->get('to_building_id');
 
-        return $buildingId === null ? null : Building::find((int) $buildingId);
+        return $buildingId === null ? null : (new BuildingRepository())->find((int) $buildingId);
     }
 
     public function steps(): array
     {
-        if (!$this->exists()) {
-            return [];
-        }
-
-        return $this->db()->fetchAll(
-            'SELECT * FROM route_steps WHERE route_id = :route_id ORDER BY step_order ASC',
-            ['route_id' => $this->primaryValue()]
-        );
+        return $this->exists() ? (new RouteRepository())->steps((int) $this->primaryValue()) : [];
     }
 
     public function path(): array

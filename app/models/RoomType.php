@@ -15,16 +15,7 @@ class RoomType extends Model
 
     public function rooms(): array
     {
-        if (!$this->exists()) {
-            return [];
-        }
-
-        $rows = $this->db()->fetchAll(
-            'SELECT * FROM rooms WHERE room_type_id = :room_type_id ORDER BY code ASC',
-            ['room_type_id' => $this->primaryValue()]
-        );
-
-        return array_map(static fn (array $row): Room => new Room($row), $rows);
+        return $this->exists() ? (new RoomTypeRepository())->rooms((int) $this->primaryValue()) : [];
     }
 
     public function isPhysical(): bool

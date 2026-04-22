@@ -22,33 +22,17 @@ class Floor extends Model
     {
         $buildingId = $this->get('building_id');
 
-        return $buildingId === null ? null : Building::find((int) $buildingId);
+        return $buildingId === null ? null : (new BuildingRepository())->find((int) $buildingId);
     }
 
     public function rooms(): array
     {
-        if (!$this->exists()) {
-            return [];
-        }
-
-        $rows = $this->db()->fetchAll(
-            'SELECT * FROM rooms WHERE floor_id = :floor_id ORDER BY code ASC',
-            ['floor_id' => $this->primaryValue()]
-        );
-
-        return array_map(static fn (array $row): Room => new Room($row), $rows);
+        return $this->exists() ? (new FloorRepository())->rooms((int) $this->primaryValue()) : [];
     }
 
     public function points(): array
     {
-        if (!$this->exists()) {
-            return [];
-        }
-
-        return $this->db()->fetchAll(
-            'SELECT * FROM floor_points WHERE floor_id = :floor_id ORDER BY type ASC, code ASC',
-            ['floor_id' => $this->primaryValue()]
-        );
+        return $this->exists() ? (new FloorRepository())->points((int) $this->primaryValue()) : [];
     }
 
     public function activeRooms(): array

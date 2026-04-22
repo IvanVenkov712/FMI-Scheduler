@@ -11,7 +11,7 @@ class ResourceRepository
 
     public function find(int|string $id): ?Resource
     {
-        return Resource::find($id);
+        return (new GenericModelRepository($this->database))->find(Resource::class, $id);
     }
 
     public function findBySlug(string $slug): ?Resource
@@ -97,6 +97,30 @@ class ResourceRepository
              ORDER BY rooms.code ASC',
             ['resource_id' => $resourceId]
         );
+    }
+
+    public function roomResourceModels(int $resourceId): array
+    {
+        $rows = $this->db()->fetchAll(
+            'SELECT * FROM room_resources WHERE resource_id = :resource_id ORDER BY room_id ASC',
+            ['resource_id' => $resourceId]
+        );
+
+        return array_map(static fn (array $row): RoomResource => new RoomResource($row), $rows);
+    }
+
+    public function roomsForResource(int $resourceId): array
+    {
+        $rows = $this->db()->fetchAll(
+            'SELECT rooms.*
+             FROM room_resources
+             INNER JOIN rooms ON rooms.id = room_resources.room_id
+             WHERE room_resources.resource_id = :resource_id
+             ORDER BY rooms.code ASC',
+            ['resource_id' => $resourceId]
+        );
+
+        return array_map(static fn (array $row): Room => new Room($row), $rows);
     }
 
     public function resourcesForRoom(int|string $roomId): array

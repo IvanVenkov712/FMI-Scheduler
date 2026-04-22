@@ -24,63 +24,27 @@ class User extends Model
     {
         $roleId = $this->get('role_id');
 
-        return $roleId === null ? null : Role::find((int) $roleId);
+        return $roleId === null ? null : (new RoleRepository())->find((int) $roleId);
     }
 
     public function createdEvents(): array
     {
-        if (!$this->exists()) {
-            return [];
-        }
-
-        $rows = $this->db()->fetchAll(
-            'SELECT * FROM events WHERE created_by = :user_id ORDER BY starts_at DESC',
-            ['user_id' => $this->primaryValue()]
-        );
-
-        return array_map(static fn (array $row): Event => new Event($row), $rows);
+        return $this->exists() ? (new UserRepository())->createdEvents((int) $this->primaryValue()) : [];
     }
 
     public function examRequests(): array
     {
-        if (!$this->exists()) {
-            return [];
-        }
-
-        $rows = $this->db()->fetchAll(
-            'SELECT * FROM exam_requests WHERE requested_by = :user_id ORDER BY created_at DESC',
-            ['user_id' => $this->primaryValue()]
-        );
-
-        return array_map(static fn (array $row): ExamRequest => new ExamRequest($row), $rows);
+        return $this->exists() ? (new UserRepository())->examRequests((int) $this->primaryValue()) : [];
     }
 
     public function hostedSessions(): array
     {
-        if (!$this->exists()) {
-            return [];
-        }
-
-        $rows = $this->db()->fetchAll(
-            'SELECT * FROM online_sessions WHERE host_user_id = :user_id ORDER BY created_at DESC',
-            ['user_id' => $this->primaryValue()]
-        );
-
-        return array_map(static fn (array $row): OnlineSession => new OnlineSession($row), $rows);
+        return $this->exists() ? (new UserRepository())->hostedSessions((int) $this->primaryValue()) : [];
     }
 
     public function auditLogs(): array
     {
-        if (!$this->exists()) {
-            return [];
-        }
-
-        $rows = $this->db()->fetchAll(
-            'SELECT * FROM audit_logs WHERE user_id = :user_id ORDER BY created_at DESC',
-            ['user_id' => $this->primaryValue()]
-        );
-
-        return array_map(static fn (array $row): AuditLog => new AuditLog($row), $rows);
+        return $this->exists() ? (new UserRepository())->auditLogs((int) $this->primaryValue()) : [];
     }
 
     public function fullName(): string
@@ -110,14 +74,6 @@ class User extends Model
 
     public static function findByLogin(string $login): ?self
     {
-        $row = Database::getInstance(Database::configFromFile())->fetch(
-            'SELECT * FROM users WHERE email = :email_login OR username = :username_login LIMIT 1',
-            [
-                'email_login' => $login,
-                'username_login' => $login,
-            ]
-        );
-
-        return $row === null ? null : new self($row);
+        return (new UserRepository())->findByLogin($login);
     }
 }

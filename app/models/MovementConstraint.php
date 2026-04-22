@@ -25,35 +25,35 @@ class MovementConstraint extends Model
     {
         $buildingId = $this->get('building_id');
 
-        return $buildingId === null ? null : Building::find((int) $buildingId);
+        return $buildingId === null ? null : (new BuildingRepository())->find((int) $buildingId);
     }
 
     public function floor(): ?Floor
     {
         $floorId = $this->get('floor_id');
 
-        return $floorId === null ? null : Floor::find((int) $floorId);
+        return $floorId === null ? null : (new FloorRepository())->find((int) $floorId);
     }
 
     public function room(): ?Room
     {
         $roomId = $this->get('room_id');
 
-        return $roomId === null ? null : Room::find((int) $roomId);
+        return $roomId === null ? null : (new RoomRepository())->find((int) $roomId);
     }
 
     public function route(): ?Route
     {
         $routeId = $this->get('route_id');
 
-        return $routeId === null ? null : Route::find((int) $routeId);
+        return $routeId === null ? null : (new RouteRepository())->find((int) $routeId);
     }
 
     public function creator(): ?User
     {
         $createdBy = $this->get('created_by');
 
-        return $createdBy === null ? null : User::find((int) $createdBy);
+        return $createdBy === null ? null : (new UserRepository())->find((int) $createdBy);
     }
 
     public function ruleData(): array

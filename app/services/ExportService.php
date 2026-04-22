@@ -20,6 +20,7 @@ class ExportService
         private readonly AllocationParameterRepository $allocationParameters = new AllocationParameterRepository(),
         private readonly RequestRepository $requests = new RequestRepository(),
         private readonly UserRepository $users = new UserRepository(),
+        private readonly OnlineSessionRepository $onlineSessions = new OnlineSessionRepository(),
         private readonly ImportExportJobRepository $jobs = new ImportExportJobRepository()
     ) {
     }
@@ -119,7 +120,7 @@ class ExportService
             'allocation_parameters' => $this->mapRows($entityId === null ? $this->allocationParameters->exportRows() : $this->filterById($this->allocationParameters->exportRows(), $entityId)),
             'exam_requests' => $this->examRequestRows($entityId),
             'resource_requests' => $this->resourceRequestRows($entityId),
-            'online_sessions' => $this->mapModels($entityId === null ? OnlineSession::all('event_id', 'ASC') : array_filter([$this->findOnlineSessionById($entityId)])),
+            'online_sessions' => $this->mapModels($entityId === null ? $this->onlineSessions->all('event_id', 'ASC') : array_filter([$this->findOnlineSessionById($entityId)])),
             'movement_constraints' => $this->movementConstraintRows($entityId),
             default => throw new InvalidArgumentException('Unsupported export entity.'),
         };
@@ -162,7 +163,7 @@ class ExportService
 
     private function findOnlineSessionById(int $entityId): ?OnlineSession
     {
-        return OnlineSession::find($entityId);
+        return $this->onlineSessions->find($entityId);
     }
 
     private function scheduleRows(?int $entityId): array

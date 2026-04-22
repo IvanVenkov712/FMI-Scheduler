@@ -22,16 +22,7 @@ class Building extends Model
 
     public function floors(): array
     {
-        if (!$this->exists()) {
-            return [];
-        }
-
-        $rows = $this->db()->fetchAll(
-            'SELECT * FROM floors WHERE building_id = :building_id ORDER BY number ASC',
-            ['building_id' => $this->primaryValue()]
-        );
-
-        return array_map(static fn (array $row): Floor => new Floor($row), $rows);
+        return $this->exists() ? (new BuildingRepository())->floors((int) $this->primaryValue()) : [];
     }
 
     public function activeFloors(): array
@@ -72,21 +63,6 @@ class Building extends Model
 
     private function routeCollection(string $column): array
     {
-        if (!$this->exists()) {
-            return [];
-        }
-
-        $rows = $this->db()->fetchAll(
-            "SELECT * FROM routes
-             WHERE {$column} = :building_id
-             ORDER BY LEAST(
-                IFNULL(walking_duration_minutes, 65535),
-                IFNULL(car_duration_minutes, 65535),
-                IFNULL(public_transport_duration_minutes, 65535)
-             ) ASC, name ASC",
-            ['building_id' => $this->primaryValue()]
-        );
-
-        return array_map(static fn (array $row): Route => new Route($row), $rows);
+        return $this->exists() ? (new BuildingRepository())->routesForBuilding((int) $this->primaryValue(), $column) : [];
     }
 }

@@ -11,7 +11,7 @@ class BuildingRepository
 
     public function find(int|string $id): ?Building
     {
-        return Building::find($id);
+        return (new GenericModelRepository($this->database))->find(Building::class, $id);
     }
 
     public function findByCode(string $code): ?Building
@@ -120,6 +120,22 @@ class BuildingRepository
         $rows = $this->db()->fetchAll($sql, $params);
 
         return array_map(static fn (array $row): Floor => new Floor($row), $rows);
+    }
+
+    public function routesForBuilding(int $buildingId, string $column): array
+    {
+        $rows = $this->db()->fetchAll(
+            "SELECT * FROM routes
+             WHERE {$column} = :building_id
+             ORDER BY LEAST(
+                IFNULL(walking_duration_minutes, 65535),
+                IFNULL(car_duration_minutes, 65535),
+                IFNULL(public_transport_duration_minutes, 65535)
+             ) ASC, name ASC",
+            ['building_id' => $buildingId]
+        );
+
+        return array_map(static fn (array $row): Route => new Route($row), $rows);
     }
 
     private function db(): Database

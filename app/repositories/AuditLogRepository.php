@@ -73,7 +73,26 @@ class AuditLogRepository
         ?array $newValues = null,
         ?int $userId = null
     ): AuditLog {
-        return AuditLog::record($action, $entityType, $entityId, $oldValues, $newValues, $userId);
+        $oldValues = $oldValues === null ? null : SensitiveData::redact($oldValues);
+        $newValues = $newValues === null ? null : SensitiveData::redact($newValues);
+
+        $id = $this->db()->insert(
+            'INSERT INTO audit_logs (user_id, action, entity_type, entity_id, old_values, new_values, ip_address, user_agent, created_at)
+             VALUES (:user_id, :action, :entity_type, :entity_id, :old_values, :new_values, :ip_address, :user_agent, :created_at)',
+            [
+                'user_id' => $userId,
+                'action' => $action,
+                'entity_type' => $entityType,
+                'entity_id' => $entityId === null ? null : (string) $entityId,
+                'old_values' => $oldValues === null ? null : json_encode($oldValues, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'new_values' => $newValues === null ? null : json_encode($newValues, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]
+        );
+
+        return $this->find($id) ?? new AuditLog();
     }
 
     private function db(): Database

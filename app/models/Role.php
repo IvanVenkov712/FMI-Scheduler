@@ -14,16 +14,7 @@ class Role extends Model
 
     public function users(): array
     {
-        if (!$this->exists()) {
-            return [];
-        }
-
-        $rows = $this->db()->fetchAll(
-            'SELECT * FROM users WHERE role_id = :role_id ORDER BY last_name ASC, first_name ASC',
-            ['role_id' => $this->primaryValue()]
-        );
-
-        return array_map(static fn (array $row): User => new User($row), $rows);
+        return $this->exists() ? (new RoleRepository())->users((int) $this->primaryValue()) : [];
     }
 
     public function permissions(): array

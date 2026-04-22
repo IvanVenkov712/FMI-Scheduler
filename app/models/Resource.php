@@ -15,46 +15,17 @@ class Resource extends Model
 
     public function roomResources(): array
     {
-        if (!$this->exists()) {
-            return [];
-        }
-
-        $rows = $this->db()->fetchAll(
-            'SELECT * FROM room_resources WHERE resource_id = :resource_id ORDER BY room_id ASC',
-            ['resource_id' => $this->primaryValue()]
-        );
-
-        return array_map(static fn (array $row): RoomResource => new RoomResource($row), $rows);
+        return $this->exists() ? (new ResourceRepository())->roomResourceModels((int) $this->primaryValue()) : [];
     }
 
     public function rooms(): array
     {
-        if (!$this->exists()) {
-            return [];
-        }
-
-        $rows = $this->db()->fetchAll(
-            'SELECT rooms.*
-             FROM room_resources
-             INNER JOIN rooms ON rooms.id = room_resources.room_id
-             WHERE room_resources.resource_id = :resource_id
-             ORDER BY rooms.code ASC',
-            ['resource_id' => $this->primaryValue()]
-        );
-
-        return array_map(static fn (array $row): Room => new Room($row), $rows);
+        return $this->exists() ? (new ResourceRepository())->roomsForResource((int) $this->primaryValue()) : [];
     }
 
     public function requests(): array
     {
-        if (!$this->exists()) {
-            return [];
-        }
-
-        return $this->db()->fetchAll(
-            'SELECT * FROM resource_requests WHERE resource_id = :resource_id ORDER BY created_at DESC',
-            ['resource_id' => $this->primaryValue()]
-        );
+        return $this->exists() ? (new ResourceRepository())->resourceRequests(['resource_id' => (int) $this->primaryValue()]) : [];
     }
 
     public function isConsumable(): bool

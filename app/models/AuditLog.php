@@ -22,7 +22,7 @@ class AuditLog extends Model
     {
         $userId = $this->get('user_id');
 
-        return $userId === null ? null : User::find((int) $userId);
+        return $userId === null ? null : (new UserRepository())->find((int) $userId);
     }
 
     public function oldValues(): array
@@ -43,23 +43,7 @@ class AuditLog extends Model
         ?array $newValues = null,
         ?int $userId = null
     ): self {
-        $oldValues = $oldValues === null ? null : SensitiveData::redact($oldValues);
-        $newValues = $newValues === null ? null : SensitiveData::redact($newValues);
-
-        $log = new self([
-            'user_id' => $userId,
-            'action' => $action,
-            'entity_type' => $entityType,
-            'entity_id' => $entityId === null ? null : (string) $entityId,
-            'old_values' => $oldValues === null ? null : json_encode($oldValues, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-            'new_values' => $newValues === null ? null : json_encode($newValues, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
-            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
-        ]);
-
-        $log->save();
-
-        return $log;
+        return (new AuditLogRepository())->record($action, $entityType, $entityId, $oldValues, $newValues, $userId);
     }
 
     private function decodeJsonField(string $field): array

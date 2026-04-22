@@ -27,7 +27,7 @@ class MovementConstraintRepository
 
     public function find(int|string $id): ?MovementConstraint
     {
-        return MovementConstraint::find($id);
+        return (new GenericModelRepository($this->database))->find(MovementConstraint::class, $id);
     }
 
     public function create(array $data): MovementConstraint

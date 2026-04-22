@@ -11,7 +11,7 @@ class StudentGroupRepository
 
     public function find(int|string $id): ?StudentGroup
     {
-        return StudentGroup::find($id);
+        return (new GenericModelRepository($this->database))->find(StudentGroup::class, $id);
     }
 
     public function findByCode(string $code): ?StudentGroup

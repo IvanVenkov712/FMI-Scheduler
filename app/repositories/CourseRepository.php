@@ -11,7 +11,7 @@ class CourseRepository
 
     public function find(int|string $id): ?Course
     {
-        return Course::find($id);
+        return (new GenericModelRepository($this->database))->find(Course::class, $id);
     }
 
     public function findByCode(string $code): ?Course

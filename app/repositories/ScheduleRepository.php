@@ -11,7 +11,7 @@ class ScheduleRepository
 
     public function find(int|string $id): ?Schedule
     {
-        return Schedule::find($id);
+        return (new GenericModelRepository($this->database))->find(Schedule::class, $id);
     }
 
     public function all(array $filters = []): array
@@ -105,6 +105,14 @@ class ScheduleRepository
              ' . $where . '
              ORDER BY events.starts_at ASC, events.id ASC',
             $params
+        );
+    }
+
+    public function items(int $scheduleId): array
+    {
+        return $this->db()->fetchAll(
+            'SELECT * FROM schedule_events WHERE schedule_id = :schedule_id ORDER BY id ASC',
+            ['schedule_id' => $scheduleId]
         );
     }
 

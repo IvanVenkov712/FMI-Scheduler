@@ -11,7 +11,7 @@ class RequestRepository
 
     public function find(int|string $id): ?ExamRequest
     {
-        return ExamRequest::find($id);
+        return (new GenericModelRepository($this->database))->find(ExamRequest::class, $id);
     }
 
     public function all(array $filters = []): array

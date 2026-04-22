@@ -22,14 +22,14 @@ class OnlineSession extends Model
     {
         $eventId = $this->get('event_id');
 
-        return $eventId === null ? null : Event::find((int) $eventId);
+        return $eventId === null ? null : (new EventRepository())->find((int) $eventId);
     }
 
     public function host(): ?User
     {
         $hostId = $this->get('host_user_id');
 
-        return $hostId === null ? null : User::find((int) $hostId);
+        return $hostId === null ? null : (new UserRepository())->find((int) $hostId);
     }
 
     public function isLive(?DateTimeInterface $at = null): bool

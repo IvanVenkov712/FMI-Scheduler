@@ -11,7 +11,7 @@ class FloorRepository
 
     public function find(int|string $id): ?Floor
     {
-        return Floor::find($id);
+        return (new GenericModelRepository($this->database))->find(Floor::class, $id);
     }
 
     public function byBuilding(int $buildingId, bool $onlyActive = false): array

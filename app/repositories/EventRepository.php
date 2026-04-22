@@ -11,7 +11,7 @@ class EventRepository
 
     public function find(int|string $id): ?Event
     {
-        return Event::find($id);
+        return (new GenericModelRepository($this->database))->find(Event::class, $id);
     }
 
     public function all(array $filters = []): array
@@ -135,7 +135,19 @@ class EventRepository
 
     public function upcoming(int $limit = 10): array
     {
-        return Event::upcoming($limit);
+        $rows = $this->db()->fetchAll(
+            'SELECT * FROM events WHERE starts_at >= NOW() ORDER BY starts_at ASC LIMIT ' . max(1, $limit)
+        );
+
+        return array_map(static fn (array $row): Event => new Event($row), $rows);
+    }
+
+    public function scheduleLinks(int $eventId): array
+    {
+        return $this->db()->fetchAll(
+            'SELECT * FROM schedule_events WHERE event_id = :event_id ORDER BY id ASC',
+            ['event_id' => $eventId]
+        );
     }
 
     public function overlapsForRoom(int $roomId, string $startsAt, string $endsAt, ?int $ignoreEventId = null): array

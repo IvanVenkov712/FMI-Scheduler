@@ -32,28 +32,28 @@ class ExamRequest extends Model
     {
         $requestedBy = $this->get('requested_by');
 
-        return $requestedBy === null ? null : User::find((int) $requestedBy);
+        return $requestedBy === null ? null : (new UserRepository())->find((int) $requestedBy);
     }
 
     public function reviewer(): ?User
     {
         $reviewedBy = $this->get('reviewed_by');
 
-        return $reviewedBy === null ? null : User::find((int) $reviewedBy);
+        return $reviewedBy === null ? null : (new UserRepository())->find((int) $reviewedBy);
     }
 
     public function event(): ?Event
     {
         $eventId = $this->get('event_id');
 
-        return $eventId === null ? null : Event::find((int) $eventId);
+        return $eventId === null ? null : (new EventRepository())->find((int) $eventId);
     }
 
     public function preferredRoom(): ?Room
     {
         $roomId = $this->get('preferred_room_id');
 
-        return $roomId === null ? null : Room::find((int) $roomId);
+        return $roomId === null ? null : (new RoomRepository())->find((int) $roomId);
     }
 
     public function requiredResources(): array

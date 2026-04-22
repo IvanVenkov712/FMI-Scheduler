@@ -11,7 +11,7 @@ class RoomRepository
 
     public function find(int|string $id): ?Room
     {
-        return Room::find($id);
+        return (new GenericModelRepository($this->database))->find(Room::class, $id);
     }
 
     public function findByCode(string $code): ?Room
@@ -71,6 +71,20 @@ class RoomRepository
     public function roomTypes(): array
     {
         return $this->db()->fetchAll('SELECT * FROM room_types ORDER BY name ASC');
+    }
+
+    public function resourcesForRoomModels(int $roomId): array
+    {
+        $rows = $this->db()->fetchAll(
+            'SELECT room_resources.*, resources.name, resources.slug, resources.unit, resources.is_consumable
+             FROM room_resources
+             INNER JOIN resources ON resources.id = room_resources.resource_id
+             WHERE room_resources.room_id = :room_id
+             ORDER BY resources.name ASC',
+            ['room_id' => $roomId]
+        );
+
+        return array_map(static fn (array $row): RoomResource => new RoomResource($row), $rows);
     }
 
     public function create(array $data): Room
@@ -211,6 +225,59 @@ class RoomRepository
         $sql .= ' ORDER BY starts_at ASC';
 
         return $this->db()->fetchAll($sql, $params);
+    }
+
+    public function eventsForRoom(int $roomId, string $from = '', string $to = ''): array
+    {
+        $sql = 'SELECT * FROM events WHERE room_id = :room_id';
+        $params = ['room_id' => $roomId];
+
+        if ($from !== '' && $to !== '') {
+            $sql .= ' AND starts_at < :to_date AND ends_at > :from_date';
+            $params['from_date'] = $from;
+            $params['to_date'] = $to;
+        }
+
+        $sql .= ' ORDER BY starts_at ASC';
+
+        $rows = $this->db()->fetchAll($sql, $params);
+
+        return array_map(static fn (array $row): Event => new Event($row), $rows);
+    }
+
+    public function hasEventConflict(int $roomId, string $startsAt, string $endsAt): bool
+    {
+        return $this->db()->fetch(
+            'SELECT id
+             FROM events
+             WHERE room_id = :room_id
+               AND starts_at < :ends_at
+               AND ends_at > :starts_at
+               AND status <> "cancelled"
+             LIMIT 1',
+            [
+                'room_id' => $roomId,
+                'starts_at' => $startsAt,
+                'ends_at' => $endsAt,
+            ]
+        ) !== null;
+    }
+
+    public function hasUnavailabilityConflict(int $roomId, string $startsAt, string $endsAt): bool
+    {
+        return $this->db()->fetch(
+            'SELECT id
+             FROM room_unavailability
+             WHERE room_id = :room_id
+               AND starts_at < :ends_at
+               AND ends_at > :starts_at
+             LIMIT 1',
+            [
+                'room_id' => $roomId,
+                'starts_at' => $startsAt,
+                'ends_at' => $endsAt,
+            ]
+        ) !== null;
     }
 
     public function createUnavailability(array $data): string
