@@ -161,6 +161,10 @@ class EventService
             return ['success' => false, 'errors' => ['room' => ['Room is busy in the selected interval.']]];
         }
 
+        if (!$this->roomSatisfiesRequiredResources($room, $event->requiredResources())) {
+            return ['success' => false, 'errors' => ['room' => ['Room resources are insufficient for the event requirements.']]];
+        }
+
         return $this->update($eventId, ['room_id' => $roomId, 'status' => 'scheduled'], null, $userId);
     }
 
@@ -210,6 +214,10 @@ class EventService
 
                 if ($overlaps !== []) {
                     $errors['room_id'][] = 'Room is busy in the selected interval.';
+                }
+
+                if (!$this->roomSatisfiesRequiredResources($room, (array) ($data['required_resources'] ?? []))) {
+                    $errors['room_id'][] = 'Room resources are insufficient for the event requirements.';
                 }
             }
         }
@@ -341,6 +349,17 @@ class EventService
         if ($blocked !== null) {
             throw new RuntimeException('Room is unavailable in the selected interval.');
         }
+    }
+
+    private function roomSatisfiesRequiredResources(Room $room, array $requiredResources): bool
+    {
+        $requirements = ResourceRequirementHelper::normalize($requiredResources);
+
+        if ($requirements === []) {
+            return true;
+        }
+
+        return ResourceRequirementHelper::satisfies($room->resources(), $requirements);
     }
 
     private function db(): Database

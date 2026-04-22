@@ -17,7 +17,7 @@ class AllocationController extends Controller
         $startsAt = (string) $this->input('starts_at', '');
         $endsAt = (string) $this->input('ends_at', '');
         $deliveryMode = (string) $this->input('delivery_mode', 'physical');
-        $resourceIds = $this->resourceIds();
+        $resourceRequirements = $this->resourceRequirements();
 
         $rooms = [];
         if ($startsAt !== '' && $endsAt !== '') {
@@ -26,7 +26,7 @@ class AllocationController extends Controller
                 'starts_at' => $startsAt,
                 'ends_at' => $endsAt,
                 'delivery_mode' => $deliveryMode,
-                'resource_ids' => $resourceIds,
+                'resource_requirements' => $resourceRequirements,
             ]));
         }
 
@@ -37,7 +37,8 @@ class AllocationController extends Controller
                 'startsAt' => $startsAt,
                 'endsAt' => $endsAt,
                 'deliveryMode' => $deliveryMode,
-                'resourceIds' => $resourceIds,
+                'resourceIds' => array_column($resourceRequirements, 'resource_id'),
+                'resourceRequirements' => $resourceRequirements,
             ],
         ]);
     }
@@ -103,15 +104,22 @@ class AllocationController extends Controller
         }, $rankedRooms);
     }
 
-    private function resourceIds(): array
+    private function resourceRequirements(): array
     {
-        $resourceIds = $this->input('resource_ids', $this->input('resources', []));
+        $resources = $this->input('resource_requirements', $this->input('resource_ids', $this->input('resources', [])));
+        $quantities = $this->input('resource_quantities', []);
 
-        if (is_string($resourceIds)) {
-            $resourceIds = explode(',', $resourceIds);
+        if (is_string($resources)) {
+            $resources = explode(',', $resources);
         }
 
-        return array_values(array_filter(array_map('intval', (array) $resourceIds)));
+        if (is_string($quantities)) {
+            $quantities = explode(',', $quantities);
+        }
+
+        return ResourceRequirementHelper::normalize(
+            is_array($resources) ? $resources + ['quantities' => (array) $quantities] : []
+        );
     }
 
     private function normalizeScheduleId(mixed $scheduleId): ?int

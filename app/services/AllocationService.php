@@ -22,21 +22,23 @@ class AllocationService
         $startsAt = (string) ($criteria['starts_at'] ?? '');
         $endsAt = (string) ($criteria['ends_at'] ?? '');
         $deliveryMode = (string) ($criteria['delivery_mode'] ?? 'physical');
-        $requiredResourceIds = array_values(array_filter(array_map('intval', (array) ($criteria['resource_ids'] ?? []))));
+        $requiredResources = $this->normalizeRequiredResources(
+            (array) ($criteria['resource_requirements'] ?? $criteria['resource_ids'] ?? [])
+        );
 
         $candidates = $this->rooms->availableBetween(
             $capacity,
             $startsAt,
             $endsAt,
             $deliveryMode,
-            $requiredResourceIds,
+            $requiredResources,
             true
         );
 
         $scored = [];
 
         foreach ($candidates as $room) {
-            $score = $this->scoreRoom($room, $capacity, $requiredResourceIds, $criteria);
+            $score = $this->scoreRoom($room, $capacity, $requiredResources, $criteria);
             $scored[] = [
                 'room' => $room,
                 'score' => $score['score'],
@@ -102,7 +104,7 @@ class AllocationService
             return ['success' => false, 'reason' => 'Event not found.'];
         }
 
-        $resourceIds = $this->extractRequiredResourceIds($event);
+        $resourceRequirements = $this->extractRequiredResources($event);
         $rankedRooms = $this->searchAvailableRooms([
             'event_id' => $eventId,
             'schedule_id' => $scheduleId,
@@ -110,7 +112,7 @@ class AllocationService
             'starts_at' => (string) $event->get('starts_at'),
             'ends_at' => (string) $event->get('ends_at'),
             'delivery_mode' => (string) $event->get('delivery_mode', 'physical'),
-            'resource_ids' => $resourceIds,
+            'resource_requirements' => $resourceRequirements,
             'preferred_room_id' => $event->get('room_id'),
         ]);
 
@@ -180,7 +182,7 @@ class AllocationService
         ];
     }
 
-    private function scoreRoom(Room $room, int $capacity, array $requiredResourceIds, array $criteria): array
+    private function scoreRoom(Room $room, int $capacity, array $requiredResources, array $criteria): array
     {
         $score = 1000;
         $explanations = [];
@@ -202,21 +204,20 @@ class AllocationService
             $explanations[] = 'floor proximity bonus applied';
         }
 
-        $roomResourceIds = array_map(
-            static fn (RoomResource $resource): int => (int) $resource->get('resource_id'),
-            $room->resources()
-        );
-
+        $availableResources = ResourceRequirementHelper::availableQuantityByResource($room->resources());
         $matchedResources = 0;
-        foreach ($requiredResourceIds as $resourceId) {
-            if (in_array((int) $resourceId, $roomResourceIds, true)) {
+        foreach ($requiredResources as $requirement) {
+            $resourceId = (int) ($requirement['resource_id'] ?? 0);
+            $requiredQuantity = (int) ($requirement['quantity'] ?? 1);
+
+            if (($availableResources[$resourceId] ?? 0) >= $requiredQuantity) {
                 $matchedResources++;
             }
         }
 
         $score += $matchedResources * 40;
-        if ($requiredResourceIds !== []) {
-            $explanations[] = sprintf('matched %d/%d required resources', $matchedResources, count($requiredResourceIds));
+        if ($requiredResources !== []) {
+            $explanations[] = sprintf('matched %d/%d required resource requirements', $matchedResources, count($requiredResources));
         }
 
         $bufferPenalty = $this->bufferPenalty($room, (string) ($criteria['starts_at'] ?? ''), (string) ($criteria['ends_at'] ?? ''));
@@ -395,47 +396,38 @@ class AllocationService
         return 0;
     }
 
-    private function extractRequiredResourceIds(Event $event): array
+    private function extractRequiredResources(Event $event): array
     {
         $eventResources = $event->requiredResources();
-        $resourceIds = $this->normalizeRequiredResourceIds($eventResources);
+        $resourceRequirements = $this->normalizeRequiredResources($eventResources);
 
-        if ($resourceIds !== []) {
-            return $resourceIds;
+        if ($resourceRequirements !== []) {
+            return $resourceRequirements;
         }
 
         $sessionLinks = $event->scheduleLinks();
-        $resourceIds = [];
+        $resourceRequirements = [];
 
         foreach ($sessionLinks as $link) {
             if (!empty($link['conflict_notes'])) {
                 $decoded = json_decode((string) $link['conflict_notes'], true);
+                if (is_array($decoded) && isset($decoded['resource_requirements']) && is_array($decoded['resource_requirements'])) {
+                    $resourceRequirements = array_merge($resourceRequirements, $decoded['resource_requirements']);
+                    continue;
+                }
+
                 if (is_array($decoded) && isset($decoded['resource_ids']) && is_array($decoded['resource_ids'])) {
-                    $resourceIds = array_merge($resourceIds, array_map('intval', $decoded['resource_ids']));
+                    $resourceRequirements = array_merge($resourceRequirements, $decoded['resource_ids']);
                 }
             }
         }
 
-        return array_values(array_unique(array_filter($resourceIds)));
+        return $this->normalizeRequiredResources($resourceRequirements);
     }
 
-    private function normalizeRequiredResourceIds(array $requiredResources): array
+    private function normalizeRequiredResources(array $requiredResources): array
     {
-        $resourceIds = [];
-
-        foreach ($requiredResources as $resource) {
-            if (is_array($resource)) {
-                $resourceId = $resource['resource_id'] ?? $resource['id'] ?? null;
-            } else {
-                $resourceId = $resource;
-            }
-
-            if ((int) $resourceId > 0) {
-                $resourceIds[] = (int) $resourceId;
-            }
-        }
-
-        return array_values(array_unique($resourceIds));
+        return ResourceRequirementHelper::normalize($requiredResources);
     }
 
     private function adjacentScheduledEvents(int $scheduleId, int $eventId): array

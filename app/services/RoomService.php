@@ -109,7 +109,7 @@ class RoomService
         string $startsAt,
         string $endsAt,
         string $deliveryMode = 'physical',
-        array $requiredResourceIds = [],
+        array $requiredResources = [],
         bool $preferCovidCapacity = true
     ): array {
         return $this->rooms->availableBetween(
@@ -117,7 +117,7 @@ class RoomService
             $startsAt,
             $endsAt,
             $deliveryMode,
-            array_values(array_filter(array_map('intval', $requiredResourceIds))),
+            $this->normalizeRequiredResources($requiredResources),
             $preferCovidCapacity
         );
     }
@@ -138,7 +138,7 @@ class RoomService
         ];
     }
 
-    public function canHostEvent(int $roomId, string $startsAt, string $endsAt, int $studentsCount, array $requiredResourceIds = []): bool
+    public function canHostEvent(int $roomId, string $startsAt, string $endsAt, int $studentsCount, array $requiredResources = []): bool
     {
         $room = $this->rooms->find($roomId);
         if ($room === null || !$room->isAvailableBetween($startsAt, $endsAt)) {
@@ -149,18 +149,10 @@ class RoomService
             return false;
         }
 
-        $resourceIds = array_map(
-            static fn (RoomResource $resource): int => (int) $resource->get('resource_id'),
-            $room->resources()
+        return ResourceRequirementHelper::satisfies(
+            $room->resources(),
+            $this->normalizeRequiredResources($requiredResources)
         );
-
-        foreach ($requiredResourceIds as $resourceId) {
-            if (!in_array((int) $resourceId, $resourceIds, true)) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     public function blockRoom(array $data, ?int $userId = null): array
@@ -219,5 +211,10 @@ class RoomService
         }
 
         return $normalized;
+    }
+
+    private function normalizeRequiredResources(array $requiredResources): array
+    {
+        return ResourceRequirementHelper::normalize($requiredResources);
     }
 }

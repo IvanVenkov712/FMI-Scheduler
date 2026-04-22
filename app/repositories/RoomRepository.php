@@ -75,7 +75,7 @@ class RoomRepository
         string $startsAt,
         string $endsAt,
         string $deliveryMode = 'physical',
-        array $requiredResourceIds = [],
+        array $requiredResources = [],
         bool $preferCovidCapacity = true
     ): array {
         $capacityColumn = $preferCovidCapacity
@@ -116,16 +116,19 @@ class RoomRepository
                   AND room_unavailability.ends_at > :starts_at
             )';
 
-        foreach (array_values($requiredResourceIds) as $index => $resourceId) {
+        foreach (array_values(ResourceRequirementHelper::normalize($requiredResources)) as $index => $requirement) {
             $resourceKey = 'resource_' . $index;
+            $quantityKey = 'resource_quantity_' . $index;
             $sql .= '
                 AND EXISTS (
                     SELECT 1 FROM room_resources
                     WHERE room_resources.room_id = rooms.id
                       AND room_resources.resource_id = :' . $resourceKey . '
+                      AND room_resources.quantity >= :' . $quantityKey . '
                       AND room_resources.status = "available"
                 )';
-            $params[$resourceKey] = (int) $resourceId;
+            $params[$resourceKey] = (int) ($requirement['resource_id'] ?? 0);
+            $params[$quantityKey] = (int) ($requirement['quantity'] ?? 1);
         }
 
         $sql .= ' ORDER BY ' . $capacityColumn . ' ASC, rooms.code ASC';

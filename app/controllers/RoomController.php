@@ -99,30 +99,33 @@ class RoomController extends CrudController
         $resources = $this->resourceFilter();
 
         $params = ['capacity' => $capacity, 'starts_at' => $startsAt, 'ends_at' => $endsAt];
-        $resourceJoin = '';
-        $resourceHaving = '';
+        $resourceClauses = '';
 
         if ($resources !== []) {
-            $placeholders = [];
-            foreach ($resources as $index => $resourceId) {
-                $key = 'resource_' . $index;
-                $placeholders[] = ':' . $key;
-                $params[$key] = $resourceId;
-            }
+            foreach ($resources as $index => $resource) {
+                $resourceKey = 'resource_' . $index;
+                $quantityKey = 'resource_quantity_' . $index;
 
-            $resourceJoin = ' INNER JOIN room_resources rr ON rr.room_id = rooms.id
-                               AND rr.status = "available"
-                               AND rr.resource_id IN (' . implode(', ', $placeholders) . ')';
-            $resourceHaving = ' HAVING COUNT(DISTINCT rr.resource_id) >= :resource_count';
-            $params['resource_count'] = count($resources);
+                $resourceClauses .= '
+                   AND EXISTS (
+                       SELECT 1 FROM room_resources rr
+                       WHERE rr.room_id = rooms.id
+                         AND rr.status = "available"
+                         AND rr.resource_id = :' . $resourceKey . '
+                         AND rr.quantity >= :' . $quantityKey . '
+                   )';
+                $params[$resourceKey] = (int) ($resource['resource_id'] ?? 0);
+                $params[$quantityKey] = (int) ($resource['quantity'] ?? 1);
+            }
         }
 
         return $this->respond('rooms/index', [
             'rooms' => $this->database()->fetchAll(
                 'SELECT rooms.*
-                 FROM rooms' . $resourceJoin . '
+                 FROM rooms
                  WHERE rooms.status = "available"
                    AND rooms.capacity >= :capacity
+                   ' . $resourceClauses . '
                    AND NOT EXISTS (
                        SELECT 1 FROM events
                        WHERE events.room_id = rooms.id
@@ -130,7 +133,6 @@ class RoomController extends CrudController
                          AND events.ends_at > :starts_at
                          AND events.status <> "cancelled"
                    )
-                 GROUP BY rooms.id' . $resourceHaving . '
                  ORDER BY rooms.capacity ASC, rooms.code ASC',
                 $params
             ),
@@ -149,11 +151,18 @@ class RoomController extends CrudController
     private function resourceFilter(): array
     {
         $resources = $this->input('resources', []);
+        $quantities = $this->input('resource_quantities', []);
 
         if (is_string($resources)) {
             $resources = explode(',', $resources);
         }
 
-        return array_values(array_filter(array_map('intval', (array) $resources)));
+        if (is_string($quantities)) {
+            $quantities = explode(',', $quantities);
+        }
+
+        return ResourceRequirementHelper::normalize(
+            is_array($resources) ? $resources + ['quantities' => (array) $quantities] : []
+        );
     }
 }
