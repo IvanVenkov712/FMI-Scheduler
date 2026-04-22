@@ -91,16 +91,27 @@ class RouteService
 
         $selectedMovementType = $movementType !== '' ? $movementType : ($route->preferredMovementType() ?? 'walking');
         $duration = $route->durationFor($selectedMovementType) ?? $route->durationFor() ?? 0;
+        $steps = $this->resolvedSteps($route);
+        $segmentCount = (int) $route->get('resolved_segment_count', 1);
+        $isResolved = (bool) ($route->path()['resolved'] ?? false);
 
         return [
             'route' => $route,
-            'steps' => $this->routes->steps((int) $route->get('id')),
-            'explanation' => sprintf(
-                'Selected route "%s" because it has the lowest %s travel time of %d minutes.',
-                (string) $route->get('name'),
-                $this->movementLabel($selectedMovementType),
-                $duration
-            ),
+            'steps' => $steps,
+            'explanation' => $isResolved
+                ? sprintf(
+                    'Selected the best connected path "%s" with %d segments and lowest %s travel time of %d minutes.',
+                    (string) $route->get('name'),
+                    $segmentCount,
+                    $this->movementLabel($selectedMovementType),
+                    $duration
+                )
+                : sprintf(
+                    'Selected direct route "%s" because it has the lowest %s travel time of %d minutes.',
+                    (string) $route->get('name'),
+                    $this->movementLabel($selectedMovementType),
+                    $duration
+                ),
         ];
     }
 
@@ -217,5 +228,17 @@ class RouteService
             'public_transport' => 'public transport',
             default => $movementType,
         };
+    }
+
+    private function resolvedSteps(Route $route): array
+    {
+        $resolvedSteps = $route->get('resolved_steps');
+        if (is_array($resolvedSteps)) {
+            return $resolvedSteps;
+        }
+
+        $routeId = $route->get('id');
+
+        return $routeId === null ? [] : $this->routes->steps((int) $routeId);
     }
 }
