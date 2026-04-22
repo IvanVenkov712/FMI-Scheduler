@@ -17,6 +17,7 @@ class Event extends Model
         'starts_at',
         'ends_at',
         'delivery_mode',
+        'required_resources',
         'status',
     ];
 
@@ -58,6 +59,19 @@ class Event extends Model
             'SELECT * FROM schedule_events WHERE event_id = :event_id ORDER BY id ASC',
             ['event_id' => $this->primaryValue()]
         );
+    }
+
+    public function requiredResources(): array
+    {
+        $value = $this->get('required_resources');
+
+        if (!is_string($value) || $value === '') {
+            return [];
+        }
+
+        $decoded = json_decode($value, true);
+
+        return is_array($decoded) ? $decoded : [];
     }
 
     public function overlaps(string $startsAt, string $endsAt): bool

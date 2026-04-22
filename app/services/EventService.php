@@ -181,6 +181,7 @@ class EventService
             'starts_at' => 'required|date',
             'ends_at' => 'required|date',
             'delivery_mode' => 'required|in:physical,online,hybrid',
+            'required_resources' => 'nullable|array',
             'status' => 'required|in:draft,requested,scheduled,cancelled,completed',
             'room_id' => 'nullable|integer|min:1',
         ]);

@@ -63,6 +63,10 @@ class EventRepository
 
     public function create(array $data): Event
     {
+        if (isset($data['required_resources']) && is_array($data['required_resources'])) {
+            $data['required_resources'] = json_encode($data['required_resources'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+
         $event = new Event($data);
         $event->save();
 
@@ -75,6 +79,10 @@ class EventRepository
 
         if ($event === null) {
             return null;
+        }
+
+        if (isset($data['required_resources']) && is_array($data['required_resources'])) {
+            $data['required_resources'] = json_encode($data['required_resources'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
 
         $event->fill($data);

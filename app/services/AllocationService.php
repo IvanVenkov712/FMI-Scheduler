@@ -397,6 +397,13 @@ class AllocationService
 
     private function extractRequiredResourceIds(Event $event): array
     {
+        $eventResources = $event->requiredResources();
+        $resourceIds = $this->normalizeRequiredResourceIds($eventResources);
+
+        if ($resourceIds !== []) {
+            return $resourceIds;
+        }
+
         $sessionLinks = $event->scheduleLinks();
         $resourceIds = [];
 
@@ -410,6 +417,25 @@ class AllocationService
         }
 
         return array_values(array_unique(array_filter($resourceIds)));
+    }
+
+    private function normalizeRequiredResourceIds(array $requiredResources): array
+    {
+        $resourceIds = [];
+
+        foreach ($requiredResources as $resource) {
+            if (is_array($resource)) {
+                $resourceId = $resource['resource_id'] ?? $resource['id'] ?? null;
+            } else {
+                $resourceId = $resource;
+            }
+
+            if ((int) $resourceId > 0) {
+                $resourceIds[] = (int) $resourceId;
+            }
+        }
+
+        return array_values(array_unique($resourceIds));
     }
 
     private function adjacentScheduledEvents(int $scheduleId, int $eventId): array

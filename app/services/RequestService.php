@@ -123,6 +123,7 @@ class RequestService
             'starts_at' => $request->get('preferred_starts_at'),
             'ends_at' => $request->get('preferred_ends_at'),
             'delivery_mode' => $request->get('preferred_delivery_mode', 'physical'),
+            'required_resources' => $request->requiredResources(),
             'status' => 'requested',
         ];
 
