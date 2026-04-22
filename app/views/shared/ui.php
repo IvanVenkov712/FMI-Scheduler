@@ -80,6 +80,8 @@ function ui_page_start(string $title, array $options = []): void
     $active = (string) ($options['active'] ?? 'dashboard');
     $subtitle = (string) ($options['subtitle'] ?? '');
     $actions = is_array($options['actions'] ?? null) ? $options['actions'] : [];
+    $flashSuccess = SessionHelper::getFlash('success');
+    $flashError = SessionHelper::getFlash('error');
     $navItems = ui_nav_items();
     $user = ui_user();
     ?>
@@ -650,20 +652,12 @@ function ui_page_start(string $title, array $options = []): void
 
                 <?php if ($actions !== []): ?>
                     <div class="page-actions">
-                        <?php foreach ($actions as $action): ?>
-                            <?php if (!is_array($action)) {
-                                continue;
-                            } ?>
-                            <a
-                                class="button button-link <?= ui_escape((string) ($action['class'] ?? '')) ?>"
-                                href="<?= ui_escape((string) ($action['href'] ?? '#')) ?>"
-                            >
-                                <?= ui_escape((string) ($action['label'] ?? 'Open')) ?>
-                            </a>
-                        <?php endforeach; ?>
+                        <?php ui_render_actions($actions); ?>
                     </div>
                 <?php endif; ?>
             </header>
+            <?php ui_alert(is_string($flashSuccess) ? $flashSuccess : null, 'success'); ?>
+            <?php ui_alert(is_string($flashError) ? $flashError : null, 'danger'); ?>
     <?php
 }
 
@@ -713,6 +707,9 @@ function ui_render_actions(array $actions): void
                     <?php if ($method !== 'POST'): ?>
                         <input type="hidden" name="_method" value="<?= ui_escape($method) ?>">
                     <?php endif; ?>
+                    <?php foreach ((array) ($action['hidden'] ?? []) as $name => $value): ?>
+                        <input type="hidden" name="<?= ui_escape((string) $name) ?>" value="<?= ui_escape((string) $value) ?>">
+                    <?php endforeach; ?>
                     <button
                         type="submit"
                         class="<?= ui_escape($class) ?>"

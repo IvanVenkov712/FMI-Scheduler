@@ -137,6 +137,7 @@ $router->get('/users/profile', 'UserController@profile', $auth);
 $router->get('/users/manage', 'UserController@manage', $admin);
 $router->get('/users/{id}', 'UserController@details', $admin);
 $router->get('/users/{id}/edit', 'UserController@edit', $admin);
+$router->post('/users/{id}/reset-password', 'UserController@resetPassword', $admin);
 $router->post('/users/{id}', 'UserController@update', $admin);
 $router->put('/users/{id}', 'UserController@update', $admin);
 $router->delete('/users/{id}', 'UserController@delete', $admin);

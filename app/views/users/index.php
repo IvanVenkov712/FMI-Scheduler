@@ -23,6 +23,14 @@ $columns = [
 $columnActions = static fn (array $row): array => [
     ['href' => '/users/' . ($row['id'] ?? ''), 'label' => 'Profile'],
     ['href' => '/users/' . ($row['id'] ?? '') . '/edit', 'label' => 'Edit', 'class' => 'button-muted'],
+    [
+        'href' => '/users/' . ($row['id'] ?? '') . '/reset-password',
+        'label' => 'Reset Password',
+        'method' => 'POST',
+        'class' => 'button-muted',
+        'confirm' => 'Generate a new temporary password for this user?',
+        'hidden' => ['return_to' => '/users'],
+    ],
     ['href' => '/users/' . ($row['id'] ?? ''), 'label' => 'Delete', 'method' => 'DELETE', 'class' => 'button-danger', 'confirm' => 'Delete this user?'],
 ];
 

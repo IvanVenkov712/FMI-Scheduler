@@ -9,6 +9,7 @@ $activeNav = isset($activeNav) ? (string) $activeNav : 'dashboard';
 $formAction = isset($formAction) ? (string) $formAction : '#';
 $formMethod = strtoupper((string) ($formMethod ?? 'POST'));
 $submitLabel = isset($submitLabel) ? (string) $submitLabel : 'Save';
+$actions = isset($actions) && is_array($actions) ? $actions : [];
 $fields = isset($fields) && is_array($fields) ? $fields : [];
 $errors = isset($errors) && is_array($errors) ? $errors : [];
 $entity = isset($entity) && is_array($entity) ? $entity : [];
@@ -55,6 +56,7 @@ $normalizeInputValue = static function (string $type, mixed $value): string {
 ui_page_start($pageTitle, [
     'active' => $activeNav,
     'subtitle' => $pageSubtitle,
+    'actions' => $actions,
 ]);
 ?>
 

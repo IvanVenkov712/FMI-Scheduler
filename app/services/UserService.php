@@ -90,6 +90,39 @@ class UserService
         return $deleted;
     }
 
+    public function resetPassword(int|string $id, ?int $userId = null): array
+    {
+        $user = $this->users->find($id);
+        if ($user === null) {
+            return ['success' => false, 'errors' => ['user' => ['User not found.']]];
+        }
+
+        $temporaryPassword = $this->generateTemporaryPassword();
+        $updated = $this->users->update($id, [
+            'password_hash' => password_hash($temporaryPassword, PASSWORD_DEFAULT),
+            'remember_token' => null,
+        ]);
+
+        if ($updated === null) {
+            return ['success' => false, 'errors' => ['user' => ['User could not be updated.']]];
+        }
+
+        $this->auditLogs->record(
+            'reset_password',
+            'user',
+            $id,
+            ['password_reset' => false],
+            ['password_reset' => true],
+            $userId
+        );
+
+        return [
+            'success' => true,
+            'user' => $updated,
+            'temporary_password' => $temporaryPassword,
+        ];
+    }
+
     private function normalize(array $data): array
     {
         $data = $this->validation->normalizeIntegers($data, ['role_id']);
@@ -123,5 +156,18 @@ class UserService
         }
 
         return $this->validation->validate($data, $rules);
+    }
+
+    private function generateTemporaryPassword(int $length = 12): string
+    {
+        $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+        $maxIndex = strlen($alphabet) - 1;
+        $password = '';
+
+        for ($i = 0; $i < $length; $i++) {
+            $password .= $alphabet[random_int(0, $maxIndex)];
+        }
+
+        return $password;
     }
 }

@@ -17,6 +17,16 @@ $summary = [
     'Faculty Number' => ui_escape((string) ($user['faculty_number'] ?? '-')),
     'Status' => '<span class="' . ui_escape(ui_status_class($user['status'] ?? '')) . '">' . ui_escape((string) ($user['status'] ?? '-')) . '</span>',
 ];
-$actions = isset($user['id']) ? [['href' => '/users/' . ($user['id'] ?? '') . '/edit', 'label' => 'Edit User']] : [];
+$actions = isset($user['id']) ? [
+    ['href' => '/users/' . ($user['id'] ?? '') . '/edit', 'label' => 'Edit User'],
+    [
+        'href' => '/users/' . ($user['id'] ?? '') . '/reset-password',
+        'label' => 'Reset Password',
+        'method' => 'POST',
+        'class' => 'button-muted',
+        'confirm' => 'Generate a new temporary password for this user?',
+        'hidden' => ['return_to' => '/users/' . ($user['id'] ?? '')],
+    ],
+] : [];
 
 require dirname(__DIR__) . DIRECTORY_SEPARATOR . 'shared' . DIRECTORY_SEPARATOR . 'crud-details.php';

@@ -83,6 +83,40 @@ class UserController extends CrudController
         return $this->deletedResponse();
     }
 
+    public function resetPassword(int|string $id): mixed
+    {
+        $result = $this->usersService->resetPassword($id, $this->currentUserId());
+
+        if (!($result['success'] ?? false)) {
+            if ($this->wantsJson()) {
+                http_response_code(404);
+                return ['errors' => $result['errors'] ?? ['user' => ['User not found.']]];
+            }
+
+            SessionHelper::flash('error', 'Password reset failed.');
+            return $this->redirect($this->returnTo($id));
+        }
+
+        /** @var User|null $user */
+        $user = $result['user'] ?? null;
+        $temporaryPassword = (string) ($result['temporary_password'] ?? '');
+        $name = $user instanceof User ? trim($user->fullName()) : '';
+        $label = $name !== '' ? $name : (string) ($user?->get('username') ?? 'user');
+        $message = sprintf('Temporary password for %s: %s', $label, $temporaryPassword);
+
+        if ($this->wantsJson()) {
+            return [
+                'message' => 'Password reset successfully.',
+                'temporary_password' => $temporaryPassword,
+                'user' => $user?->publicData(),
+            ];
+        }
+
+        SessionHelper::flash('success', $message);
+
+        return $this->redirect($this->returnTo($id));
+    }
+
     public function details(int|string $id): mixed
     {
         return $this->respond('users/profile', ['user' => $this->publicUser($this->findOrFail($id))]);
@@ -115,5 +149,16 @@ class UserController extends CrudController
         unset($user['password_hash'], $user['remember_token']);
 
         return $user;
+    }
+
+    private function returnTo(int|string $id): string
+    {
+        $returnTo = (string) $this->input('return_to', '/users/' . $id . '/edit');
+
+        if ($returnTo === '' || !str_starts_with($returnTo, '/')) {
+            return '/users/' . $id . '/edit';
+        }
+
+        return $returnTo;
     }
 }
