@@ -18,6 +18,8 @@ class ImportService
         private readonly CourseService $courses = new CourseService(),
         private readonly StudentGroupService $studentGroups = new StudentGroupService(),
         private readonly AllocationParameterService $allocationParameters = new AllocationParameterService(),
+        private readonly RequestService $requests = new RequestService(),
+        private readonly CovidConstraintService $movementConstraints = new CovidConstraintService(),
         private readonly UserService $users = new UserService(),
         private readonly UserRepository $userRepository = new UserRepository(),
         private readonly ScheduleRepository $scheduleRepository = new ScheduleRepository(),
@@ -76,6 +78,10 @@ class ImportService
                 'student_groups' => $this->importStudentGroup($row, $userId),
                 'students' => $this->importStudent($row, $userId),
                 'allocation_parameters' => $this->importAllocationParameter($row, $userId),
+                'exam_requests' => $this->importExamRequest($row, $userId),
+                'resource_requests' => $this->importResourceRequest($row, $userId),
+                'online_sessions' => $this->importOnlineSession($row, $userId),
+                'movement_constraints' => $this->importMovementConstraint($row, $userId),
                 default => throw new InvalidArgumentException('Unsupported import entity.'),
             };
 
@@ -146,8 +152,46 @@ class ImportService
             'student_groups' => 'student_group',
             'students' => 'student',
             'allocation_parameters' => 'allocation_parameter',
+            'exam_requests' => 'exam_request',
+            'resource_requests' => 'resource_request',
+            'online_sessions' => 'online_session',
+            'movement_constraints' => 'movement_constraint',
             default => 'row',
         };
+    }
+
+    private function importExamRequest(array $row, ?int $userId): array
+    {
+        $row = $this->decodeJsonFields($row, ['required_resources']);
+
+        $requestId = isset($row['id']) ? (int) $row['id'] : 0;
+        if ($requestId > 0) {
+            return $this->requests->update($requestId, $row, $userId);
+        }
+
+        return $this->requests->create($row, $userId);
+    }
+
+    private function importResourceRequest(array $row, ?int $userId): array
+    {
+        return $this->resources->importResourceRequest($row, $userId);
+    }
+
+    private function importOnlineSession(array $row, ?int $userId): array
+    {
+        return $this->events->importOnlineSession($row, $userId);
+    }
+
+    private function importMovementConstraint(array $row, ?int $userId): array
+    {
+        $row = $this->decodeJsonFields($row, ['rule_data']);
+
+        $constraintId = isset($row['id']) ? (int) $row['id'] : 0;
+        if ($constraintId > 0) {
+            return $this->movementConstraints->update($constraintId, $row, $userId);
+        }
+
+        return $this->movementConstraints->create($row, $userId);
     }
 
     private function importSchedule(array $row, ?int $userId): array
@@ -282,6 +326,22 @@ class ImportService
         }
 
         return array_values(array_filter(array_map('strval', (array) $value)));
+    }
+
+    private function decodeJsonFields(array $row, array $fields): array
+    {
+        foreach ($fields as $field) {
+            if (!isset($row[$field]) || !is_string($row[$field]) || trim($row[$field]) === '') {
+                continue;
+            }
+
+            $decoded = json_decode($row[$field], true);
+            if (is_array($decoded)) {
+                $row[$field] = $decoded;
+            }
+        }
+
+        return $row;
     }
 
     private function findExistingSchedule(array $row): ?Schedule

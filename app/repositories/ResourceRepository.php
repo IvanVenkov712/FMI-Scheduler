@@ -128,6 +128,14 @@ class ResourceRepository
         return $this->db()->fetchAll($sql, $params);
     }
 
+    public function findResourceRequest(int|string $id): ?array
+    {
+        return $this->db()->fetch(
+            'SELECT * FROM resource_requests WHERE id = :id LIMIT 1',
+            ['id' => $id]
+        );
+    }
+
     public function createResourceRequest(array $data): string
     {
         return $this->db()->insert(
@@ -144,6 +152,40 @@ class ResourceRepository
                 'reviewed_by' => $data['reviewed_by'] ?? null,
                 'reviewed_at' => $data['reviewed_at'] ?? null,
             ]
+        );
+    }
+
+    public function updateResourceRequest(int|string $id, array $data): int
+    {
+        $allowed = [
+            'requested_by',
+            'event_id',
+            'room_id',
+            'resource_id',
+            'quantity',
+            'status',
+            'notes',
+            'reviewed_by',
+            'reviewed_at',
+        ];
+
+        $payload = array_intersect_key($data, array_flip($allowed));
+        if ($payload === []) {
+            return 0;
+        }
+
+        $assignments = [];
+        foreach (array_keys($payload) as $column) {
+            $assignments[] = "{$column} = :{$column}";
+        }
+
+        $payload['id'] = $id;
+
+        return $this->db()->execute(
+            'UPDATE resource_requests
+             SET ' . implode(', ', $assignments) . '
+             WHERE id = :id',
+            $payload
         );
     }
 

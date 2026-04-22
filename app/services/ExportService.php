@@ -18,6 +18,7 @@ class ExportService
         private readonly CourseRepository $courses = new CourseRepository(),
         private readonly StudentGroupRepository $studentGroups = new StudentGroupRepository(),
         private readonly AllocationParameterRepository $allocationParameters = new AllocationParameterRepository(),
+        private readonly RequestRepository $requests = new RequestRepository(),
         private readonly UserRepository $users = new UserRepository(),
         private readonly ?Database $database = null
     ) {
@@ -116,8 +117,52 @@ class ExportService
             'student_groups' => $this->mapRows($entityId === null ? $this->studentGroups->exportRows() : $this->filterById($this->studentGroups->exportRows(), $entityId)),
             'students' => $this->mapRows($entityId === null ? $this->users->allStudents() : $this->filterById($this->users->allStudents(), $entityId)),
             'allocation_parameters' => $this->mapRows($entityId === null ? $this->allocationParameters->exportRows() : $this->filterById($this->allocationParameters->exportRows(), $entityId)),
+            'exam_requests' => $this->examRequestRows($entityId),
+            'resource_requests' => $this->resourceRequestRows($entityId),
+            'online_sessions' => $this->mapModels($entityId === null ? OnlineSession::all('event_id', 'ASC') : array_filter([$this->findOnlineSessionById($entityId)])),
+            'movement_constraints' => $this->movementConstraintRows($entityId),
             default => throw new InvalidArgumentException('Unsupported export entity.'),
         };
+    }
+
+    private function examRequestRows(?int $entityId): array
+    {
+        $requests = $entityId === null ? $this->requests->all() : array_filter([$this->requests->find($entityId)]);
+
+        return array_values(array_map(static function (ExamRequest $request): array {
+            $row = SensitiveData::strip($request->toArray());
+            $row['required_resources'] = $request->requiredResources();
+
+            return $row;
+        }, array_filter($requests)));
+    }
+
+    private function resourceRequestRows(?int $entityId): array
+    {
+        $rows = $entityId === null
+            ? $this->resources->resourceRequests()
+            : array_filter([$this->resources->findResourceRequest($entityId)]);
+
+        return $this->mapRows(array_values($rows));
+    }
+
+    private function movementConstraintRows(?int $entityId): array
+    {
+        $constraints = $entityId === null
+            ? MovementConstraint::all('id', 'ASC')
+            : array_filter([MovementConstraint::find($entityId)]);
+
+        return array_values(array_map(static function (MovementConstraint $constraint): array {
+            $row = SensitiveData::strip($constraint->toArray());
+            $row['rule_data'] = $constraint->ruleData();
+
+            return $row;
+        }, array_filter($constraints)));
+    }
+
+    private function findOnlineSessionById(int $entityId): ?OnlineSession
+    {
+        return OnlineSession::find($entityId);
     }
 
     private function scheduleRows(?int $entityId): array

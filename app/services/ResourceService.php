@@ -99,7 +99,7 @@ class ResourceService
         $result = $this->validation->validate($data, [
             'resource_id' => 'required|integer|min:1',
             'quantity' => 'required|integer|min:1',
-            'status' => 'required|in:pending,approved,rejected,fulfilled',
+            'status' => 'required|in:pending,approved,rejected,fulfilled,cancelled',
             'notes' => 'nullable|string',
         ]);
 
@@ -111,6 +111,48 @@ class ResourceService
         $this->auditLogs->record('create', 'resource_request', $id, null, $data, $userId);
 
         return ['success' => true, 'resource_request_id' => $id];
+    }
+
+    public function importResourceRequest(array $data, ?int $userId = null): array
+    {
+        $data['status'] = $data['status'] ?? 'pending';
+        $data['requested_by'] = $data['requested_by'] ?? $userId;
+        $data = $this->validation->normalizeIntegers($data, ['requested_by', 'event_id', 'room_id', 'resource_id', 'quantity', 'reviewed_by']);
+
+        $result = $this->validation->validate($data, [
+            'resource_id' => 'required|integer|min:1',
+            'quantity' => 'required|integer|min:1',
+            'status' => 'required|in:pending,approved,rejected,fulfilled,cancelled',
+            'notes' => 'nullable|string',
+            'reviewed_at' => 'nullable|date',
+        ]);
+
+        if (!$result['valid']) {
+            return ['success' => false, 'errors' => $result['errors']];
+        }
+
+        $requestId = isset($data['id']) && (int) $data['id'] > 0 ? (int) $data['id'] : null;
+        if ($requestId === null) {
+            $id = $this->resources->createResourceRequest($data);
+            $created = $this->resources->findResourceRequest($id);
+            $this->auditLogs->record('create', 'resource_request', $id, null, $created, $userId);
+
+            return ['success' => true, 'resource_request' => $created];
+        }
+
+        $existing = $this->resources->findResourceRequest($requestId);
+        if ($existing === null) {
+            return ['success' => false, 'errors' => ['resource_request' => ['Resource request not found.']]];
+        }
+
+        $payload = $data;
+        unset($payload['id'], $payload['created_at'], $payload['updated_at']);
+
+        $this->resources->updateResourceRequest($requestId, $payload);
+        $updated = $this->resources->findResourceRequest($requestId);
+        $this->auditLogs->record('update', 'resource_request', $requestId, $existing, $updated, $userId);
+
+        return ['success' => true, 'resource_request' => $updated];
     }
 
     public function reviewRequest(int|string $id, string $status, ?int $reviewedBy = null): bool

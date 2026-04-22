@@ -27,30 +27,15 @@ class CovidConstraintService
         return array_map(static fn (array $row): MovementConstraint => new MovementConstraint($row), $rows);
     }
 
+    public function find(int|string $id): ?MovementConstraint
+    {
+        return MovementConstraint::find($id);
+    }
+
     public function create(array $data, ?int $userId = null): array
     {
-        $data = $this->validation->normalizeIntegers($data, ['building_id', 'floor_id', 'room_id', 'route_id', 'created_by']);
-        $data = $this->validation->normalizeBooleans($data, ['is_active']);
-        $data['created_by'] = $data['created_by'] ?? $userId;
-        $data['is_active'] = $data['is_active'] ?? 1;
-
-        $result = $this->validation->validate($data, [
-            'name' => 'required|string|max:160',
-            'type' => 'required|in:covid,capacity,route,time_buffer,accessibility,other',
-            'scope' => 'required|in:global,building,floor,room,route',
-            'rule_data' => 'required|array',
-            'starts_at' => 'nullable|date',
-            'ends_at' => 'nullable|date',
-            'is_active' => 'nullable|boolean',
-        ]);
-
-        $errors = $result['errors'];
-        if (!empty($data['starts_at']) && !empty($data['ends_at'])) {
-            $errors = array_merge_recursive(
-                $errors,
-                $this->validation->validateDateRange((string) $data['starts_at'], (string) $data['ends_at'])
-            );
-        }
+        $data = $this->normalizeConstraintData($data, $userId);
+        $errors = $this->validateConstraintData($data);
 
         if ($errors !== []) {
             return ['success' => false, 'errors' => $errors];
@@ -83,6 +68,41 @@ class CovidConstraintService
 
         $constraint = MovementConstraint::find((int) $id);
         $this->auditLogs->record('create', 'movement_constraint', $id, null, $constraint?->toArray(), $userId);
+
+        return ['success' => true, 'constraint' => $constraint];
+    }
+
+    public function update(int|string $id, array $data, ?int $userId = null): array
+    {
+        $constraint = $this->find($id);
+        if ($constraint === null) {
+            return ['success' => false, 'errors' => ['constraint' => ['Constraint not found.']]];
+        }
+
+        $payload = $this->normalizeConstraintData($data, $userId) + $constraint->toArray();
+        $errors = $this->validateConstraintData($payload);
+        if ($errors !== []) {
+            return ['success' => false, 'errors' => $errors];
+        }
+
+        $old = $constraint->toArray();
+        $constraint->fill([
+            'name' => $payload['name'],
+            'type' => $payload['type'],
+            'scope' => $payload['scope'],
+            'building_id' => $payload['building_id'] ?? null,
+            'floor_id' => $payload['floor_id'] ?? null,
+            'room_id' => $payload['room_id'] ?? null,
+            'route_id' => $payload['route_id'] ?? null,
+            'rule_data' => json_encode($payload['rule_data'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            'description' => $payload['description'] ?? null,
+            'starts_at' => $payload['starts_at'] ?? null,
+            'ends_at' => $payload['ends_at'] ?? null,
+            'is_active' => $payload['is_active'] ?? 1,
+            'created_by' => $payload['created_by'] ?? null,
+        ]);
+        $constraint->save();
+        $this->auditLogs->record('update', 'movement_constraint', $id, $old, $constraint->toArray(), $userId);
 
         return ['success' => true, 'constraint' => $constraint];
     }
@@ -163,6 +183,39 @@ class CovidConstraintService
                 || (int) $constraint->get('building_id') === (int) $route->get('to_building_id'),
             default => false,
         };
+    }
+
+    private function normalizeConstraintData(array $data, ?int $userId): array
+    {
+        $data = $this->validation->normalizeIntegers($data, ['building_id', 'floor_id', 'room_id', 'route_id', 'created_by']);
+        $data = $this->validation->normalizeBooleans($data, ['is_active']);
+        $data['created_by'] = $data['created_by'] ?? $userId;
+        $data['is_active'] = $data['is_active'] ?? 1;
+
+        return $data;
+    }
+
+    private function validateConstraintData(array $data): array
+    {
+        $result = $this->validation->validate($data, [
+            'name' => 'required|string|max:160',
+            'type' => 'required|in:covid,capacity,route,time_buffer,accessibility,other',
+            'scope' => 'required|in:global,building,floor,room,route',
+            'rule_data' => 'required|array',
+            'starts_at' => 'nullable|date',
+            'ends_at' => 'nullable|date',
+            'is_active' => 'nullable|boolean',
+        ]);
+
+        $errors = $result['errors'];
+        if (!empty($data['starts_at']) && !empty($data['ends_at'])) {
+            $errors = array_merge_recursive(
+                $errors,
+                $this->validation->validateDateRange((string) $data['starts_at'], (string) $data['ends_at'])
+            );
+        }
+
+        return $errors;
     }
 
     private function db(): Database

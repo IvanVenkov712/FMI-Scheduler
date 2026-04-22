@@ -176,6 +176,39 @@ class EventService
         );
     }
 
+    public function importOnlineSession(array $data, ?int $userId = null): array
+    {
+        $data = $this->validation->normalizeIntegers($data, ['event_id', 'host_user_id']);
+        $result = $this->validation->validate($data, [
+            'event_id' => 'required|integer|min:1',
+        ]);
+
+        $errors = $result['errors'];
+        $errors = array_merge_recursive($errors, $this->validateRequestOnlineSession($data));
+        if ($errors !== []) {
+            return ['success' => false, 'errors' => $errors];
+        }
+
+        $eventId = (int) ($data['event_id'] ?? 0);
+        $event = $this->events->find($eventId);
+        if ($event === null) {
+            return ['success' => false, 'errors' => ['event_id' => ['Event not found.']]];
+        }
+
+        $existing = $this->events->findOnlineSession($eventId);
+        $session = $this->events->upsertOnlineSession($eventId, $data);
+        $this->auditLogs->record(
+            $existing === null ? 'create' : 'update',
+            'online_session',
+            $session->get('id'),
+            $existing?->toArray(),
+            $session->toArray(),
+            $userId
+        );
+
+        return ['success' => true, 'online_session' => $session];
+    }
+
     private function validateEventData(array $data, ?int $ignoreEventId = null): array
     {
         $result = $this->validation->validate($data, [
