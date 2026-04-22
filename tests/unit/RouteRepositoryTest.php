@@ -94,6 +94,112 @@ final class RouteRepositoryTest extends TestCase
         $this->assertSame(2, $best->get('from_room_id'));
         $this->assertSame(1, $best->get('to_room_id'));
     }
+
+    public function testBetweenBuildingsFindsComposedPathThroughIntermediateBuilding(): void
+    {
+        $database = new FakeRouteRepositoryDatabase(
+            routeRows: [
+                [
+                    'id' => 31,
+                    'from_building_id' => 1,
+                    'to_building_id' => 2,
+                    'name' => 'Campus shuttle A-B',
+                    'distance_meters' => 600,
+                    'walking_duration_minutes' => 8,
+                    'car_duration_minutes' => 2,
+                    'public_transport_duration_minutes' => 4,
+                    'is_accessible' => 1,
+                    'status' => 'active',
+                ],
+                [
+                    'id' => 32,
+                    'from_building_id' => 2,
+                    'to_building_id' => 3,
+                    'name' => 'Campus shuttle B-C',
+                    'distance_meters' => 900,
+                    'walking_duration_minutes' => 12,
+                    'car_duration_minutes' => 3,
+                    'public_transport_duration_minutes' => 5,
+                    'is_accessible' => 1,
+                    'status' => 'active',
+                ],
+            ],
+            routeStepRows: [
+                31 => [[
+                    'step_order' => 1,
+                    'instruction' => 'Move from building A to building B.',
+                    'point_type' => 'building',
+                    'building_id' => 2,
+                    'duration_minutes' => 4,
+                ]],
+                32 => [[
+                    'step_order' => 1,
+                    'instruction' => 'Move from building B to building C.',
+                    'point_type' => 'building',
+                    'building_id' => 3,
+                    'duration_minutes' => 5,
+                ]],
+            ],
+            roomConnectionRows: [],
+            roomSummaries: [],
+            buildingSummaries: [
+                1 => ['id' => 1, 'code' => 'A', 'name' => 'Building A'],
+                2 => ['id' => 2, 'code' => 'B', 'name' => 'Building B'],
+                3 => ['id' => 3, 'code' => 'C', 'name' => 'Building C'],
+            ]
+        );
+
+        $repository = new RouteRepository($database);
+        $routes = $repository->betweenBuildings(1, 3, 'public_transport');
+
+        $this->assertNotSame([], $routes);
+        $best = $routes[0];
+        $this->assertSame(9, $best->durationFor('public_transport'));
+        $this->assertSame(2, $best->path()['segment_count']);
+        $this->assertCount(2, $best->get('resolved_steps'));
+    }
+
+    public function testBetweenBuildingsUsesReverseDirectionForBuildingRoute(): void
+    {
+        $database = new FakeRouteRepositoryDatabase(
+            routeRows: [[
+                'id' => 44,
+                'from_building_id' => 1,
+                'to_building_id' => 2,
+                'name' => 'Bridge A-B',
+                'distance_meters' => 250,
+                'walking_duration_minutes' => 5,
+                'car_duration_minutes' => null,
+                'public_transport_duration_minutes' => null,
+                'is_accessible' => 1,
+                'status' => 'active',
+            ]],
+            routeStepRows: [
+                44 => [[
+                    'step_order' => 1,
+                    'instruction' => 'Cross the bridge from A to B.',
+                    'point_type' => 'building',
+                    'building_id' => 2,
+                    'duration_minutes' => 5,
+                ]],
+            ],
+            roomConnectionRows: [],
+            roomSummaries: [],
+            buildingSummaries: [
+                1 => ['id' => 1, 'code' => 'A', 'name' => 'Building A'],
+                2 => ['id' => 2, 'code' => 'B', 'name' => 'Building B'],
+            ]
+        );
+
+        $repository = new RouteRepository($database);
+        $routes = $repository->betweenBuildings(2, 1, 'walking');
+
+        $this->assertNotSame([], $routes);
+        $best = $routes[0];
+        $this->assertSame(5, $best->durationFor('walking'));
+        $this->assertSame(2, $best->get('from_building_id'));
+        $this->assertSame(1, $best->get('to_building_id'));
+    }
 }
 
 final class FakeRouteRepositoryDatabase extends Database
@@ -102,7 +208,8 @@ final class FakeRouteRepositoryDatabase extends Database
         private readonly array $routeRows,
         private readonly array $routeStepRows,
         private readonly array $roomConnectionRows,
-        private readonly array $roomSummaries
+        private readonly array $roomSummaries,
+        private readonly array $buildingSummaries = []
     ) {
     }
 
@@ -129,6 +236,10 @@ final class FakeRouteRepositoryDatabase extends Database
             return $this->roomSummaries[(int) ($params['id'] ?? 0)] ?? null;
         }
 
+        if (str_contains($sql, 'FROM buildings')) {
+            return $this->buildingSummaries[(int) ($params['id'] ?? 0)] ?? null;
+        }
+
         return null;
     }
 
@@ -141,6 +252,14 @@ final class FakeRouteRepositoryDatabase extends Database
                 $rows,
                 static fn (array $row): bool => (int) ($row['from_room_id'] ?? 0) === (int) $params['from_room_id']
                     && (int) ($row['to_room_id'] ?? 0) === (int) $params['to_room_id']
+            ));
+        }
+
+        if (isset($params['from_building_id'], $params['to_building_id'])) {
+            $rows = array_values(array_filter(
+                $rows,
+                static fn (array $row): bool => (int) ($row['from_building_id'] ?? 0) === (int) $params['from_building_id']
+                    && (int) ($row['to_building_id'] ?? 0) === (int) $params['to_building_id']
             ));
         }
 

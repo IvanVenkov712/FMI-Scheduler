@@ -105,26 +105,31 @@ class RouteRepository
 
     public function betweenBuildings(int $fromBuildingId, int $toBuildingId, string $movementType = ''): array
     {
-        $sql = 'SELECT * FROM routes
-                WHERE from_building_id = :from_building_id
-                  AND to_building_id = :to_building_id
-                  AND status = "active"';
-        $params = [
-            'from_building_id' => $fromBuildingId,
-            'to_building_id' => $toBuildingId,
-        ];
-
-        $durationColumn = $this->durationColumn($movementType);
-
-        if ($durationColumn !== null) {
-            $sql .= sprintf(' AND %s IS NOT NULL', $durationColumn);
+        if ($fromBuildingId <= 0 || $toBuildingId <= 0) {
+            return [];
         }
 
-        $sql .= ' ORDER BY ' . $this->orderByDuration($durationColumn) . ', id ASC';
+        $candidates = [];
+        $bestPath = $this->shortestBuildingPath($fromBuildingId, $toBuildingId, $movementType);
 
-        $rows = $this->db()->fetchAll($sql, $params);
+        if ($bestPath !== null) {
+            $candidates[$this->candidateKey($bestPath)] = $bestPath;
+        }
 
-        return array_map(static fn (array $row): Route => new Route($row), $rows);
+        foreach ($this->directBuildingRoutes($fromBuildingId, $toBuildingId, $movementType) as $route) {
+            $key = $this->candidateKey($route);
+            if (!isset($candidates[$key])) {
+                $candidates[$key] = $route;
+            }
+        }
+
+        $result = array_values($candidates);
+        usort(
+            $result,
+            fn (Route $left, Route $right): int => $this->compareRoutes($left, $right, $movementType)
+        );
+
+        return $result;
     }
 
     public function directRoomRoutes(int $fromRoomId, int $toRoomId, bool $accessibleOnly = false, string $movementType = ''): array
@@ -279,6 +284,21 @@ class RouteRepository
         return $graph;
     }
 
+    private function buildingGraph(string $movementType): array
+    {
+        $graph = [];
+
+        foreach ($this->buildingRouteEdges($movementType) as $edge) {
+            $graph[(int) $edge['from_building_id']][] = $edge;
+        }
+
+        foreach ($this->interBuildingRoomEdges($movementType) as $edge) {
+            $graph[(int) $edge['from_building_id']][] = $edge;
+        }
+
+        return $graph;
+    }
+
     private function routeEdges(bool $accessibleOnly, string $movementType): array
     {
         $sql = 'SELECT *
@@ -339,6 +359,139 @@ class RouteRepository
                 'duration_minutes' => $duration,
                 'distance_meters' => (int) ($row['distance_meters'] ?? 0),
                 'is_accessible' => (int) ($row['is_accessible'] ?? 1),
+                'movement_type' => $movementType !== '' ? $movementType : ($route->preferredMovementType() ?? 'walking'),
+                'name' => (string) $reverse['name'],
+                'route_attributes' => $reverse,
+                'steps' => $this->reverseSteps($forwardSteps),
+            ];
+        }
+
+        return $edges;
+    }
+
+    private function buildingRouteEdges(string $movementType): array
+    {
+        $sql = 'SELECT *
+                FROM routes
+                WHERE status = "active"
+                  AND from_building_id IS NOT NULL
+                  AND to_building_id IS NOT NULL';
+        $params = [];
+
+        $durationColumn = $this->durationColumn($movementType);
+        if ($durationColumn !== null) {
+            $sql .= sprintf(' AND %s IS NOT NULL', $durationColumn);
+        }
+
+        $sql .= ' ORDER BY id ASC';
+
+        $rows = $this->db()->fetchAll($sql, $params);
+        $edges = [];
+
+        foreach ($rows as $row) {
+            $route = new Route($row);
+            $duration = $route->durationFor($movementType);
+
+            if ($duration === null) {
+                continue;
+            }
+
+            $forwardSteps = $this->steps((int) ($row['id'] ?? 0));
+            $edges[] = [
+                'source' => 'building_route',
+                'route_id' => (int) ($row['id'] ?? 0),
+                'from_building_id' => (int) ($row['from_building_id'] ?? 0),
+                'to_building_id' => (int) ($row['to_building_id'] ?? 0),
+                'duration_minutes' => $duration,
+                'distance_meters' => (int) ($row['distance_meters'] ?? 0),
+                'movement_type' => $movementType !== '' ? $movementType : ($route->preferredMovementType() ?? 'walking'),
+                'name' => (string) ($row['name'] ?? ''),
+                'route_attributes' => $row,
+                'steps' => $forwardSteps,
+            ];
+
+            $reverse = $row;
+            $reverse['from_building_id'] = $row['to_building_id'];
+            $reverse['to_building_id'] = $row['from_building_id'];
+            $reverse['name'] = sprintf('%s (reverse)', (string) ($row['name'] ?? 'Route'));
+
+            $edges[] = [
+                'source' => 'building_route',
+                'route_id' => (int) ($row['id'] ?? 0),
+                'from_building_id' => (int) ($row['to_building_id'] ?? 0),
+                'to_building_id' => (int) ($row['from_building_id'] ?? 0),
+                'duration_minutes' => $duration,
+                'distance_meters' => (int) ($row['distance_meters'] ?? 0),
+                'movement_type' => $movementType !== '' ? $movementType : ($route->preferredMovementType() ?? 'walking'),
+                'name' => (string) $reverse['name'],
+                'route_attributes' => $reverse,
+                'steps' => $this->reverseSteps($forwardSteps),
+            ];
+        }
+
+        return $edges;
+    }
+
+    private function interBuildingRoomEdges(string $movementType): array
+    {
+        $sql = 'SELECT *
+                FROM routes
+                WHERE status = "active"
+                  AND from_room_id IS NOT NULL
+                  AND to_room_id IS NOT NULL';
+        $params = [];
+
+        $durationColumn = $this->durationColumn($movementType);
+        if ($durationColumn !== null) {
+            $sql .= sprintf(' AND %s IS NOT NULL', $durationColumn);
+        }
+
+        $sql .= ' ORDER BY id ASC';
+
+        $rows = $this->db()->fetchAll($sql, $params);
+        $edges = [];
+
+        foreach ($rows as $row) {
+            $fromRoomId = (int) ($row['from_room_id'] ?? 0);
+            $toRoomId = (int) ($row['to_room_id'] ?? 0);
+            $fromBuildingId = $this->roomBuildingId($fromRoomId);
+            $toBuildingId = $this->roomBuildingId($toRoomId);
+
+            if ($fromBuildingId <= 0 || $toBuildingId <= 0 || $fromBuildingId === $toBuildingId) {
+                continue;
+            }
+
+            $route = new Route($row);
+            $duration = $route->durationFor($movementType);
+
+            if ($duration === null) {
+                continue;
+            }
+
+            $forwardSteps = $this->steps((int) ($row['id'] ?? 0));
+            $edges[] = [
+                'source' => 'room_route',
+                'route_id' => (int) ($row['id'] ?? 0),
+                'from_building_id' => $fromBuildingId,
+                'to_building_id' => $toBuildingId,
+                'duration_minutes' => $duration,
+                'distance_meters' => (int) ($row['distance_meters'] ?? 0),
+                'movement_type' => $movementType !== '' ? $movementType : ($route->preferredMovementType() ?? 'walking'),
+                'name' => (string) ($row['name'] ?? ''),
+                'route_attributes' => $row,
+                'steps' => $forwardSteps,
+            ];
+
+            $reverse = $row;
+            $reverse['name'] = sprintf('%s (reverse)', (string) ($row['name'] ?? 'Route'));
+
+            $edges[] = [
+                'source' => 'room_route',
+                'route_id' => (int) ($row['id'] ?? 0),
+                'from_building_id' => $toBuildingId,
+                'to_building_id' => $fromBuildingId,
+                'duration_minutes' => $duration,
+                'distance_meters' => (int) ($row['distance_meters'] ?? 0),
                 'movement_type' => $movementType !== '' ? $movementType : ($route->preferredMovementType() ?? 'walking'),
                 'name' => (string) $reverse['name'],
                 'route_attributes' => $reverse,
@@ -497,6 +650,175 @@ class RouteRepository
         ]);
     }
 
+    private function shortestBuildingPath(int $fromBuildingId, int $toBuildingId, string $movementType): ?Route
+    {
+        if ($fromBuildingId === $toBuildingId) {
+            return $this->identityBuildingRoute($fromBuildingId);
+        }
+
+        $graph = $this->buildingGraph($movementType);
+        if (!isset($graph[$fromBuildingId])) {
+            return null;
+        }
+
+        $distances = [$fromBuildingId => 0];
+        $previous = [];
+        $visited = [];
+        $queue = [$fromBuildingId => 0];
+
+        while ($queue !== []) {
+            asort($queue, SORT_NUMERIC);
+            $currentBuildingId = (int) array_key_first($queue);
+            unset($queue[$currentBuildingId]);
+
+            if (isset($visited[$currentBuildingId])) {
+                continue;
+            }
+
+            $visited[$currentBuildingId] = true;
+
+            if ($currentBuildingId === $toBuildingId) {
+                break;
+            }
+
+            foreach ($graph[$currentBuildingId] ?? [] as $edge) {
+                $nextBuildingId = (int) ($edge['to_building_id'] ?? 0);
+                $cost = (int) ($edge['duration_minutes'] ?? PHP_INT_MAX);
+
+                if ($nextBuildingId <= 0 || $cost < 0) {
+                    continue;
+                }
+
+                $newDistance = $distances[$currentBuildingId] + $cost;
+                if (!isset($distances[$nextBuildingId]) || $newDistance < $distances[$nextBuildingId]) {
+                    $distances[$nextBuildingId] = $newDistance;
+                    $previous[$nextBuildingId] = [
+                        'from_building_id' => $currentBuildingId,
+                        'edge' => $edge,
+                    ];
+                    $queue[$nextBuildingId] = $newDistance;
+                }
+            }
+        }
+
+        if (!isset($previous[$toBuildingId])) {
+            return null;
+        }
+
+        $segments = [];
+        $cursor = $toBuildingId;
+
+        while (isset($previous[$cursor])) {
+            $segments[] = $previous[$cursor]['edge'];
+            $cursor = (int) $previous[$cursor]['from_building_id'];
+        }
+
+        $segments = array_reverse($segments);
+
+        return $this->resolvedBuildingRouteFromSegments($fromBuildingId, $toBuildingId, $segments, $movementType);
+    }
+
+    private function directBuildingRoutes(int $fromBuildingId, int $toBuildingId, string $movementType): array
+    {
+        $sql = 'SELECT * FROM routes
+                WHERE from_building_id = :from_building_id
+                  AND to_building_id = :to_building_id
+                  AND status = "active"';
+        $params = [
+            'from_building_id' => $fromBuildingId,
+            'to_building_id' => $toBuildingId,
+        ];
+
+        $durationColumn = $this->durationColumn($movementType);
+
+        if ($durationColumn !== null) {
+            $sql .= sprintf(' AND %s IS NOT NULL', $durationColumn);
+        }
+
+        $sql .= ' ORDER BY ' . $this->orderByDuration($durationColumn) . ', id ASC';
+
+        $rows = $this->db()->fetchAll($sql, $params);
+
+        return array_map(static fn (array $row): Route => new Route($row), $rows);
+    }
+
+    private function resolvedBuildingRouteFromSegments(int $fromBuildingId, int $toBuildingId, array $segments, string $movementType): Route
+    {
+        $fromBuilding = $this->buildingSummary($fromBuildingId);
+        $toBuilding = $this->buildingSummary($toBuildingId);
+        $preferredMovementType = $movementType !== '' ? $movementType : 'walking';
+        $walking = 0;
+        $car = 0;
+        $publicTransport = 0;
+        $hasWalking = false;
+        $hasCar = false;
+        $hasPublicTransport = false;
+        $distanceMeters = 0;
+        $steps = [];
+        $segmentNames = [];
+        $routeIds = [];
+
+        foreach ($segments as $segment) {
+            $segmentNames[] = (string) ($segment['name'] ?? ($segment['source'] ?? 'segment'));
+            $distanceMeters += (int) ($segment['distance_meters'] ?? 0);
+
+            $duration = (int) ($segment['duration_minutes'] ?? 0);
+            $segmentMovementType = (string) ($segment['movement_type'] ?? $preferredMovementType);
+            if ($segmentMovementType === 'walking') {
+                $walking += $duration;
+                $hasWalking = true;
+            } elseif ($segmentMovementType === 'car') {
+                $car += $duration;
+                $hasCar = true;
+            } elseif ($segmentMovementType === 'public_transport') {
+                $publicTransport += $duration;
+                $hasPublicTransport = true;
+            }
+
+            if (!empty($segment['route_id'])) {
+                $routeIds[] = (int) $segment['route_id'];
+            }
+
+            foreach ((array) ($segment['steps'] ?? []) as $step) {
+                if (!is_array($step)) {
+                    continue;
+                }
+
+                $step['step_order'] = count($steps) + 1;
+                $steps[] = $step;
+            }
+        }
+
+        $name = sprintf(
+            'Resolved route %s -> %s',
+            (string) ($fromBuilding['code'] ?? ('#' . $fromBuildingId)),
+            (string) ($toBuilding['code'] ?? ('#' . $toBuildingId))
+        );
+
+        return ResolvedRoute::fromArray([
+            'id' => count(array_unique($routeIds)) === 1 ? $routeIds[0] : null,
+            'from_building_id' => $fromBuildingId,
+            'to_building_id' => $toBuildingId,
+            'name' => $name,
+            'description' => 'Resolved from connected inter-building route segments.',
+            'distance_meters' => $distanceMeters > 0 ? $distanceMeters : null,
+            'walking_duration_minutes' => $hasWalking ? $walking : null,
+            'car_duration_minutes' => $hasCar ? $car : null,
+            'public_transport_duration_minutes' => $hasPublicTransport ? $publicTransport : null,
+            'is_accessible' => $this->segmentsAccessible($segments) ? 1 : 0,
+            'status' => 'active',
+            'path_data' => json_encode([
+                'resolved' => true,
+                'movement_type' => $preferredMovementType,
+                'segments' => $segmentNames,
+                'segment_count' => count($segments),
+                'route_ids' => array_values(array_unique($routeIds)),
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            'resolved_steps' => $steps,
+            'resolved_segment_count' => count($segments),
+        ]);
+    }
+
     private function reverseSteps(array $steps): array
     {
         $reversed = array_reverse($steps);
@@ -538,6 +860,34 @@ class RouteRepository
             'resolved_steps' => [],
             'resolved_segment_count' => 0,
         ]);
+    }
+
+    private function identityBuildingRoute(int $buildingId): Route
+    {
+        $building = $this->buildingSummary($buildingId);
+
+        return ResolvedRoute::fromArray([
+            'from_building_id' => $buildingId,
+            'to_building_id' => $buildingId,
+            'name' => sprintf('Stay in building %s', (string) ($building['code'] ?? ('#' . $buildingId))),
+            'description' => 'Origin and destination are the same building.',
+            'walking_duration_minutes' => 0,
+            'is_accessible' => 1,
+            'status' => 'active',
+            'resolved_steps' => [],
+            'resolved_segment_count' => 0,
+        ]);
+    }
+
+    private function buildingSummary(int $buildingId): ?array
+    {
+        return $this->db()->fetch(
+            'SELECT id, code, name
+             FROM buildings
+             WHERE id = :id
+             LIMIT 1',
+            ['id' => $buildingId]
+        );
     }
 
     private function roomSummary(int $roomId): ?array
@@ -587,6 +937,15 @@ class RouteRepository
         }
 
         return true;
+    }
+
+    private function roomBuildingId(int $roomId): int
+    {
+        if ($roomId <= 0) {
+            return 0;
+        }
+
+        return (int) ($this->roomSummary($roomId)['building_id'] ?? 0);
     }
 
     private function durationColumn(string $movementType): ?string
