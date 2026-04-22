@@ -5,11 +5,16 @@ DirectoryIndex index.php
     RewriteEngine On
 
     # Internal application code, data and documentation must not be web-readable.
-    RewriteRule ^(?:app|config|database|docs|routes|storage|tests)(?:/|$) - [F,L,NC]
+    RewriteRule ^(?:app|config|database|docs|storage|tests)(?:/|$) - [F,L,NC]
+    RewriteRule ^routes/.*\.php$ - [F,L,NC]
     RewriteRule ^(?:FileStructure|project_structure|project_requirements|project_specification|xampp-setup)\.txt$ - [F,L,NC]
 
     # Uploaded files are public assets, but executable PHP files are never served from there.
     RewriteRule ^(?:public/)?uploads/.*\.(?:php|phtml|phar)$ - [F,L,NC]
+
+    # The application uses /routes as a public URL prefix, so do not treat the local /routes
+    # directory as a directly web-accessible folder.
+    RewriteRule ^routes/?$ index.php [L,QSA]
 
     # Allow short asset URLs such as /css/main.css while keeping assets in /public.
     RewriteCond %{REQUEST_FILENAME} !-f
