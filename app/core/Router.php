@@ -143,14 +143,20 @@ class Router
     private function runMiddleware(array $middleware, array $request): void
     {
         foreach ($middleware as $entry) {
-            $handler = $this->middlewareAliases[$entry] ?? $entry;
+            $handler = is_string($entry) && array_key_exists($entry, $this->middlewareAliases)
+                ? $this->middlewareAliases[$entry]
+                : $entry;
 
             if (is_string($handler) && class_exists($handler)) {
                 $handler = [new $handler(), 'handle'];
             }
 
             if (!is_callable($handler)) {
-                throw new RuntimeException("Middleware is not callable: {$entry}");
+                $label = is_string($entry)
+                    ? $entry
+                    : (is_array($entry) ? 'array middleware' : gettype($entry));
+
+                throw new RuntimeException("Middleware is not callable: {$label}");
             }
 
             $result = $handler($request);

@@ -48,6 +48,11 @@ class View
             throw new RuntimeException("View file not found: {$path}");
         }
 
+        $sharedUi = dirname($this->viewsPath) . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . 'shared' . DIRECTORY_SEPARATOR . 'ui.php';
+        if (is_file($sharedUi)) {
+            require_once $sharedUi;
+        }
+
         extract($data, EXTR_SKIP);
 
         ob_start();

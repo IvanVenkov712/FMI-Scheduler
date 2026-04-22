@@ -164,7 +164,6 @@ class App
     {
         $reflection = new ReflectionClass($this->router);
         $property = $reflection->getProperty('routes');
-        $property->setAccessible(true);
 
         return $property->getValue($this->router) === [];
     }

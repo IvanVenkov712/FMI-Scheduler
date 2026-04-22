@@ -89,8 +89,10 @@ class RoomRepository
                   AND ' . $capacityColumn . ' >= :capacity';
         $params = [
             'capacity' => $capacity,
-            'starts_at' => $startsAt,
-            'ends_at' => $endsAt,
+            'event_window_starts_at' => $startsAt,
+            'event_window_ends_at' => $endsAt,
+            'unavailability_window_starts_at' => $startsAt,
+            'unavailability_window_ends_at' => $endsAt,
         ];
 
         if ($deliveryMode === 'online') {
@@ -105,15 +107,15 @@ class RoomRepository
             AND NOT EXISTS (
                 SELECT 1 FROM events
                 WHERE events.room_id = rooms.id
-                  AND events.starts_at < :ends_at
-                  AND events.ends_at > :starts_at
+                  AND events.starts_at < :event_window_ends_at
+                  AND events.ends_at > :event_window_starts_at
                   AND events.status <> "cancelled"
             )
             AND NOT EXISTS (
                 SELECT 1 FROM room_unavailability
                 WHERE room_unavailability.room_id = rooms.id
-                  AND room_unavailability.starts_at < :ends_at
-                  AND room_unavailability.ends_at > :starts_at
+                  AND room_unavailability.starts_at < :unavailability_window_ends_at
+                  AND room_unavailability.ends_at > :unavailability_window_starts_at
             )';
 
         foreach (array_values(ResourceRequirementHelper::normalize($requiredResources)) as $index => $requirement) {

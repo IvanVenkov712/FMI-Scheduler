@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . 'shared' . DIRECTORY_SEPARATOR . 'ui.php';
+
 $user = isset($user) && is_array($user) ? $user : [];
 $pageTitle = trim((string) (($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')));
 $pageTitle = $pageTitle !== '' ? $pageTitle : 'User Profile';
