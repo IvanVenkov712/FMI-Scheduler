@@ -6,7 +6,7 @@ class ImportService
 {
     public function __construct(
         private readonly CsvParser $csv = new CsvParser(),
-        private readonly XmlParser $xml = new XmlParser(),
+        private readonly XmlDataParser $xml = new XmlDataParser(),
         private readonly AsciiPlanParser $ascii = new AsciiPlanParser(),
         private readonly BuildingService $buildings = new BuildingService(),
         private readonly FloorService $floors = new FloorService(),

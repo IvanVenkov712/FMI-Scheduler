@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-class XmlParser
+class XmlDataParser
 {
     public function parseFile(string $path, string $rowTag = 'row'): array
     {

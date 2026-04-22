@@ -6,7 +6,7 @@ class ExportService
 {
     public function __construct(
         private readonly CsvParser $csv = new CsvParser(),
-        private readonly XmlParser $xml = new XmlParser(),
+        private readonly XmlDataParser $xml = new XmlDataParser(),
         private readonly AsciiPlanParser $ascii = new AsciiPlanParser(),
         private readonly BuildingRepository $buildings = new BuildingRepository(),
         private readonly FloorRepository $floors = new FloorRepository(),
