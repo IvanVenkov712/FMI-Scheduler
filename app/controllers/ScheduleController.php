@@ -99,12 +99,18 @@ class ScheduleController extends CrudController
             return $this->validationResponse($errors, $data, 'schedules/details');
         }
 
-        $this->schedulesService->attachEvent(
+        $result = $this->schedulesService->attachEvent(
             (int) $id,
             (int) $data['event_id'],
             isset($data['assigned_room_id']) && $data['assigned_room_id'] !== '' ? (int) $data['assigned_room_id'] : null,
-            (string) ($data['allocation_status'] ?? 'manual')
+            (string) ($data['allocation_status'] ?? 'manual'),
+            isset($data['conflict_notes']) && $data['conflict_notes'] !== '' ? (string) $data['conflict_notes'] : null,
+            $this->currentUserId()
         );
+
+        if (!($result['success'] ?? false)) {
+            return $this->validationResponse((array) ($result['errors'] ?? []), $data, 'schedules/details');
+        }
 
         return $this->updatedResponse($this->findOrFail($id));
     }
