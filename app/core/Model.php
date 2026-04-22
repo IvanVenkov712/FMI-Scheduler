@@ -17,7 +17,7 @@ abstract class Model
     public function fill(array $attributes): self
     {
         foreach ($attributes as $key => $value) {
-            if ($this->fillable === [] || in_array($key, $this->fillable, true)) {
+            if ($this->isAssignable($key)) {
                 $this->attributes[$key] = $value;
             }
         }
@@ -32,7 +32,7 @@ abstract class Model
 
     public function set(string $key, mixed $value): self
     {
-        if ($this->fillable === [] || in_array($key, $this->fillable, true)) {
+        if ($this->isAssignable($key)) {
             $this->attributes[$key] = $value;
         }
 
@@ -151,6 +151,13 @@ abstract class Model
     protected function db(): Database
     {
         return Database::getInstance(Database::configFromFile());
+    }
+
+    protected function isAssignable(string $key): bool
+    {
+        return $key === $this->primaryKey
+            || $this->fillable === []
+            || in_array($key, $this->fillable, true);
     }
 
     protected function exists(): bool
