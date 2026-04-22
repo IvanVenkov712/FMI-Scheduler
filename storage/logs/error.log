@@ -5,3 +5,19 @@
 [22-Apr-2026 15:16:40 Europe/Sofia] PHP Deprecated:  Method ReflectionProperty::setAccessible() is deprecated since 8.5, as it has no effect since PHP 8.1 in C:\Users\ivanv\FMI\WebProject\app\core\App.php on line 167
 [22-Apr-2026 15:17:44 Europe/Sofia] PHP Deprecated:  Method ReflectionProperty::setAccessible() is deprecated since 8.5, as it has no effect since PHP 8.1 in C:\Users\ivanv\FMI\WebProject\app\core\App.php on line 167
 [22-Apr-2026 15:17:44 Europe/Sofia] PHP Deprecated:  Method ReflectionProperty::setAccessible() is deprecated since 8.5, as it has no effect since PHP 8.1 in C:\Users\ivanv\FMI\WebProject\app\core\App.php on line 167
+[22-Apr-2026 15:28:23 Europe/Sofia] PHP Deprecated:  Method ReflectionProperty::setAccessible() is deprecated since 8.5, as it has no effect since PHP 8.1 in C:\Users\ivanv\FMI\WebProject\app\core\App.php on line 167
+[22-Apr-2026 15:28:54 Europe/Sofia] PHP Deprecated:  Method ReflectionProperty::setAccessible() is deprecated since 8.5, as it has no effect since PHP 8.1 in C:\Users\ivanv\FMI\WebProject\app\core\App.php on line 167
+[2026-04-22 15:28:54] POST /login | HTTP 500 | SQLSTATE[HY093]: Invalid parameter number
+PDOException: SQLSTATE[HY093]: Invalid parameter number
+#0 C:\Users\ivanv\FMI\WebProject\app\core\Database.php(63): PDOStatement->execute(Array)
+#1 C:\Users\ivanv\FMI\WebProject\app\core\Database.php(70): Database->query('SELECT * FROM u...', Array)
+#2 C:\Users\ivanv\FMI\WebProject\app\models\User.php(113): Database->fetch('SELECT * FROM u...', Array)
+#3 C:\Users\ivanv\FMI\WebProject\app\repositories\UserRepository.php(19): User::findByLogin('admin@example.t...')
+#4 C:\Users\ivanv\FMI\WebProject\app\services\AuthService.php(25): UserRepository->findByLogin('admin@example.t...')
+#5 C:\Users\ivanv\FMI\WebProject\app\controllers\AuthController.php(24): AuthService->attempt('admin@example.t...', 'admin123456')
+#6 C:\Users\ivanv\FMI\WebProject\app\core\Router.php(133): AuthController->authenticate()
+#7 C:\Users\ivanv\FMI\WebProject\app\core\Router.php(93): Router->callAction(Array, Array, Array)
+#8 C:\Users\ivanv\FMI\WebProject\app\core\App.php(35): Router->dispatch()
+#9 C:\Users\ivanv\FMI\WebProject\index.php(21): App->run()
+#10 {main}
+[22-Apr-2026 15:29:06 Europe/Sofia] PHP Deprecated:  Method ReflectionProperty::setAccessible() is deprecated since 8.5, as it has no effect since PHP 8.1 in C:\Users\ivanv\FMI\WebProject\app\core\App.php on line 167

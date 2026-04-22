@@ -111,8 +111,11 @@ class User extends Model
     public static function findByLogin(string $login): ?self
     {
         $row = Database::getInstance(Database::configFromFile())->fetch(
-            'SELECT * FROM users WHERE email = :login OR username = :login LIMIT 1',
-            ['login' => $login]
+            'SELECT * FROM users WHERE email = :email_login OR username = :username_login LIMIT 1',
+            [
+                'email_login' => $login,
+                'username_login' => $login,
+            ]
         );
 
         return $row === null ? null : new self($row);
