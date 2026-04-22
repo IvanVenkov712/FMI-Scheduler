@@ -33,6 +33,14 @@ ON DUPLICATE KEY UPDATE
     status = VALUES(status),
     updated_at = CURRENT_TIMESTAMP;
 
+UPDATE rooms
+SET access_key = CASE id
+    WHEN 2 THEN 'FMI-002-HYBRID'
+    WHEN 5 THEN 'ZOOM-ROOM-1-ACCESS'
+    ELSE access_key
+END
+WHERE id IN (2, 5);
+
 INSERT INTO resources (id, name, slug, description, unit, is_consumable) VALUES
     (1, 'Projector', 'projector', 'Presentation projector.', 'pcs', 0),
     (2, 'Second Projector', 'second_projector', 'Additional projector for exams or large rooms.', 'pcs', 0),
@@ -62,3 +70,13 @@ ON DUPLICATE KEY UPDATE
     quantity = VALUES(quantity),
     status = VALUES(status),
     updated_at = CURRENT_TIMESTAMP;
+
+INSERT INTO room_connections (from_room_id, to_room_id, connection_type, is_bidirectional, walking_minutes) VALUES
+    (1, 2, 'corridor', 1, 1),
+    (1, 3, 'stairs', 1, 2),
+    (2, 4, 'corridor', 1, 1),
+    (3, 4, 'corridor', 1, 1),
+    (6, 7, 'outdoor', 1, 12)
+ON DUPLICATE KEY UPDATE
+    is_bidirectional = VALUES(is_bidirectional),
+    walking_minutes = VALUES(walking_minutes);
