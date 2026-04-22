@@ -24,10 +24,6 @@ class ImportExportController extends Controller
             return $this->fail('Import file is required.', 422);
         }
 
-        if (in_array(strtolower($format), ['ascii', 'txt'], true) && $entity === 'floors' && $this->importContext($entity) === []) {
-            return $this->fail('ASCII import for floors requires a target floor_id.', 422);
-        }
-
         try {
             $upload = $this->uploader()->upload(
                 $_FILES['file'],

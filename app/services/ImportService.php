@@ -22,6 +22,8 @@ class ImportService
         private readonly CovidConstraintService $movementConstraints = new CovidConstraintService(),
         private readonly UserService $users = new UserService(),
         private readonly UserRepository $userRepository = new UserRepository(),
+        private readonly BuildingRepository $buildingRepository = new BuildingRepository(),
+        private readonly FloorRepository $floorRepository = new FloorRepository(),
         private readonly ScheduleRepository $scheduleRepository = new ScheduleRepository(),
         private readonly CourseRepository $courseRepository = new CourseRepository(),
         private readonly StudentGroupRepository $studentGroupRepository = new StudentGroupRepository(),
@@ -98,29 +100,21 @@ class ImportService
 
     public function importAscii(string $entity, string $filePath, ?int $userId = null, array $context = []): array
     {
-        if ($entity !== 'floors') {
-            throw new InvalidArgumentException('ASCII import is supported only for floor plans.');
+        if (!in_array($entity, ['floors', 'buildings'], true)) {
+            throw new InvalidArgumentException('ASCII import is supported only for building and floor plans.');
         }
 
-        $floorId = isset($context['floor_id']) ? (int) $context['floor_id'] : 0;
-        if ($floorId <= 0) {
-            throw new InvalidArgumentException('ASCII import requires a target floor_id.');
+        $content = file_get_contents($filePath);
+        if ($content === false) {
+            throw new RuntimeException('ASCII plan file could not be read.');
         }
 
-        $result = $this->floors->importAsciiPlan($floorId, $filePath, $userId);
-        if (!($result['success'] ?? false)) {
-            throw new RuntimeException($this->flattenErrors((array) ($result['errors'] ?? [])));
+        $trimmed = ltrim($content);
+        if ($entity === 'buildings' || str_starts_with($trimmed, 'BUILDING ')) {
+            return $this->importBuildingAsciiDocuments($content, $userId);
         }
 
-        return [
-            'imported' => 1,
-            'failed' => 0,
-            'errors' => [],
-            'floor_id' => $floorId,
-            'floor' => $result['floor'] instanceof Floor ? $result['floor']->toArray() : null,
-            'parsed_plan' => $result['parsed_plan'] ?? null,
-            'note' => 'ASCII plan imported and persisted successfully.',
-        ];
+        return $this->importFloorAsciiDocuments($content, $userId, $context);
     }
 
     private function decodeJsonFile(string $filePath): array
@@ -426,6 +420,14 @@ class ImportService
             return sprintf('Imported ASCII plan for floor %d.', (int) $result['floor_id']);
         }
 
+        if (($result['entity'] ?? null) === 'buildings' || ($result['entity'] ?? null) === 'floors') {
+            return sprintf(
+                'Imported %d ASCII document(s), failed %d.',
+                (int) ($result['imported'] ?? 0),
+                (int) ($result['failed'] ?? 0)
+            );
+        }
+
         return sprintf(
             'Imported %d record(s), failed %d.',
             (int) ($result['imported'] ?? 0),
@@ -479,5 +481,330 @@ class ImportService
     private function db(): Database
     {
         return $this->database ?? Database::getInstance(Database::configFromFile());
+    }
+
+    private function importBuildingAsciiDocuments(string $content, ?int $userId): array
+    {
+        $documents = $this->parseAsciiBuildingDocuments($content);
+        if ($documents === []) {
+            throw new InvalidArgumentException('ASCII building file does not contain any BUILDING documents.');
+        }
+
+        $imported = 0;
+        $errors = [];
+
+        foreach ($documents as $index => $document) {
+            try {
+                $building = $this->upsertAsciiBuilding($document['building'], $userId);
+
+                foreach ($document['floors'] as $floorDocument) {
+                    $this->upsertAsciiFloor($floorDocument['meta'] + [
+                        'building_id' => (int) $building->get('id'),
+                        'building_code' => (string) $building->get('code'),
+                    ], $floorDocument['plan'], $userId);
+                }
+
+                $imported++;
+            } catch (Throwable $exception) {
+                $errors[] = ['row' => $index + 1, 'message' => $exception->getMessage()];
+            }
+        }
+
+        return [
+            'entity' => 'buildings',
+            'imported' => $imported,
+            'failed' => count($errors),
+            'errors' => $errors,
+        ];
+    }
+
+    private function importFloorAsciiDocuments(string $content, ?int $userId, array $context): array
+    {
+        $trimmed = ltrim($content);
+        $floorId = isset($context['floor_id']) ? (int) $context['floor_id'] : 0;
+
+        if ($floorId > 0 && !str_starts_with($trimmed, 'FLOOR ')) {
+            $result = $this->floors->savePlan($floorId, $content, [], null, $userId);
+            if (!($result['success'] ?? false)) {
+                throw new RuntimeException($this->flattenErrors((array) ($result['errors'] ?? [])));
+            }
+
+            return [
+                'entity' => 'floors',
+                'imported' => 1,
+                'failed' => 0,
+                'errors' => [],
+                'floor_id' => $floorId,
+                'floor' => $result['floor'] instanceof Floor ? $result['floor']->toArray() : null,
+                'parsed_plan' => $result['parsed_plan'] ?? null,
+                'note' => 'ASCII plan imported and persisted successfully.',
+            ];
+        }
+
+        $documents = $this->parseAsciiFloorDocuments($content);
+        if ($documents === []) {
+            throw new InvalidArgumentException('ASCII floor file requires a target floor_id or FLOOR metadata headers.');
+        }
+
+        $imported = 0;
+        $errors = [];
+        $lastFloor = null;
+
+        foreach ($documents as $index => $document) {
+            try {
+                $lastFloor = $this->upsertAsciiFloor($document['meta'], $document['plan'], $userId);
+                $imported++;
+            } catch (Throwable $exception) {
+                $errors[] = ['row' => $index + 1, 'message' => $exception->getMessage()];
+            }
+        }
+
+        return [
+            'entity' => 'floors',
+            'imported' => $imported,
+            'failed' => count($errors),
+            'errors' => $errors,
+            'floor_id' => $lastFloor?->get('id'),
+            'floor' => $lastFloor?->toArray(),
+        ];
+    }
+
+    private function parseAsciiBuildingDocuments(string $content): array
+    {
+        $lines = preg_split("/\r\n|\n|\r/", $content) ?: [];
+        $documents = [];
+        $currentBuilding = null;
+        $currentFloors = [];
+        $currentFloorMeta = null;
+        $currentPlanLines = [];
+
+        foreach ($lines as $line) {
+            if (str_starts_with($line, 'BUILDING ')) {
+                if ($currentBuilding !== null) {
+                    $documents[] = ['building' => $currentBuilding, 'floors' => $currentFloors];
+                }
+
+                $currentBuilding = $this->decodeAsciiHeader(substr($line, 9), 'building');
+                $currentFloors = [];
+                $currentFloorMeta = null;
+                $currentPlanLines = [];
+                continue;
+            }
+
+            if (str_starts_with($line, 'FLOOR ')) {
+                $currentFloorMeta = $this->decodeAsciiHeader(substr($line, 6), 'floor');
+                $currentPlanLines = [];
+                continue;
+            }
+
+            if (trim($line) === 'END_FLOOR') {
+                if ($currentFloorMeta !== null) {
+                    $currentFloors[] = [
+                        'meta' => $currentFloorMeta,
+                        'plan' => rtrim(implode(PHP_EOL, $currentPlanLines)),
+                    ];
+                }
+
+                $currentFloorMeta = null;
+                $currentPlanLines = [];
+                continue;
+            }
+
+            if (trim($line) === 'END_BUILDING') {
+                if ($currentBuilding !== null) {
+                    $documents[] = ['building' => $currentBuilding, 'floors' => $currentFloors];
+                }
+
+                $currentBuilding = null;
+                $currentFloors = [];
+                $currentFloorMeta = null;
+                $currentPlanLines = [];
+                continue;
+            }
+
+            if ($currentFloorMeta !== null) {
+                $currentPlanLines[] = $line;
+            }
+        }
+
+        if ($currentBuilding !== null) {
+            if ($currentFloorMeta !== null) {
+                $currentFloors[] = [
+                    'meta' => $currentFloorMeta,
+                    'plan' => rtrim(implode(PHP_EOL, $currentPlanLines)),
+                ];
+            }
+
+            $documents[] = ['building' => $currentBuilding, 'floors' => $currentFloors];
+        }
+
+        return $documents;
+    }
+
+    private function parseAsciiFloorDocuments(string $content): array
+    {
+        $lines = preg_split("/\r\n|\n|\r/", $content) ?: [];
+        $documents = [];
+        $currentMeta = null;
+        $currentPlanLines = [];
+
+        foreach ($lines as $line) {
+            if (str_starts_with($line, 'FLOOR ')) {
+                if ($currentMeta !== null) {
+                    $documents[] = [
+                        'meta' => $currentMeta,
+                        'plan' => rtrim(implode(PHP_EOL, $currentPlanLines)),
+                    ];
+                }
+
+                $currentMeta = $this->decodeAsciiHeader(substr($line, 6), 'floor');
+                $currentPlanLines = [];
+                continue;
+            }
+
+            if (trim($line) === 'END_FLOOR') {
+                if ($currentMeta !== null) {
+                    $documents[] = [
+                        'meta' => $currentMeta,
+                        'plan' => rtrim(implode(PHP_EOL, $currentPlanLines)),
+                    ];
+                }
+
+                $currentMeta = null;
+                $currentPlanLines = [];
+                continue;
+            }
+
+            if ($currentMeta !== null) {
+                $currentPlanLines[] = $line;
+            }
+        }
+
+        if ($currentMeta !== null) {
+            $documents[] = [
+                'meta' => $currentMeta,
+                'plan' => rtrim(implode(PHP_EOL, $currentPlanLines)),
+            ];
+        }
+
+        return $documents;
+    }
+
+    private function decodeAsciiHeader(string $json, string $type): array
+    {
+        $decoded = json_decode(trim($json), true);
+
+        if (!is_array($decoded)) {
+            throw new InvalidArgumentException(sprintf('Invalid %s ASCII header.', $type));
+        }
+
+        return $decoded;
+    }
+
+    private function upsertAsciiBuilding(array $meta, ?int $userId): Building
+    {
+        $buildingId = (int) ($meta['id'] ?? 0);
+        $code = trim((string) ($meta['code'] ?? ''));
+        $existing = $buildingId > 0 ? $this->buildingRepository->find($buildingId) : null;
+
+        if ($existing === null && $code !== '') {
+            $existing = $this->buildingRepository->findByCode($code);
+        }
+
+        $payload = array_filter([
+            'code' => $code,
+            'name' => trim((string) ($meta['name'] ?? '')),
+            'orientation' => $meta['orientation'] ?? 'east',
+            'address' => $meta['address'] ?? null,
+            'description' => $meta['description'] ?? null,
+            'status' => $meta['status'] ?? 'active',
+        ], static fn (mixed $value): bool => $value !== null && $value !== '');
+
+        if ($existing === null) {
+            if (($payload['code'] ?? '') === '' || ($payload['name'] ?? '') === '') {
+                throw new InvalidArgumentException('ASCII building import requires at least building code and name.');
+            }
+
+            $result = $this->buildings->create($payload, $userId);
+        } else {
+            $result = $this->buildings->update((int) $existing->get('id'), $payload, $userId);
+        }
+
+        if (!($result['success'] ?? false) || !($result['building'] ?? null) instanceof Building) {
+            throw new RuntimeException($this->flattenErrors((array) ($result['errors'] ?? [])));
+        }
+
+        return $result['building'];
+    }
+
+    private function upsertAsciiFloor(array $meta, string $plan, ?int $userId): Floor
+    {
+        $floor = null;
+        $floorId = (int) ($meta['id'] ?? 0);
+
+        if ($floorId > 0) {
+            $floor = $this->floorRepository->find($floorId);
+        }
+
+        $buildingId = isset($meta['building_id']) ? (int) $meta['building_id'] : 0;
+        if ($buildingId <= 0 && !empty($meta['building_code'])) {
+            $building = $this->buildingRepository->findByCode((string) $meta['building_code']);
+            $buildingId = $building === null ? 0 : (int) $building->get('id');
+        }
+
+        $number = isset($meta['number']) ? (int) $meta['number'] : null;
+
+        if ($floor === null && $buildingId > 0 && $number !== null) {
+            foreach ($this->floorRepository->byBuilding($buildingId) as $existingFloor) {
+                if ((int) $existingFloor->get('number') === $number) {
+                    $floor = $existingFloor;
+                    break;
+                }
+            }
+        }
+
+        if ($floor === null) {
+            if ($buildingId <= 0 || $number === null) {
+                throw new InvalidArgumentException('ASCII floor import requires floor id or building + floor number metadata.');
+            }
+
+            $createResult = $this->floors->create([
+                'building_id' => $buildingId,
+                'number' => $number,
+                'name' => trim((string) ($meta['name'] ?? ('Floor ' . $number))),
+                'description' => $meta['description'] ?? null,
+                'status' => $meta['status'] ?? 'active',
+            ], $userId);
+
+            if (!($createResult['success'] ?? false) || !($createResult['floor'] ?? null) instanceof Floor) {
+                throw new RuntimeException($this->flattenErrors((array) ($createResult['errors'] ?? [])));
+            }
+
+            $floor = $createResult['floor'];
+        } else {
+            $updatePayload = array_filter([
+                'building_id' => $buildingId > 0 ? $buildingId : null,
+                'number' => $number,
+                'name' => $meta['name'] ?? null,
+                'description' => $meta['description'] ?? null,
+                'status' => $meta['status'] ?? null,
+            ], static fn (mixed $value): bool => $value !== null && $value !== '');
+
+            if ($updatePayload !== []) {
+                $updateResult = $this->floors->update((int) $floor->get('id'), $updatePayload, $userId);
+                if (!($updateResult['success'] ?? false) || !($updateResult['floor'] ?? null) instanceof Floor) {
+                    throw new RuntimeException($this->flattenErrors((array) ($updateResult['errors'] ?? [])));
+                }
+
+                $floor = $updateResult['floor'];
+            }
+        }
+
+        $planResult = $this->floors->savePlan((int) $floor->get('id'), $plan, [], null, $userId);
+        if (!($planResult['success'] ?? false) || !($planResult['floor'] ?? null) instanceof Floor) {
+            throw new RuntimeException($this->flattenErrors((array) ($planResult['errors'] ?? [])));
+        }
+
+        return $planResult['floor'];
     }
 }

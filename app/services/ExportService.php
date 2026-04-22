@@ -100,7 +100,7 @@ class ExportService
             throw new RuntimeException('Floor not found.');
         }
 
-        return (string) $floor->get('ascii_plan', '');
+        return $this->serializeFloorAsciiDocument($floor);
     }
 
     private function rowsForEntity(string $entity, ?int $entityId): array
@@ -238,21 +238,109 @@ class ExportService
 
     private function toAscii(string $entity, ?int $entityId, array $rows): string
     {
-        if ($entity === 'floors' && $entityId !== null) {
-            return $this->exportFloorAscii($entityId);
+        if ($entity === 'buildings') {
+            return $this->exportBuildingsAscii($entityId, $rows);
         }
 
-        if ($entity === 'buildings') {
-            $lines = [];
-
-            foreach ($rows as $row) {
-                $lines[] = sprintf('[%s] %s (%s)', $row['code'] ?? '?', $row['name'] ?? 'building', $row['orientation'] ?? 'east');
-            }
-
-            return implode(PHP_EOL, $lines);
+        if ($entity === 'floors') {
+            return $this->exportFloorsAscii($entityId, $rows);
         }
 
         return $this->toText($entity, $rows);
+    }
+
+    private function exportBuildingsAscii(?int $entityId, array $rows): string
+    {
+        $buildingIds = $entityId !== null
+            ? [$entityId]
+            : array_values(array_filter(array_map(static fn (array $row): int => (int) ($row['id'] ?? 0), $rows)));
+
+        $documents = [];
+
+        foreach ($buildingIds as $buildingId) {
+            $building = $this->buildings->find($buildingId);
+            if ($building === null) {
+                continue;
+            }
+
+            $documents[] = $this->serializeBuildingAsciiDocument($building);
+        }
+
+        return $documents === [] ? $this->toText('buildings', $rows) : implode(PHP_EOL . PHP_EOL, $documents);
+    }
+
+    private function exportFloorsAscii(?int $entityId, array $rows): string
+    {
+        if ($entityId !== null) {
+            return $this->exportFloorAscii($entityId);
+        }
+
+        $documents = [];
+
+        foreach ($rows as $row) {
+            $floorId = (int) ($row['id'] ?? 0);
+            $floor = $floorId > 0 ? $this->floors->find($floorId) : null;
+
+            if ($floor === null) {
+                continue;
+            }
+
+            $documents[] = $this->serializeFloorAsciiDocument($floor);
+        }
+
+        return $documents === [] ? $this->toText('floors', $rows) : implode(PHP_EOL . PHP_EOL, $documents);
+    }
+
+    private function serializeBuildingAsciiDocument(Building $building): string
+    {
+        $header = [
+            'id' => (int) $building->get('id'),
+            'code' => (string) $building->get('code'),
+            'name' => (string) $building->get('name'),
+            'orientation' => (string) $building->get('orientation', 'east'),
+            'address' => $building->get('address'),
+            'description' => $building->get('description'),
+            'status' => (string) $building->get('status', 'active'),
+        ];
+
+        $parts = [
+            'BUILDING ' . json_encode($header, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        ];
+
+        foreach ($building->floors() as $floor) {
+            $parts[] = $this->serializeFloorAsciiDocument($floor);
+        }
+
+        $parts[] = 'END_BUILDING';
+
+        return implode(PHP_EOL . PHP_EOL, $parts);
+    }
+
+    private function serializeFloorAsciiDocument(Floor $floor): string
+    {
+        $building = $floor->building();
+        $header = [
+            'id' => (int) $floor->get('id'),
+            'building_id' => (int) $floor->get('building_id'),
+            'building_code' => $building?->get('code'),
+            'number' => (int) $floor->get('number'),
+            'name' => (string) $floor->get('name'),
+            'description' => $floor->get('description'),
+            'status' => (string) $floor->get('status', 'active'),
+            'width_units' => $floor->get('width_units'),
+            'height_units' => $floor->get('height_units'),
+        ];
+
+        $parts = ['FLOOR ' . json_encode($header, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
+        $plan = trim((string) $floor->get('ascii_plan', ''));
+
+        if ($plan !== '') {
+            $parts[] = $plan;
+        }
+
+        $parts[] = 'END_FLOOR';
+
+        return implode(PHP_EOL, $parts);
     }
 
     private function startJob(string $type, string $format, string $entity, ?string $filePath, ?int $userId): string
