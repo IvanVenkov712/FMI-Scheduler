@@ -112,7 +112,7 @@ class ScheduleService
 
         $effectiveRoomId = $roomId ?? ($event->get('room_id') !== null ? (int) $event->get('room_id') : null);
 
-        if ($effectiveRoomId !== null && (int) $event->get('room_id', 0) !== $effectiveRoomId) {
+        if ($effectiveRoomId !== null) {
             $assignResult = $this->eventService->assignRoom((int) $event->get('id'), $effectiveRoomId, $userId);
             if (!($assignResult['success'] ?? false)) {
                 return ['success' => false, 'errors' => (array) ($assignResult['errors'] ?? ['room' => ['Room assignment failed.']])];

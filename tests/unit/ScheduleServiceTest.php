@@ -114,6 +114,40 @@ final class ScheduleServiceTest extends TestCase
         $this->assertSame(9, $repository->attached[0]['assigned_room_id']);
         $this->assertSame('manual', $repository->attached[0]['allocation_status']);
     }
+
+    public function testAttachEventRevalidatesExistingAssignedRoomThroughEventService(): void
+    {
+        $schedule = new Schedule([
+            'id' => 10,
+            'starts_on' => '2026-06-01',
+            'ends_on' => '2026-06-30',
+        ]);
+        $event = new Event([
+            'id' => 25,
+            'starts_at' => '2026-06-10 10:00:00',
+            'ends_at' => '2026-06-10 12:00:00',
+            'delivery_mode' => 'physical',
+            'room_id' => 5,
+        ]);
+
+        $repository = new FakeScheduleRepositoryForService($schedule);
+        $eventService = new FakeEventServiceForScheduleService();
+        $service = new ScheduleService(
+            $repository,
+            new FakeEventRepositoryForScheduleService($event),
+            $eventService,
+            new AuditLogRepository(),
+            new ValidationService()
+        );
+
+        $result = $service->attachEvent(10, 25, 5, 'manual');
+
+        $this->assertTrue($result['success']);
+        $this->assertSame([[25, 5, null]], $eventService->assignments);
+        $this->assertCount(1, $repository->attached);
+        $this->assertSame(5, $repository->attached[0]['assigned_room_id']);
+        $this->assertSame('manual', $repository->attached[0]['allocation_status']);
+    }
 }
 
 final class FakeScheduleRepositoryForService extends ScheduleRepository
