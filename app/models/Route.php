@@ -18,6 +18,7 @@ class Route extends Model
         'public_transport_duration_minutes',
         'path_data',
         'is_accessible',
+        'is_bidirectional',
         'status',
     ];
 
@@ -77,6 +78,11 @@ class Route extends Model
     public function isAccessible(): bool
     {
         return (int) $this->get('is_accessible', 1) === 1;
+    }
+
+    public function isBidirectional(): bool
+    {
+        return (int) $this->get('is_bidirectional', 1) === 1;
     }
 
     public function isActive(): bool

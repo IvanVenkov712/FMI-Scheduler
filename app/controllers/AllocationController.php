@@ -45,6 +45,14 @@ class AllocationController extends Controller
 
     public function autoAssign(int|string|null $scheduleId = null): mixed
     {
+        if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
+            $scheduleId = $this->normalizeScheduleId($scheduleId ?? $this->input('schedule_id'));
+
+            return $this->respond('allocation/auto-assign', [
+                'scheduleId' => $scheduleId,
+            ]);
+        }
+
         $data = $this->body() + $this->input();
         $scheduleId = $this->normalizeScheduleId($scheduleId ?? $data['schedule_id'] ?? null);
         $allocation = $this->allocation->allocateSchedule($scheduleId, $data, $this->currentUserId());

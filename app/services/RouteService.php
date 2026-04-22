@@ -24,8 +24,9 @@ class RouteService
     public function create(array $data, array $steps = [], ?int $userId = null): array
     {
         $data = $this->normalizeRouteIntegers($this->applyLegacyDurationInput($data));
-        $data = $this->validation->normalizeBooleans($data, ['is_accessible']);
+        $data = $this->validation->normalizeBooleans($data, ['is_accessible', 'is_bidirectional']);
         $data['status'] = $data['status'] ?? 'active';
+        $data['is_bidirectional'] = $data['is_bidirectional'] ?? 1;
 
         $errors = $this->validateRouteData($data);
 
@@ -51,7 +52,7 @@ class RouteService
         }
 
         $payload = $this->normalizeRouteIntegers($this->applyLegacyDurationInput($data));
-        $payload = $this->validation->normalizeBooleans($payload, ['is_accessible']);
+        $payload = $this->validation->normalizeBooleans($payload, ['is_accessible', 'is_bidirectional']);
         $errors = $this->validateRouteData($payload + $route->toArray());
 
         if ($errors !== []) {
@@ -168,6 +169,7 @@ class RouteService
             'public_transport_duration_minutes' => 'nullable|integer|min:1',
             'status' => 'required|in:active,inactive,restricted',
             'is_accessible' => 'nullable|boolean',
+            'is_bidirectional' => 'nullable|boolean',
         ]);
 
         $errors = $result['errors'];

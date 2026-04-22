@@ -53,3 +53,4 @@ SOURCE migrations/013_create_catalog_import_tables.sql;
 SOURCE migrations/014_alter_online_sessions_access_fields.sql;
 SOURCE migrations/015_alter_exam_requests_online_fields.sql;
 SOURCE migrations/016_alter_events_required_resources.sql;
+SOURCE migrations/017_alter_routes_directionality.sql;

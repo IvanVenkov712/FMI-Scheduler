@@ -17,14 +17,14 @@ class RouteController extends CrudController
     protected array $fillable = [
         'from_room_id', 'to_room_id', 'from_building_id', 'to_building_id', 'name',
         'description', 'distance_meters', 'walking_duration_minutes', 'car_duration_minutes', 'public_transport_duration_minutes',
-        'path_data', 'is_accessible', 'status',
+        'path_data', 'is_accessible', 'is_bidirectional', 'status',
     ];
     protected array $required = ['name'];
     protected array $integerFields = [
         'from_room_id', 'to_room_id', 'from_building_id', 'to_building_id', 'distance_meters',
         'walking_duration_minutes', 'car_duration_minutes', 'public_transport_duration_minutes',
     ];
-    protected array $booleanFields = ['is_accessible'];
+    protected array $booleanFields = ['is_accessible', 'is_bidirectional'];
     protected array $jsonFields = ['path_data'];
     protected array $listFilters = ['status', 'is_accessible', 'from_building_id', 'to_building_id'];
     protected string $defaultOrder = 'LEAST(IFNULL(walking_duration_minutes, 65535), IFNULL(car_duration_minutes, 65535), IFNULL(public_transport_duration_minutes, 65535)) ASC, name ASC';

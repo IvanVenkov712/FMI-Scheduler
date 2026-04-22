@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS routes (
     public_transport_duration_minutes SMALLINT UNSIGNED NULL,
     path_data JSON NULL,
     is_accessible TINYINT(1) NOT NULL DEFAULT 1,
+    is_bidirectional TINYINT(1) NOT NULL DEFAULT 1,
     status ENUM('active', 'inactive', 'restricted') NOT NULL DEFAULT 'active',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

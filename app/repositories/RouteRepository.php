@@ -346,24 +346,26 @@ class RouteRepository
                 'steps' => $forwardSteps,
             ];
 
-            $reverse = $row;
-            $reverse['from_room_id'] = $row['to_room_id'];
-            $reverse['to_room_id'] = $row['from_room_id'];
-            $reverse['name'] = sprintf('%s (reverse)', (string) ($row['name'] ?? 'Route'));
+            if ((int) ($row['is_bidirectional'] ?? 1) === 1) {
+                $reverse = $row;
+                $reverse['from_room_id'] = $row['to_room_id'];
+                $reverse['to_room_id'] = $row['from_room_id'];
+                $reverse['name'] = sprintf('%s (reverse)', (string) ($row['name'] ?? 'Route'));
 
-            $edges[] = [
-                'source' => 'route',
-                'route_id' => (int) ($row['id'] ?? 0),
-                'from_room_id' => (int) ($row['to_room_id'] ?? 0),
-                'to_room_id' => (int) ($row['from_room_id'] ?? 0),
-                'duration_minutes' => $duration,
-                'distance_meters' => (int) ($row['distance_meters'] ?? 0),
-                'is_accessible' => (int) ($row['is_accessible'] ?? 1),
-                'movement_type' => $movementType !== '' ? $movementType : ($route->preferredMovementType() ?? 'walking'),
-                'name' => (string) $reverse['name'],
-                'route_attributes' => $reverse,
-                'steps' => $this->reverseSteps($forwardSteps),
-            ];
+                $edges[] = [
+                    'source' => 'route',
+                    'route_id' => (int) ($row['id'] ?? 0),
+                    'from_room_id' => (int) ($row['to_room_id'] ?? 0),
+                    'to_room_id' => (int) ($row['from_room_id'] ?? 0),
+                    'duration_minutes' => $duration,
+                    'distance_meters' => (int) ($row['distance_meters'] ?? 0),
+                    'is_accessible' => (int) ($row['is_accessible'] ?? 1),
+                    'movement_type' => $movementType !== '' ? $movementType : ($route->preferredMovementType() ?? 'walking'),
+                    'name' => (string) $reverse['name'],
+                    'route_attributes' => $reverse,
+                    'steps' => $this->reverseSteps($forwardSteps),
+                ];
+            }
         }
 
         return $edges;
@@ -410,23 +412,25 @@ class RouteRepository
                 'steps' => $forwardSteps,
             ];
 
-            $reverse = $row;
-            $reverse['from_building_id'] = $row['to_building_id'];
-            $reverse['to_building_id'] = $row['from_building_id'];
-            $reverse['name'] = sprintf('%s (reverse)', (string) ($row['name'] ?? 'Route'));
+            if ((int) ($row['is_bidirectional'] ?? 1) === 1) {
+                $reverse = $row;
+                $reverse['from_building_id'] = $row['to_building_id'];
+                $reverse['to_building_id'] = $row['from_building_id'];
+                $reverse['name'] = sprintf('%s (reverse)', (string) ($row['name'] ?? 'Route'));
 
-            $edges[] = [
-                'source' => 'building_route',
-                'route_id' => (int) ($row['id'] ?? 0),
-                'from_building_id' => (int) ($row['to_building_id'] ?? 0),
-                'to_building_id' => (int) ($row['from_building_id'] ?? 0),
-                'duration_minutes' => $duration,
-                'distance_meters' => (int) ($row['distance_meters'] ?? 0),
-                'movement_type' => $movementType !== '' ? $movementType : ($route->preferredMovementType() ?? 'walking'),
-                'name' => (string) $reverse['name'],
-                'route_attributes' => $reverse,
-                'steps' => $this->reverseSteps($forwardSteps),
-            ];
+                $edges[] = [
+                    'source' => 'building_route',
+                    'route_id' => (int) ($row['id'] ?? 0),
+                    'from_building_id' => (int) ($row['to_building_id'] ?? 0),
+                    'to_building_id' => (int) ($row['from_building_id'] ?? 0),
+                    'duration_minutes' => $duration,
+                    'distance_meters' => (int) ($row['distance_meters'] ?? 0),
+                    'movement_type' => $movementType !== '' ? $movementType : ($route->preferredMovementType() ?? 'walking'),
+                    'name' => (string) $reverse['name'],
+                    'route_attributes' => $reverse,
+                    'steps' => $this->reverseSteps($forwardSteps),
+                ];
+            }
         }
 
         return $edges;
@@ -482,21 +486,23 @@ class RouteRepository
                 'steps' => $forwardSteps,
             ];
 
-            $reverse = $row;
-            $reverse['name'] = sprintf('%s (reverse)', (string) ($row['name'] ?? 'Route'));
+            if ((int) ($row['is_bidirectional'] ?? 1) === 1) {
+                $reverse = $row;
+                $reverse['name'] = sprintf('%s (reverse)', (string) ($row['name'] ?? 'Route'));
 
-            $edges[] = [
-                'source' => 'room_route',
-                'route_id' => (int) ($row['id'] ?? 0),
-                'from_building_id' => $toBuildingId,
-                'to_building_id' => $fromBuildingId,
-                'duration_minutes' => $duration,
-                'distance_meters' => (int) ($row['distance_meters'] ?? 0),
-                'movement_type' => $movementType !== '' ? $movementType : ($route->preferredMovementType() ?? 'walking'),
-                'name' => (string) $reverse['name'],
-                'route_attributes' => $reverse,
-                'steps' => $this->reverseSteps($forwardSteps),
-            ];
+                $edges[] = [
+                    'source' => 'room_route',
+                    'route_id' => (int) ($row['id'] ?? 0),
+                    'from_building_id' => $toBuildingId,
+                    'to_building_id' => $fromBuildingId,
+                    'duration_minutes' => $duration,
+                    'distance_meters' => (int) ($row['distance_meters'] ?? 0),
+                    'movement_type' => $movementType !== '' ? $movementType : ($route->preferredMovementType() ?? 'walking'),
+                    'name' => (string) $reverse['name'],
+                    'route_attributes' => $reverse,
+                    'steps' => $this->reverseSteps($forwardSteps),
+                ];
+            }
         }
 
         return $edges;

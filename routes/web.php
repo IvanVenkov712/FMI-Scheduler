@@ -116,10 +116,10 @@ $router->get('/routes/{id}/steps', 'RouteController@steps', $auth);
 $router->post('/routes/{id}/steps', 'RouteController@saveSteps', $admin);
 
 $router->get('/allocation/search', 'AllocationController@search', $auth);
-$router->get('/allocation/auto-assign', 'AllocationController@autoAssign', array_merge($auth, $scheduleManagers));
 $router->post('/allocation/auto-assign', 'AllocationController@autoAssign', array_merge($auth, $scheduleManagers));
-$router->get('/allocation/auto-assign/{scheduleId}', 'AllocationController@autoAssign', array_merge($auth, $scheduleManagers));
 $router->post('/allocation/auto-assign/{scheduleId}', 'AllocationController@autoAssign', array_merge($auth, $scheduleManagers));
+$router->get('/allocation/auto-assign', 'AllocationController@autoAssign', array_merge($auth, $scheduleManagers));
+$router->get('/allocation/auto-assign/{scheduleId}', 'AllocationController@autoAssign', array_merge($auth, $scheduleManagers));
 $router->get('/allocation/result/{id}', 'AllocationController@result', array_merge($auth, $scheduleManagers));
 
 $router->get('/import', 'ImportExportController@import', $admin);

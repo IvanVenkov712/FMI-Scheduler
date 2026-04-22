@@ -19,7 +19,7 @@ class UserService
     public function create(array $data, ?int $userId = null): array
     {
         $payload = $this->normalize($data);
-        $result = $this->validate($payload);
+        $result = $this->validate($payload, true);
 
         if (!$result['valid']) {
             return ['success' => false, 'errors' => $result['errors']];
@@ -48,7 +48,7 @@ class UserService
 
         $payload = $this->normalize($data);
         $merged = $payload + $user->toArray();
-        $result = $this->validate($merged);
+        $result = $this->validate($merged, false);
 
         if (!$result['valid']) {
             return ['success' => false, 'errors' => $result['errors']];
@@ -103,19 +103,25 @@ class UserService
         return $data;
     }
 
-    private function validate(array $data): array
+    private function validate(array $data, bool $requirePasswordHash): array
     {
-        return $this->validation->validate($data, [
+        $rules = [
             'role_id' => 'required|integer|min:1',
             'username' => 'required|string|min:3|max:80',
             'email' => 'required|email|max:190',
-            'password_hash' => 'required|string|max:255',
+            'password_hash' => 'nullable|string|max:255',
             'first_name' => 'required|string|max:120',
             'last_name' => 'required|string|max:120',
             'phone' => 'nullable|string|max:60',
             'faculty_number' => 'nullable|string|max:60',
             'department' => 'nullable|string|max:120',
             'status' => 'nullable|in:active,inactive',
-        ]);
+        ];
+
+        if ($requirePasswordHash) {
+            $rules['password_hash'] = 'required|string|max:255';
+        }
+
+        return $this->validation->validate($data, $rules);
     }
 }
