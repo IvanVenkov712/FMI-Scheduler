@@ -10,7 +10,7 @@ class AllocationService
         private readonly EventRepository $events = new EventRepository(),
         private readonly ScheduleRepository $schedules = new ScheduleRepository(),
         private readonly RouteService $routes = new RouteService(),
-        private readonly CovidConstraintService $constraints = new CovidConstraintService(),
+        private readonly ConstraintService $constraints = new ConstraintService(),
         private readonly AllocationRunRepository $runs = new AllocationRunRepository(),
         private readonly AuditLogRepository $auditLogs = new AuditLogRepository()
     ) {

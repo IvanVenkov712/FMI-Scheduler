@@ -1,0 +1,40 @@
+Date : 2026-04-23 12:27:55
+Directory : c:\Users\ivanv\FMI\WebProject
+Total : 13 files,  -71 codes, 0 comments, -13 blanks, all -84 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| PHP      |         13 |        -71 |          0 |        -13 |        -84 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++----------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                 | files      | code       | comment    | blank      | total      |
++----------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                    |         13 |        -71 |          0 |        -13 |        -84 |
+| app                                                                  |         13 |        -71 |          0 |        -13 |        -84 |
+| app\controllers                                                      |         10 |        -63 |          0 |        -11 |        -74 |
+| app\core                                                             |          3 |         -8 |          0 |         -2 |        -10 |
++----------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++----------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                                             | language | code       | comment    | blank      | total      |
++----------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| c:\Users\ivanv\FMI\WebProject\app\controllers\BuildingController.php | PHP      |         -2 |          0 |          0 |         -2 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\CrudController.php     | PHP      |        -31 |          0 |         -8 |        -39 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\EventController.php    | PHP      |         -2 |          0 |          0 |         -2 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\FloorController.php    | PHP      |         -2 |          0 |          0 |         -2 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\RequestController.php  | PHP      |        -16 |          0 |         -3 |        -19 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\ResourceController.php | PHP      |         -2 |          0 |          0 |         -2 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\RoomController.php     | PHP      |         -2 |          0 |          0 |         -2 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\RouteController.php    | PHP      |         -2 |          0 |          0 |         -2 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\ScheduleController.php | PHP      |         -2 |          0 |          0 |         -2 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\UserController.php     | PHP      |         -2 |          0 |          0 |         -2 |
+| c:\Users\ivanv\FMI\WebProject\app\core\App.php                       | PHP      |         -6 |          0 |         -2 |         -8 |
+| c:\Users\ivanv\FMI\WebProject\app\core\Controller.php                | PHP      |         -6 |          0 |         -1 |         -7 |
+| c:\Users\ivanv\FMI\WebProject\app\core\Router.php                    | PHP      |          4 |          0 |          1 |          5 |
+| Total                                                                |          |        -71 |          0 |        -13 |        -84 |
++----------------------------------------------------------------------+----------+------------+------------+------------+------------+

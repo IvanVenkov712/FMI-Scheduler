@@ -147,7 +147,7 @@ class App
             }
         }
 
-        if ($this->routerIsEmpty()) {
+        if ($this->router->isEmpty()) {
             $this->router->get('/', static fn (): string => 'Schedule management system');
         }
     }
@@ -158,14 +158,6 @@ class App
         $this->router->middleware('admin', 'AdminMiddleware');
         $this->router->middleware('role', 'RoleMiddleware');
         $this->router->middleware('csrf', 'CsrfMiddleware');
-    }
-
-    private function routerIsEmpty(): bool
-    {
-        $reflection = new ReflectionClass($this->router);
-        $property = $reflection->getProperty('routes');
-
-        return $property->getValue($this->router) === [];
     }
 
     private function logException(Throwable $exception): void

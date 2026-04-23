@@ -19,7 +19,7 @@ class ImportService
         private readonly StudentGroupService $studentGroups = new StudentGroupService(),
         private readonly AllocationParameterService $allocationParameters = new AllocationParameterService(),
         private readonly RequestService $requests = new RequestService(),
-        private readonly CovidConstraintService $movementConstraints = new CovidConstraintService(),
+        private readonly ConstraintService $movementConstraints = new ConstraintService(),
         private readonly UserService $users = new UserService(),
         private readonly UserRepository $userRepository = new UserRepository(),
         private readonly BuildingRepository $buildingRepository = new BuildingRepository(),

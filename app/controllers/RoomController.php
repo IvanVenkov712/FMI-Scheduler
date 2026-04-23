@@ -13,7 +13,6 @@ class RoomController extends CrudController
         parent::__construct($request);
     }
 
-    protected string $table = 'rooms';
     protected string $viewPath = 'rooms';
     protected string $entityName = 'room';
     protected array $fillable = [
@@ -23,7 +22,6 @@ class RoomController extends CrudController
     protected array $required = ['room_type_id', 'code', 'name'];
     protected array $integerFields = ['floor_id', 'room_type_id', 'capacity', 'covid_capacity', 'x', 'y', 'width', 'height'];
     protected array $listFilters = ['floor_id', 'room_type_id', 'status'];
-    protected string $defaultOrder = 'code ASC';
 
     public function store(): mixed
     {

@@ -12,7 +12,6 @@ class EventController extends CrudController
         parent::__construct($request);
     }
 
-    protected string $table = 'events';
     protected string $viewPath = 'events';
     protected string $entityName = 'event';
     protected array $fillable = [
@@ -22,7 +21,6 @@ class EventController extends CrudController
     protected array $required = ['title', 'starts_at', 'ends_at'];
     protected array $integerFields = ['created_by', 'room_id', 'students_count'];
     protected array $listFilters = ['type', 'status', 'room_id', 'delivery_mode'];
-    protected string $defaultOrder = 'starts_at DESC';
 
     public function store(): mixed
     {

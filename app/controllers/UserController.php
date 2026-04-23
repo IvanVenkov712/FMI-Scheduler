@@ -11,7 +11,6 @@ class UserController extends CrudController
         parent::__construct($request);
     }
 
-    protected string $table = 'users';
     protected string $viewPath = 'users';
     protected string $entityName = 'user';
     protected array $fillable = [
@@ -21,7 +20,6 @@ class UserController extends CrudController
     protected array $required = ['username', 'email', 'first_name', 'last_name'];
     protected array $integerFields = ['role_id'];
     protected array $listFilters = ['role_id', 'status', 'department'];
-    protected string $defaultOrder = 'last_name ASC, first_name ASC';
 
     public function profile(): string
     {
@@ -122,9 +120,9 @@ class UserController extends CrudController
         return $this->respond('users/profile', ['user' => $this->publicUser($this->findOrFail($id))]);
     }
 
-    protected function rows(?string $sql = null, array $params = []): array
+    protected function rows(): array
     {
-        $rows = parent::rows($sql, $params);
+        $rows = parent::rows();
 
         return array_map(fn (array $user): array => $this->publicUser($user), $rows);
     }

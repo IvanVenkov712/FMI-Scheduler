@@ -13,7 +13,6 @@ class RouteController extends CrudController
         parent::__construct($request);
     }
 
-    protected string $table = 'routes';
     protected string $viewPath = 'routes';
     protected string $entityName = 'route';
     protected array $fillable = [
@@ -29,7 +28,6 @@ class RouteController extends CrudController
     protected array $booleanFields = ['is_accessible', 'is_bidirectional'];
     protected array $jsonFields = ['path_data'];
     protected array $listFilters = ['status', 'is_accessible', 'from_building_id', 'to_building_id'];
-    protected string $defaultOrder = 'LEAST(IFNULL(walking_duration_minutes, 65535), IFNULL(car_duration_minutes, 65535), IFNULL(public_transport_duration_minutes, 65535)) ASC, name ASC';
 
     public function store(): mixed
     {

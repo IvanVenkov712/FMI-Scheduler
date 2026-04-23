@@ -11,13 +11,11 @@ class ResourceController extends CrudController
         parent::__construct($request);
     }
 
-    protected string $table = 'resources';
     protected string $viewPath = 'resources';
     protected string $entityName = 'resource';
     protected array $fillable = ['name', 'slug', 'description', 'unit', 'is_consumable'];
     protected array $required = ['name', 'slug'];
     protected array $booleanFields = ['is_consumable'];
-    protected string $defaultOrder = 'name ASC';
 
     public function store(): mixed
     {

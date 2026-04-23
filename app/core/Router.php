@@ -63,6 +63,11 @@ class Router
         return $this;
     }
 
+    public function isEmpty(): bool
+    {
+        return $this->routes === [];
+    }
+
     public function dispatch(?string $method = null, ?string $uri = null): mixed
     {
         $method = $this->resolveMethod($method);

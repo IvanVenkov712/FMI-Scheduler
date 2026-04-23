@@ -18,13 +18,6 @@ abstract class Controller
         return $this->view->render($view, $data, $layout);
     }
 
-    protected function json(array $data, int $statusCode = 200): void
-    {
-        http_response_code($statusCode);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    }
-
     protected function redirect(string $url, int $statusCode = 302): void
     {
         http_response_code($statusCode);
@@ -72,11 +65,6 @@ abstract class Controller
         }
 
         return $errors;
-    }
-
-    protected function database(): Database
-    {
-        return Database::getInstance(Database::configFromFile());
     }
 
     protected function sanitize(mixed $data): mixed

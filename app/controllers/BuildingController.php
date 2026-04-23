@@ -11,7 +11,6 @@ class BuildingController extends CrudController
         parent::__construct($request);
     }
 
-    protected string $table = 'buildings';
     protected string $viewPath = 'buildings';
     protected string $entityName = 'building';
     protected array $fillable = [
@@ -22,7 +21,6 @@ class BuildingController extends CrudController
     protected array $required = ['code', 'name'];
     protected array $integerFields = ['floors_count'];
     protected array $listFilters = ['status', 'orientation'];
-    protected string $defaultOrder = 'name ASC';
 
     public function store(): mixed
     {

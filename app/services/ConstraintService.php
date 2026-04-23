@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-class CovidConstraintService
+class ConstraintService
 {
     public function __construct(
         private readonly MovementConstraintRepository $constraints = new MovementConstraintRepository(),
         private readonly AuditLogRepository $auditLogs = new AuditLogRepository(),
         private readonly ValidationService $validation = new ValidationService()
-    ) {
-    }
+    ) {}
 
     public function active(?DateTimeInterface $at = null): array
     {
@@ -166,5 +165,4 @@ class CovidConstraintService
 
         return $errors;
     }
-
 }

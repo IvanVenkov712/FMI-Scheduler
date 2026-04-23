@@ -11,14 +11,12 @@ class ScheduleController extends CrudController
         parent::__construct($request);
     }
 
-    protected string $table = 'schedules';
     protected string $viewPath = 'schedules';
     protected string $entityName = 'schedule';
     protected array $fillable = ['name', 'type', 'academic_year', 'semester', 'starts_on', 'ends_on', 'status', 'created_by'];
     protected array $required = ['name', 'starts_on', 'ends_on'];
     protected array $integerFields = ['created_by'];
     protected array $listFilters = ['type', 'status', 'semester'];
-    protected string $defaultOrder = 'starts_on DESC';
 
     public function store(): mixed
     {

@@ -13,7 +13,6 @@ class RequestController extends CrudController
         parent::__construct($request);
     }
 
-    protected string $table = 'exam_requests';
     protected string $viewPath = 'requests';
     protected string $entityName = 'request';
     protected array $fillable = [
@@ -27,7 +26,6 @@ class RequestController extends CrudController
     protected array $integerFields = ['requested_by', 'event_id', 'students_count', 'preferred_room_id', 'reviewed_by', 'online_host_user_id'];
     protected array $jsonFields = ['required_resources'];
     protected array $listFilters = ['status', 'requested_by', 'preferred_delivery_mode'];
-    protected string $defaultOrder = 'created_at DESC';
 
     public function store(): mixed
     {
@@ -44,23 +42,6 @@ class RequestController extends CrudController
         $request = $result['request'] ?? null;
 
         return $this->storedResponse($request?->toArray() ?? []);
-    }
-
-    public function index(): mixed
-    {
-        $user = $this->currentUser();
-
-        if ($this->isTeacher($user)) {
-            return $this->respond($this->viewPath . '/index', [
-                $this->collectionKey() => $this->rows(
-                    null,
-                    []
-                ),
-                'filters' => $this->filters(),
-            ]);
-        }
-
-        return parent::index();
     }
 
     public function details(int|string $id): mixed

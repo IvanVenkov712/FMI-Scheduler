@@ -4,17 +4,14 @@ declare(strict_types=1);
 
 abstract class CrudController extends Controller
 {
-    protected string $table = '';
     protected string $viewPath = '';
     protected string $entityName = 'record';
-    protected string $primaryKey = 'id';
     protected array $fillable = [];
     protected array $required = [];
     protected array $jsonFields = [];
     protected array $integerFields = [];
     protected array $booleanFields = [];
     protected array $listFilters = [];
-    protected string $defaultOrder = 'id DESC';
 
     public function index(): mixed
     {
@@ -68,12 +65,8 @@ abstract class CrudController extends Controller
         return $this->delete($id);
     }
 
-    protected function rows(?string $sql = null, array $params = []): array
+    protected function rows(): array
     {
-        if ($sql !== null) {
-            throw new BadMethodCallException(static::class . ' must not query rows directly; use a service layer.');
-        }
-
         return array_map(
             fn (mixed $record): array => $this->recordToArray($record),
             $this->listRecords($this->filters())
@@ -90,16 +83,6 @@ abstract class CrudController extends Controller
         }
 
         return $record;
-    }
-
-    protected function insert(array $data): string
-    {
-        throw new BadMethodCallException(static::class . ' must not insert directly; use a service layer.');
-    }
-
-    protected function updateRow(int|string $id, array $data): void
-    {
-        throw new BadMethodCallException(static::class . ' must not update rows directly; use a service layer.');
     }
 
     protected function payload(): array
@@ -271,31 +254,9 @@ abstract class CrudController extends Controller
         return str_replace('-', '_', basename($this->viewPath));
     }
 
-    protected function sanitize(mixed $data): mixed
-    {
-        return SensitiveData::strip($data);
-    }
-
     protected function filters(): array
     {
         return array_intersect_key($this->input(), array_flip($this->listFilters));
-    }
-
-    private function whereFromFilters(): array
-    {
-        $conditions = [];
-        $params = [];
-
-        foreach ($this->filters() as $field => $value) {
-            if ($value === '' || $value === null) {
-                continue;
-            }
-
-            $conditions[] = "{$field} = :filter_{$field}";
-            $params['filter_' . $field] = $value;
-        }
-
-        return [$conditions === [] ? '' : ' WHERE ' . implode(' AND ', $conditions), $params];
     }
 
     private function recordToArray(mixed $record): array
