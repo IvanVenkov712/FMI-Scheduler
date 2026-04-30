@@ -13,30 +13,24 @@ class AllocationController extends Controller
 
     public function search(): mixed
     {
-        $capacity = (int) $this->input('capacity', 0);
-        $startsAt = (string) $this->input('starts_at', '');
-        $endsAt = (string) $this->input('ends_at', '');
-        $deliveryMode = (string) $this->input('delivery_mode', 'physical');
-        $resourceRequirements = $this->resourceRequirements();
-
-        $rooms = [];
-        if ($startsAt !== '' && $endsAt !== '') {
-            $rooms = $this->normalizeRankedRooms($this->allocation->searchAvailableRooms([
-                'capacity' => $capacity,
-                'starts_at' => $startsAt,
-                'ends_at' => $endsAt,
-                'delivery_mode' => $deliveryMode,
-                'resource_requirements' => $resourceRequirements,
-            ]));
-        }
+        $searchInput = [
+            'capacity' => (int) $this->input('capacity', 0),
+            'starts_at' => (string) $this->input('starts_at', ''),
+            'ends_at' => (string) $this->input('ends_at', ''),
+            'delivery_mode' => (string) $this->input('delivery_mode', 'physical'),
+            'resource_requirements' => $this->input('resource_requirements', $this->input('resource_ids', $this->input('resources', []))),
+            'resource_quantities' => $this->input('resource_quantities', []),
+        ];
+        $resourceRequirements = $this->allocation->searchResourceRequirements($searchInput);
+        $rooms = $this->allocation->searchRoomOptions($searchInput);
 
         return $this->respond('allocation/search', [
             'rooms' => $rooms,
             'filters' => [
-                'capacity' => $capacity,
-                'startsAt' => $startsAt,
-                'endsAt' => $endsAt,
-                'deliveryMode' => $deliveryMode,
+                'capacity' => $searchInput['capacity'],
+                'startsAt' => $searchInput['starts_at'],
+                'endsAt' => $searchInput['ends_at'],
+                'deliveryMode' => $searchInput['delivery_mode'],
                 'resourceIds' => array_column($resourceRequirements, 'resource_id'),
                 'resourceRequirements' => $resourceRequirements,
             ],
@@ -97,37 +91,6 @@ class AllocationController extends Controller
         }
 
         return $this->render($view, $this->sanitize($data));
-    }
-
-    private function normalizeRankedRooms(array $rankedRooms): array
-    {
-        return array_map(function (array $entry): array {
-            $room = $entry['room'] ?? null;
-
-            return [
-                'room' => $this->sanitize($room instanceof Room ? $room->toArray() : $room),
-                'score' => (int) ($entry['score'] ?? 0),
-                'explanation' => (string) ($entry['explanation'] ?? ''),
-            ];
-        }, $rankedRooms);
-    }
-
-    private function resourceRequirements(): array
-    {
-        $resources = $this->input('resource_requirements', $this->input('resource_ids', $this->input('resources', [])));
-        $quantities = $this->input('resource_quantities', []);
-
-        if (is_string($resources)) {
-            $resources = explode(',', $resources);
-        }
-
-        if (is_string($quantities)) {
-            $quantities = explode(',', $quantities);
-        }
-
-        return ResourceRequirementHelper::normalize(
-            is_array($resources) ? $resources + ['quantities' => (array) $quantities] : []
-        );
     }
 
     private function normalizeScheduleId(mixed $scheduleId): ?int

@@ -56,6 +56,24 @@ class AllocationService
         return $scored;
     }
 
+    public function searchRoomOptions(array $input): array
+    {
+        $criteria = $this->searchCriteriaFromInput($input);
+        $startsAt = (string) ($criteria['starts_at'] ?? '');
+        $endsAt = (string) ($criteria['ends_at'] ?? '');
+
+        if ($startsAt === '' || $endsAt === '') {
+            return [];
+        }
+
+        return $this->presentRankedRooms($this->searchAvailableRooms($criteria));
+    }
+
+    public function searchResourceRequirements(array $input): array
+    {
+        return $this->normalizeInputResourceRequirements($input);
+    }
+
     public function allocateSchedule(?int $scheduleId = null, array $input = [], ?int $userId = null): array
     {
         $runId = $this->createRun($scheduleId, $input, $userId);
@@ -428,6 +446,50 @@ class AllocationService
     private function normalizeRequiredResources(array $requiredResources): array
     {
         return ResourceRequirementHelper::normalize($requiredResources);
+    }
+
+    private function searchCriteriaFromInput(array $input): array
+    {
+        return [
+            'capacity' => (int) ($input['capacity'] ?? 0),
+            'starts_at' => (string) ($input['starts_at'] ?? ''),
+            'ends_at' => (string) ($input['ends_at'] ?? ''),
+            'delivery_mode' => (string) ($input['delivery_mode'] ?? 'physical'),
+            'resource_requirements' => $this->normalizeInputResourceRequirements($input),
+        ];
+    }
+
+    private function normalizeInputResourceRequirements(array $input): array
+    {
+        $resources = $input['resource_requirements'] ?? $input['resource_ids'] ?? $input['resources'] ?? [];
+        $quantities = $input['resource_quantities'] ?? [];
+
+        if (is_string($resources)) {
+            $resources = explode(',', $resources);
+        }
+
+        if (is_string($quantities)) {
+            $quantities = explode(',', $quantities);
+        }
+
+        if (!is_array($resources)) {
+            return [];
+        }
+
+        return ResourceRequirementHelper::normalize($resources + ['quantities' => (array) $quantities]);
+    }
+
+    private function presentRankedRooms(array $rankedRooms): array
+    {
+        return array_map(function (array $entry): array {
+            $room = $entry['room'] ?? null;
+
+            return [
+                'room' => $room instanceof Room ? $room->toArray() : $room,
+                'score' => (int) ($entry['score'] ?? 0),
+                'explanation' => (string) ($entry['explanation'] ?? ''),
+            ];
+        }, $rankedRooms);
     }
 
     private function adjacentScheduledEvents(int $scheduleId, int $eventId): array
