@@ -45,7 +45,7 @@ class AllocationParameterRepository
     public function create(array $data): AllocationParameter
     {
         $item = new AllocationParameter($data);
-        $item->save();
+        (new GenericModelRepository($this->database))->save($item);
 
         return $item;
     }
@@ -58,7 +58,7 @@ class AllocationParameterRepository
         }
 
         $item->fill($data);
-        $item->save();
+        (new GenericModelRepository($this->database))->save($item);
 
         return $item;
     }

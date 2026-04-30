@@ -64,7 +64,7 @@ class BuildingRepository
     public function create(array $data): Building
     {
         $building = new Building($data);
-        $building->save();
+        (new GenericModelRepository($this->database))->save($building);
 
         return $building;
     }
@@ -78,7 +78,7 @@ class BuildingRepository
         }
 
         $building->fill($data);
-        $building->save();
+        (new GenericModelRepository($this->database))->save($building);
 
         return $building;
     }
@@ -87,7 +87,9 @@ class BuildingRepository
     {
         $building = $this->find($id);
 
-        return $building?->delete() ?? false;
+        return $building !== null
+            ? (new GenericModelRepository($this->database))->delete($building)
+            : false;
     }
 
     public function withStatistics(): array

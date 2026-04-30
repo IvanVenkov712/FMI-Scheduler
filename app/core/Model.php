@@ -44,32 +44,6 @@ abstract class Model
         return $this->attributes;
     }
 
-    public function save(): bool
-    {
-        return (new GenericModelRepository())->save($this);
-    }
-
-    public function delete(): bool
-    {
-        return (new GenericModelRepository())->delete($this);
-    }
-
-    public static function find(int|string $id): ?static
-    {
-        /** @var static|null $model */
-        $model = (new GenericModelRepository())->find(static::class, $id);
-
-        return $model;
-    }
-
-    public static function all(string $orderBy = 'id', string $direction = 'ASC'): array
-    {
-        /** @var array<static> $models */
-        $models = (new GenericModelRepository())->all(static::class, $orderBy, $direction);
-
-        return $models;
-    }
-
     protected function tableName(): string
     {
         if ($this->table !== '') {

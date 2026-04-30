@@ -49,7 +49,7 @@ class ScheduleRepository
     public function create(array $data): Schedule
     {
         $schedule = new Schedule($data);
-        $schedule->save();
+        (new GenericModelRepository($this->database))->save($schedule);
 
         return $schedule;
     }
@@ -63,7 +63,7 @@ class ScheduleRepository
         }
 
         $schedule->fill($data);
-        $schedule->save();
+        (new GenericModelRepository($this->database))->save($schedule);
 
         return $schedule;
     }
@@ -72,7 +72,9 @@ class ScheduleRepository
     {
         $schedule = $this->find($id);
 
-        return $schedule?->delete() ?? false;
+        return $schedule !== null
+            ? (new GenericModelRepository($this->database))->delete($schedule)
+            : false;
     }
 
     public function published(): array

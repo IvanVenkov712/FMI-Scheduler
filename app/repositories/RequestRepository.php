@@ -48,7 +48,7 @@ class RequestRepository
         }
 
         $request = new ExamRequest($data);
-        $request->save();
+        (new GenericModelRepository($this->database))->save($request);
 
         return $request;
     }
@@ -66,7 +66,7 @@ class RequestRepository
         }
 
         $request->fill($data);
-        $request->save();
+        (new GenericModelRepository($this->database))->save($request);
 
         return $request;
     }
@@ -115,7 +115,9 @@ class RequestRepository
     {
         $request = $this->find($id);
 
-        return $request?->delete() ?? false;
+        return $request !== null
+            ? (new GenericModelRepository($this->database))->delete($request)
+            : false;
     }
 
     private function db(): Database

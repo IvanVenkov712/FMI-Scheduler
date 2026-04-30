@@ -44,7 +44,7 @@ class RouteRepository
         }
 
         $route = new Route($data);
-        $route->save();
+        (new GenericModelRepository($this->database))->save($route);
 
         return $route;
     }
@@ -62,7 +62,7 @@ class RouteRepository
         }
 
         $route->fill($data);
-        $route->save();
+        (new GenericModelRepository($this->database))->save($route);
 
         return $route;
     }
@@ -71,7 +71,9 @@ class RouteRepository
     {
         $route = $this->find($id);
 
-        return $route?->delete() ?? false;
+        return $route !== null
+            ? (new GenericModelRepository($this->database))->delete($route)
+            : false;
     }
 
     public function betweenRooms(int $fromRoomId, int $toRoomId, bool $accessibleOnly = false, string $movementType = ''): array

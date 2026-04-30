@@ -108,8 +108,8 @@ class ExportService
     {
         return match ($entity) {
             'buildings' => $this->mapModels($entityId === null ? $this->buildings->all() : array_filter([$this->buildings->find($entityId)])),
-            'floors' => $this->mapModels($entityId === null ? Floor::all('building_id', 'ASC') : array_filter([$this->floors->find($entityId)])),
-            'rooms' => $this->mapModels($entityId === null ? Room::all('code', 'ASC') : array_filter([$this->rooms->find($entityId)])),
+            'floors' => $this->mapModels($entityId === null ? $this->floors->all('building_id', 'ASC') : array_filter([$this->floors->find($entityId)])),
+            'rooms' => $this->mapModels($entityId === null ? $this->rooms->all('code', 'ASC') : array_filter([$this->rooms->find($entityId)])),
             'events' => $this->mapModels($entityId === null ? $this->events->all() : array_filter([$this->events->find($entityId)])),
             'resources' => $this->mapModels($entityId === null ? $this->resources->all() : array_filter([$this->resources->find($entityId)])),
             'routes' => $this->mapModels($entityId === null ? $this->routes->all() : array_filter([$this->routes->find($entityId)])),
@@ -150,8 +150,8 @@ class ExportService
     private function movementConstraintRows(?int $entityId): array
     {
         $constraints = $entityId === null
-            ? MovementConstraint::all('id', 'ASC')
-            : array_filter([MovementConstraint::find($entityId)]);
+            ? (new MovementConstraintRepository())->all('id', 'ASC')
+            : array_filter([(new MovementConstraintRepository())->find($entityId)]);
 
         return array_values(array_map(static function (MovementConstraint $constraint): array {
             $row = SensitiveData::strip($constraint->toArray());

@@ -105,7 +105,7 @@ class UserRepository
     public function create(array $data): User
     {
         $user = new User($data);
-        $user->save();
+        (new GenericModelRepository($this->database))->save($user);
 
         return $user;
     }
@@ -119,7 +119,7 @@ class UserRepository
         }
 
         $user->fill($data);
-        $user->save();
+        (new GenericModelRepository($this->database))->save($user);
 
         return $user;
     }
@@ -128,7 +128,9 @@ class UserRepository
     {
         $user = $this->find($id);
 
-        return $user?->delete() ?? false;
+        return $user !== null
+            ? (new GenericModelRepository($this->database))->delete($user)
+            : false;
     }
 
     public function recordSuccessfulLogin(int $userId, ?string $rememberToken = null): int

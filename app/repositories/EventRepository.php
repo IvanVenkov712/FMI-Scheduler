@@ -68,7 +68,7 @@ class EventRepository
         }
 
         $event = new Event($data);
-        $event->save();
+        (new GenericModelRepository($this->database))->save($event);
 
         return $event;
     }
@@ -100,7 +100,7 @@ class EventRepository
         }
 
         $event->fill($data);
-        $event->save();
+        (new GenericModelRepository($this->database))->save($event);
 
         return $event;
     }
@@ -130,7 +130,9 @@ class EventRepository
     {
         $event = $this->find($id);
 
-        return $event?->delete() ?? false;
+        return $event !== null
+            ? (new GenericModelRepository($this->database))->delete($event)
+            : false;
     }
 
     public function upcoming(int $limit = 10): array
@@ -223,14 +225,14 @@ class EventRepository
 
         if ($existing === null) {
             $session = new OnlineSession($payload);
-            $session->save();
+            (new GenericModelRepository($this->database))->save($session);
 
             return $session;
         }
 
         $session = new OnlineSession($existing);
         $session->fill($payload);
-        $session->save();
+        (new GenericModelRepository($this->database))->save($session);
 
         return $session;
     }

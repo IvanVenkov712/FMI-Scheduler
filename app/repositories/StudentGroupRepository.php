@@ -43,7 +43,7 @@ class StudentGroupRepository
     public function create(array $data): StudentGroup
     {
         $group = new StudentGroup($data);
-        $group->save();
+        (new GenericModelRepository($this->database))->save($group);
 
         return $group;
     }
@@ -56,7 +56,7 @@ class StudentGroupRepository
         }
 
         $group->fill($data);
-        $group->save();
+        (new GenericModelRepository($this->database))->save($group);
 
         return $group;
     }

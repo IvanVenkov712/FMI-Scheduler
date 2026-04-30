@@ -14,6 +14,14 @@ class FloorRepository
         return (new GenericModelRepository($this->database))->find(Floor::class, $id);
     }
 
+    public function all(string $orderBy = 'id', string $direction = 'ASC'): array
+    {
+        return array_map(
+            static fn (object $floor): Floor => $floor,
+            (new GenericModelRepository($this->database))->all(Floor::class, $orderBy, $direction)
+        );
+    }
+
     public function byBuilding(int $buildingId, bool $onlyActive = false): array
     {
         $sql = 'SELECT * FROM floors WHERE building_id = :building_id';
@@ -56,7 +64,7 @@ class FloorRepository
     public function create(array $data): Floor
     {
         $floor = new Floor($data);
-        $floor->save();
+        (new GenericModelRepository($this->database))->save($floor);
 
         return $floor;
     }
@@ -70,7 +78,7 @@ class FloorRepository
         }
 
         $floor->fill($data);
-        $floor->save();
+        (new GenericModelRepository($this->database))->save($floor);
 
         return $floor;
     }
@@ -79,7 +87,9 @@ class FloorRepository
     {
         $floor = $this->find($id);
 
-        return $floor?->delete() ?? false;
+        return $floor !== null
+            ? (new GenericModelRepository($this->database))->delete($floor)
+            : false;
     }
 
     public function points(int $floorId): array

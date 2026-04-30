@@ -30,6 +30,14 @@ class MovementConstraintRepository
         return (new GenericModelRepository($this->database))->find(MovementConstraint::class, $id);
     }
 
+    public function all(string $orderBy = 'id', string $direction = 'ASC'): array
+    {
+        return array_map(
+            static fn (object $constraint): MovementConstraint => $constraint,
+            (new GenericModelRepository($this->database))->all(MovementConstraint::class, $orderBy, $direction)
+        );
+    }
+
     public function create(array $data): MovementConstraint
     {
         $payload = $data;
@@ -82,7 +90,7 @@ class MovementConstraintRepository
             'is_active' => $data['is_active'] ?? 1,
             'created_by' => $data['created_by'] ?? null,
         ]);
-        $constraint->save();
+        (new GenericModelRepository($this->database))->save($constraint);
 
         return $constraint;
     }

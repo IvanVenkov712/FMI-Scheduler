@@ -29,7 +29,7 @@ class CourseRepository
     public function create(array $data): Course
     {
         $course = new Course($data);
-        $course->save();
+        (new GenericModelRepository($this->database))->save($course);
 
         return $course;
     }
@@ -42,7 +42,7 @@ class CourseRepository
         }
 
         $course->fill($data);
-        $course->save();
+        (new GenericModelRepository($this->database))->save($course);
 
         return $course;
     }

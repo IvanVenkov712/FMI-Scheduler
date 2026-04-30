@@ -61,7 +61,7 @@ class ResourceRepository
     public function create(array $data): Resource
     {
         $resource = new Resource($data);
-        $resource->save();
+        (new GenericModelRepository($this->database))->save($resource);
 
         return $resource;
     }
@@ -75,7 +75,7 @@ class ResourceRepository
         }
 
         $resource->fill($data);
-        $resource->save();
+        (new GenericModelRepository($this->database))->save($resource);
 
         return $resource;
     }
@@ -84,7 +84,9 @@ class ResourceRepository
     {
         $resource = $this->find($id);
 
-        return $resource?->delete() ?? false;
+        return $resource !== null
+            ? (new GenericModelRepository($this->database))->delete($resource)
+            : false;
     }
 
     public function roomResources(int $resourceId): array

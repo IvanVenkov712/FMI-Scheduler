@@ -14,6 +14,14 @@ class RoomRepository
         return (new GenericModelRepository($this->database))->find(Room::class, $id);
     }
 
+    public function all(string $orderBy = 'id', string $direction = 'ASC'): array
+    {
+        return array_map(
+            static fn (object $room): Room => $room,
+            (new GenericModelRepository($this->database))->all(Room::class, $orderBy, $direction)
+        );
+    }
+
     public function findByCode(string $code): ?Room
     {
         $row = $this->db()->fetch(
@@ -90,7 +98,7 @@ class RoomRepository
     public function create(array $data): Room
     {
         $room = new Room($data);
-        $room->save();
+        (new GenericModelRepository($this->database))->save($room);
 
         return $room;
     }
@@ -104,7 +112,7 @@ class RoomRepository
         }
 
         $room->fill($data);
-        $room->save();
+        (new GenericModelRepository($this->database))->save($room);
 
         return $room;
     }
@@ -113,7 +121,9 @@ class RoomRepository
     {
         $room = $this->find($id);
 
-        return $room?->delete() ?? false;
+        return $room !== null
+            ? (new GenericModelRepository($this->database))->delete($room)
+            : false;
     }
 
     public function availableBetween(
