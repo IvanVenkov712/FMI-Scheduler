@@ -12,6 +12,14 @@ class AuthService
     ) {
     }
 
+    public function attemptFromInput(array $input, bool $remember = false): array
+    {
+        $login = trim((string) ($input['login'] ?? $input['email'] ?? $input['username'] ?? ''));
+        $password = (string) ($input['password'] ?? '');
+
+        return $this->attempt($login, $password, $remember);
+    }
+
     public function attempt(string $login, string $password, bool $remember = false): array
     {
         $result = $this->validation->validate(

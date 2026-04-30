@@ -54,6 +54,16 @@ abstract class Controller
         return $this->request;
     }
 
+    protected function wantsJson(): bool
+    {
+        $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+        $path = $this->request()['path'] ?? '';
+
+        return str_contains($accept, 'application/json')
+            || str_starts_with((string) $path, '/api')
+            || $this->input('format') === 'json';
+    }
+
     protected function requireFields(array $data, array $fields): array
     {
         $errors = [];

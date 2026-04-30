@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 class AuthController extends Controller
 {
+    private const REGISTRATION_DISABLED_MESSAGE =
+        'Self-service registration is disabled. Accounts are created and managed by administrators.';
+
+    private const REGISTRATION_DISABLED_ERROR =
+        'Self-service registration is disabled. Please contact an administrator for account creation or activation.';
+
     public function __construct(
         array $request = [],
         private readonly AuthService $auth = new AuthService()
@@ -18,24 +24,17 @@ class AuthController extends Controller
 
     public function authenticate(): mixed
     {
-        $data = $this->body();
-        $login = trim((string) ($data['login'] ?? $data['email'] ?? $data['username'] ?? ''));
-        $password = (string) ($data['password'] ?? '');
-        $result = $this->auth->attempt($login, $password);
+        $result = $this->auth->attemptFromInput($this->body());
 
         if (!($result['success'] ?? false)) {
             $errors = (array) ($result['errors'] ?? []);
             $message = (string) (($errors['login'][0] ?? null) ?? 'Invalid credentials.');
-            return $this->authError($message);
+            return $this->authErrorResponse($message);
         }
 
         $user = (array) ($result['user'] ?? []);
 
-        if ($this->wantsJson()) {
-            return ['user' => $user, 'message' => 'Logged in successfully.'];
-        }
-
-        return $this->redirect('/dashboard');
+        return $this->loginSuccessResponse($user);
     }
 
     public function register(): string
@@ -43,23 +42,13 @@ class AuthController extends Controller
         http_response_code(403);
 
         return $this->render('errors/403', [
-            'message' => 'Self-service registration is disabled. Accounts are created and managed by administrators.',
+            'message' => self::REGISTRATION_DISABLED_MESSAGE,
         ]);
     }
 
     public function storeRegistration(): mixed
     {
-        http_response_code(403);
-
-        if ($this->wantsJson()) {
-            return [
-                'error' => 'Self-service registration is disabled. Please contact an administrator for account creation or activation.',
-            ];
-        }
-
-        return $this->render('errors/403', [
-            'message' => 'Self-service registration is disabled. Please contact an administrator for account creation or activation.',
-        ]);
+        return $this->registrationDisabledResponse();
     }
 
     public function logout(): mixed
@@ -70,6 +59,20 @@ class AuthController extends Controller
 
         $this->auth->logout();
 
+        return $this->logoutResponse();
+    }
+
+    private function loginSuccessResponse(array $user): mixed
+    {
+        if ($this->wantsJson()) {
+            return ['user' => $user, 'message' => 'Logged in successfully.'];
+        }
+
+        return $this->redirect('/dashboard');
+    }
+
+    private function logoutResponse(): mixed
+    {
         if ($this->wantsJson()) {
             return ['message' => 'Logged out successfully.'];
         }
@@ -77,7 +80,20 @@ class AuthController extends Controller
         return $this->redirect('/login');
     }
 
-    private function authError(string $message, int $status = 422): mixed
+    private function registrationDisabledResponse(): mixed
+    {
+        http_response_code(403);
+
+        if ($this->wantsJson()) {
+            return ['error' => self::REGISTRATION_DISABLED_ERROR];
+        }
+
+        return $this->render('errors/403', [
+            'message' => self::REGISTRATION_DISABLED_ERROR,
+        ]);
+    }
+
+    private function authErrorResponse(string $message, int $status = 422): mixed
     {
         http_response_code($status);
 
@@ -86,12 +102,5 @@ class AuthController extends Controller
         }
 
         return $this->render('auth/login', ['error' => $message, 'old' => $this->body()]);
-    }
-
-    private function wantsJson(): bool
-    {
-        return str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json')
-            || str_starts_with((string) ($this->request()['path'] ?? ''), '/api')
-            || $this->input('format') === 'json';
     }
 }
