@@ -2,16 +2,12 @@
 
 declare(strict_types=1);
 
-class EventRepository
+class EventRepository extends GenericModelRepository
 {
-    public function __construct(
-        private readonly ?Database $database = null
-    ) {
-    }
 
     public function find(int|string $id): ?Event
     {
-        return (new GenericModelRepository($this->database))->find(Event::class, $id);
+        return $this->findModel(Event::class, $id);
     }
 
     public function all(array $filters = []): array
@@ -68,7 +64,7 @@ class EventRepository
         }
 
         $event = new Event($data);
-        (new GenericModelRepository($this->database))->save($event);
+        $this->saveModel($event);
 
         return $event;
     }
@@ -100,7 +96,7 @@ class EventRepository
         }
 
         $event->fill($data);
-        (new GenericModelRepository($this->database))->save($event);
+        $this->saveModel($event);
 
         return $event;
     }
@@ -131,7 +127,7 @@ class EventRepository
         $event = $this->find($id);
 
         return $event !== null
-            ? (new GenericModelRepository($this->database))->delete($event)
+            ? $this->deleteModel($event)
             : false;
     }
 
@@ -225,14 +221,14 @@ class EventRepository
 
         if ($existing === null) {
             $session = new OnlineSession($payload);
-            (new GenericModelRepository($this->database))->save($session);
+            $this->saveModel($session);
 
             return $session;
         }
 
         $session = new OnlineSession($existing);
         $session->fill($payload);
-        (new GenericModelRepository($this->database))->save($session);
+        $this->saveModel($session);
 
         return $session;
     }
@@ -323,9 +319,6 @@ class EventRepository
             throw new RuntimeException('Room is unavailable in the selected interval.');
         }
     }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
-    }
 }
+
+

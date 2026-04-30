@@ -2,16 +2,12 @@
 
 declare(strict_types=1);
 
-class ScheduleRepository
+class ScheduleRepository extends GenericModelRepository
 {
-    public function __construct(
-        private readonly ?Database $database = null
-    ) {
-    }
 
     public function find(int|string $id): ?Schedule
     {
-        return (new GenericModelRepository($this->database))->find(Schedule::class, $id);
+        return $this->findModel(Schedule::class, $id);
     }
 
     public function all(array $filters = []): array
@@ -49,7 +45,7 @@ class ScheduleRepository
     public function create(array $data): Schedule
     {
         $schedule = new Schedule($data);
-        (new GenericModelRepository($this->database))->save($schedule);
+        $this->saveModel($schedule);
 
         return $schedule;
     }
@@ -63,7 +59,7 @@ class ScheduleRepository
         }
 
         $schedule->fill($data);
-        (new GenericModelRepository($this->database))->save($schedule);
+        $this->saveModel($schedule);
 
         return $schedule;
     }
@@ -73,7 +69,7 @@ class ScheduleRepository
         $schedule = $this->find($id);
 
         return $schedule !== null
-            ? (new GenericModelRepository($this->database))->delete($schedule)
+            ? $this->deleteModel($schedule)
             : false;
     }
 
@@ -171,9 +167,6 @@ class ScheduleRepository
 
         return array_map(static fn (array $row): Event => new Event($row), $rows);
     }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
-    }
 }
+
+

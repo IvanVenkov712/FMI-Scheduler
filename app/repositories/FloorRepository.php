@@ -2,23 +2,19 @@
 
 declare(strict_types=1);
 
-class FloorRepository
+class FloorRepository extends GenericModelRepository
 {
-    public function __construct(
-        private readonly ?Database $database = null
-    ) {
-    }
 
     public function find(int|string $id): ?Floor
     {
-        return (new GenericModelRepository($this->database))->find(Floor::class, $id);
+        return $this->findModel(Floor::class, $id);
     }
 
     public function all(string $orderBy = 'id', string $direction = 'ASC'): array
     {
         return array_map(
             static fn (object $floor): Floor => $floor,
-            (new GenericModelRepository($this->database))->all(Floor::class, $orderBy, $direction)
+            $this->allModels(Floor::class, $orderBy, $direction)
         );
     }
 
@@ -64,7 +60,7 @@ class FloorRepository
     public function create(array $data): Floor
     {
         $floor = new Floor($data);
-        (new GenericModelRepository($this->database))->save($floor);
+        $this->saveModel($floor);
 
         return $floor;
     }
@@ -78,7 +74,7 @@ class FloorRepository
         }
 
         $floor->fill($data);
-        (new GenericModelRepository($this->database))->save($floor);
+        $this->saveModel($floor);
 
         return $floor;
     }
@@ -88,7 +84,7 @@ class FloorRepository
         $floor = $this->find($id);
 
         return $floor !== null
-            ? (new GenericModelRepository($this->database))->delete($floor)
+            ? $this->deleteModel($floor)
             : false;
     }
 
@@ -154,9 +150,6 @@ class FloorRepository
 
         return array_map(static fn (array $row): Room => new Room($row), $rows);
     }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
-    }
 }
+
+

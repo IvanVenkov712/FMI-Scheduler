@@ -2,16 +2,12 @@
 
 declare(strict_types=1);
 
-class StudentGroupRepository
+class StudentGroupRepository extends GenericModelRepository
 {
-    public function __construct(
-        private readonly ?Database $database = null
-    ) {
-    }
 
     public function find(int|string $id): ?StudentGroup
     {
-        return (new GenericModelRepository($this->database))->find(StudentGroup::class, $id);
+        return $this->findModel(StudentGroup::class, $id);
     }
 
     public function findByCode(string $code): ?StudentGroup
@@ -43,7 +39,7 @@ class StudentGroupRepository
     public function create(array $data): StudentGroup
     {
         $group = new StudentGroup($data);
-        (new GenericModelRepository($this->database))->save($group);
+        $this->saveModel($group);
 
         return $group;
     }
@@ -56,7 +52,7 @@ class StudentGroupRepository
         }
 
         $group->fill($data);
-        (new GenericModelRepository($this->database))->save($group);
+        $this->saveModel($group);
 
         return $group;
     }
@@ -96,9 +92,6 @@ class StudentGroupRepository
 
         return array_map(static fn (array $row): int => (int) $row['user_id'], $rows);
     }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
-    }
 }
+
+

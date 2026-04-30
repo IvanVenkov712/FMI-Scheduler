@@ -2,16 +2,12 @@
 
 declare(strict_types=1);
 
-class RequestRepository
+class RequestRepository extends GenericModelRepository
 {
-    public function __construct(
-        private readonly ?Database $database = null
-    ) {
-    }
 
     public function find(int|string $id): ?ExamRequest
     {
-        return (new GenericModelRepository($this->database))->find(ExamRequest::class, $id);
+        return $this->findModel(ExamRequest::class, $id);
     }
 
     public function all(array $filters = []): array
@@ -48,7 +44,7 @@ class RequestRepository
         }
 
         $request = new ExamRequest($data);
-        (new GenericModelRepository($this->database))->save($request);
+        $this->saveModel($request);
 
         return $request;
     }
@@ -66,7 +62,7 @@ class RequestRepository
         }
 
         $request->fill($data);
-        (new GenericModelRepository($this->database))->save($request);
+        $this->saveModel($request);
 
         return $request;
     }
@@ -116,12 +112,9 @@ class RequestRepository
         $request = $this->find($id);
 
         return $request !== null
-            ? (new GenericModelRepository($this->database))->delete($request)
+            ? $this->deleteModel($request)
             : false;
     }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
-    }
 }
+
+

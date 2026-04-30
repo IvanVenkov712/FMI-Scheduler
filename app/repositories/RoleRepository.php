@@ -2,12 +2,8 @@
 
 declare(strict_types=1);
 
-class RoleRepository
+class RoleRepository extends GenericModelRepository
 {
-    public function __construct(
-        private readonly ?Database $database = null
-    ) {
-    }
 
     public function all(): array
     {
@@ -16,7 +12,7 @@ class RoleRepository
 
     public function find(int|string $id): ?Role
     {
-        return (new GenericModelRepository($this->database))->find(Role::class, $id);
+        return $this->findModel(Role::class, $id);
     }
 
     public function users(int $roleId): array
@@ -38,9 +34,6 @@ class RoleRepository
 
         return $row === null ? null : (int) $row['id'];
     }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
-    }
 }
+
+

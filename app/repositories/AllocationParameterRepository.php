@@ -2,16 +2,12 @@
 
 declare(strict_types=1);
 
-class AllocationParameterRepository
+class AllocationParameterRepository extends GenericModelRepository
 {
-    public function __construct(
-        private readonly ?Database $database = null
-    ) {
-    }
 
     public function find(int|string $id): ?AllocationParameter
     {
-        return (new GenericModelRepository($this->database))->find(AllocationParameter::class, $id);
+        return $this->findModel(AllocationParameter::class, $id);
     }
 
     public function findByCode(string $code): ?AllocationParameter
@@ -45,7 +41,7 @@ class AllocationParameterRepository
     public function create(array $data): AllocationParameter
     {
         $item = new AllocationParameter($data);
-        (new GenericModelRepository($this->database))->save($item);
+        $this->saveModel($item);
 
         return $item;
     }
@@ -58,13 +54,10 @@ class AllocationParameterRepository
         }
 
         $item->fill($data);
-        (new GenericModelRepository($this->database))->save($item);
+        $this->saveModel($item);
 
         return $item;
     }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
-    }
 }
+
+

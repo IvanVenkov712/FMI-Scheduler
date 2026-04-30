@@ -2,12 +2,8 @@
 
 declare(strict_types=1);
 
-class AllocationRunRepository
+class AllocationRunRepository extends GenericModelRepository
 {
-    public function __construct(
-        private readonly ?Database $database = null
-    ) {
-    }
 
     public function create(?int $scheduleId, array $input, ?int $userId): string
     {
@@ -46,9 +42,6 @@ class AllocationRunRepository
             ['id' => $id]
         );
     }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
-    }
 }
+
+

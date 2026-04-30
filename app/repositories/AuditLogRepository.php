@@ -2,12 +2,8 @@
 
 declare(strict_types=1);
 
-class AuditLogRepository
+class AuditLogRepository extends GenericModelRepository
 {
-    public function __construct(
-        private readonly ?Database $database = null
-    ) {
-    }
 
     public function find(int|string $id): ?AuditLog
     {
@@ -94,9 +90,6 @@ class AuditLogRepository
 
         return $this->find($id) ?? new AuditLog();
     }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
-    }
 }
+
+

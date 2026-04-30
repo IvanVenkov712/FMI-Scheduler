@@ -2,16 +2,12 @@
 
 declare(strict_types=1);
 
-class ResourceRepository
+class ResourceRepository extends GenericModelRepository
 {
-    public function __construct(
-        private readonly ?Database $database = null
-    ) {
-    }
 
     public function find(int|string $id): ?Resource
     {
-        return (new GenericModelRepository($this->database))->find(Resource::class, $id);
+        return $this->findModel(Resource::class, $id);
     }
 
     public function findBySlug(string $slug): ?Resource
@@ -61,7 +57,7 @@ class ResourceRepository
     public function create(array $data): Resource
     {
         $resource = new Resource($data);
-        (new GenericModelRepository($this->database))->save($resource);
+        $this->saveModel($resource);
 
         return $resource;
     }
@@ -75,7 +71,7 @@ class ResourceRepository
         }
 
         $resource->fill($data);
-        (new GenericModelRepository($this->database))->save($resource);
+        $this->saveModel($resource);
 
         return $resource;
     }
@@ -85,7 +81,7 @@ class ResourceRepository
         $resource = $this->find($id);
 
         return $resource !== null
-            ? (new GenericModelRepository($this->database))->delete($resource)
+            ? $this->deleteModel($resource)
             : false;
     }
 
@@ -258,9 +254,6 @@ class ResourceRepository
             ]
         );
     }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
-    }
 }
+
+

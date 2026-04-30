@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 class GenericModelRepository
 {
+    protected readonly ?Database $database;
+
     public function __construct(
-        private readonly ?Database $database = null
+        ?Database $database = null
     ) {
+        $this->database = $database;
     }
 
-    public function save(Model $model): bool
+    protected function saveModel(Model $model): bool
     {
         $data = $model->repositoryPersistableAttributes();
         $primaryValue = $model->repositoryPrimaryValue();
@@ -35,7 +38,7 @@ class GenericModelRepository
         return true;
     }
 
-    public function delete(Model $model): bool
+    protected function deleteModel(Model $model): bool
     {
         $primaryValue = $model->repositoryPrimaryValue();
         if ($primaryValue === null) {
@@ -54,7 +57,7 @@ class GenericModelRepository
         return $count > 0;
     }
 
-    public function find(string $modelClass, int|string $id): ?object
+    protected function findModel(string $modelClass, int|string $id): ?object
     {
         /** @var Model $model */
         $model = new $modelClass();
@@ -70,7 +73,7 @@ class GenericModelRepository
         return $row === null ? null : new $modelClass($row);
     }
 
-    public function all(string $modelClass, string $orderBy = 'id', string $direction = 'ASC'): array
+    protected function allModels(string $modelClass, string $orderBy = 'id', string $direction = 'ASC'): array
     {
         /** @var Model $model */
         $model = new $modelClass();
@@ -109,8 +112,9 @@ class GenericModelRepository
         return $count >= 0;
     }
 
-    private function db(): Database
+    protected function db(): Database
     {
         return $this->database ?? Database::getInstance(Database::configFromFile());
     }
 }
+

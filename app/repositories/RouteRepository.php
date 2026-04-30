@@ -2,16 +2,12 @@
 
 declare(strict_types=1);
 
-class RouteRepository
+class RouteRepository extends GenericModelRepository
 {
-    public function __construct(
-        private readonly ?Database $database = null
-    ) {
-    }
 
     public function find(int|string $id): ?Route
     {
-        return (new GenericModelRepository($this->database))->find(Route::class, $id);
+        return $this->findModel(Route::class, $id);
     }
 
     public function all(bool $onlyActive = false, string $movementType = ''): array
@@ -44,7 +40,7 @@ class RouteRepository
         }
 
         $route = new Route($data);
-        (new GenericModelRepository($this->database))->save($route);
+        $this->saveModel($route);
 
         return $route;
     }
@@ -62,7 +58,7 @@ class RouteRepository
         }
 
         $route->fill($data);
-        (new GenericModelRepository($this->database))->save($route);
+        $this->saveModel($route);
 
         return $route;
     }
@@ -72,7 +68,7 @@ class RouteRepository
         $route = $this->find($id);
 
         return $route !== null
-            ? (new GenericModelRepository($this->database))->delete($route)
+            ? $this->deleteModel($route)
             : false;
     }
 
@@ -196,11 +192,6 @@ class RouteRepository
                 );
             }
         });
-    }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
     }
 
     private function shortestRoomPath(int $fromRoomId, int $toRoomId, bool $accessibleOnly, string $movementType): ?Route
@@ -979,3 +970,5 @@ class RouteRepository
         ) ASC, distance_meters ASC';
     }
 }
+
+

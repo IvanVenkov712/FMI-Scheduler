@@ -2,16 +2,12 @@
 
 declare(strict_types=1);
 
-class UserRepository
+class UserRepository extends GenericModelRepository
 {
-    public function __construct(
-        private readonly ?Database $database = null
-    ) {
-    }
 
     public function find(int|string $id): ?User
     {
-        return (new GenericModelRepository($this->database))->find(User::class, $id);
+        return $this->findModel(User::class, $id);
     }
 
     public function findByLogin(string $login): ?User
@@ -105,7 +101,7 @@ class UserRepository
     public function create(array $data): User
     {
         $user = new User($data);
-        (new GenericModelRepository($this->database))->save($user);
+        $this->saveModel($user);
 
         return $user;
     }
@@ -119,7 +115,7 @@ class UserRepository
         }
 
         $user->fill($data);
-        (new GenericModelRepository($this->database))->save($user);
+        $this->saveModel($user);
 
         return $user;
     }
@@ -129,7 +125,7 @@ class UserRepository
         $user = $this->find($id);
 
         return $user !== null
-            ? (new GenericModelRepository($this->database))->delete($user)
+            ? $this->deleteModel($user)
             : false;
     }
 
@@ -219,9 +215,6 @@ class UserRepository
 
         return array_map(static fn (array $row): ExamRequest => new ExamRequest($row), $rows);
     }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
-    }
 }
+
+

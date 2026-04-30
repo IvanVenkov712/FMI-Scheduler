@@ -2,23 +2,19 @@
 
 declare(strict_types=1);
 
-class RoomRepository
+class RoomRepository extends GenericModelRepository
 {
-    public function __construct(
-        private readonly ?Database $database = null
-    ) {
-    }
 
     public function find(int|string $id): ?Room
     {
-        return (new GenericModelRepository($this->database))->find(Room::class, $id);
+        return $this->findModel(Room::class, $id);
     }
 
     public function all(string $orderBy = 'id', string $direction = 'ASC'): array
     {
         return array_map(
             static fn (object $room): Room => $room,
-            (new GenericModelRepository($this->database))->all(Room::class, $orderBy, $direction)
+            $this->allModels(Room::class, $orderBy, $direction)
         );
     }
 
@@ -98,7 +94,7 @@ class RoomRepository
     public function create(array $data): Room
     {
         $room = new Room($data);
-        (new GenericModelRepository($this->database))->save($room);
+        $this->saveModel($room);
 
         return $room;
     }
@@ -112,7 +108,7 @@ class RoomRepository
         }
 
         $room->fill($data);
-        (new GenericModelRepository($this->database))->save($room);
+        $this->saveModel($room);
 
         return $room;
     }
@@ -122,7 +118,7 @@ class RoomRepository
         $room = $this->find($id);
 
         return $room !== null
-            ? (new GenericModelRepository($this->database))->delete($room)
+            ? $this->deleteModel($room)
             : false;
     }
 
@@ -315,9 +311,6 @@ class RoomRepository
             ['room_id' => $roomId]
         );
     }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
-    }
 }
+
+

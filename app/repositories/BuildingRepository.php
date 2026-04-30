@@ -2,16 +2,12 @@
 
 declare(strict_types=1);
 
-class BuildingRepository
+class BuildingRepository extends GenericModelRepository
 {
-    public function __construct(
-        private readonly ?Database $database = null
-    ) {
-    }
 
     public function find(int|string $id): ?Building
     {
-        return (new GenericModelRepository($this->database))->find(Building::class, $id);
+        return $this->findModel(Building::class, $id);
     }
 
     public function findByCode(string $code): ?Building
@@ -64,7 +60,7 @@ class BuildingRepository
     public function create(array $data): Building
     {
         $building = new Building($data);
-        (new GenericModelRepository($this->database))->save($building);
+        $this->saveModel($building);
 
         return $building;
     }
@@ -78,7 +74,7 @@ class BuildingRepository
         }
 
         $building->fill($data);
-        (new GenericModelRepository($this->database))->save($building);
+        $this->saveModel($building);
 
         return $building;
     }
@@ -88,7 +84,7 @@ class BuildingRepository
         $building = $this->find($id);
 
         return $building !== null
-            ? (new GenericModelRepository($this->database))->delete($building)
+            ? $this->deleteModel($building)
             : false;
     }
 
@@ -139,9 +135,6 @@ class BuildingRepository
 
         return array_map(static fn (array $row): Route => new Route($row), $rows);
     }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
-    }
 }
+
+

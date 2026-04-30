@@ -2,16 +2,12 @@
 
 declare(strict_types=1);
 
-class CourseRepository
+class CourseRepository extends GenericModelRepository
 {
-    public function __construct(
-        private readonly ?Database $database = null
-    ) {
-    }
 
     public function find(int|string $id): ?Course
     {
-        return (new GenericModelRepository($this->database))->find(Course::class, $id);
+        return $this->findModel(Course::class, $id);
     }
 
     public function findByCode(string $code): ?Course
@@ -29,7 +25,7 @@ class CourseRepository
     public function create(array $data): Course
     {
         $course = new Course($data);
-        (new GenericModelRepository($this->database))->save($course);
+        $this->saveModel($course);
 
         return $course;
     }
@@ -42,13 +38,10 @@ class CourseRepository
         }
 
         $course->fill($data);
-        (new GenericModelRepository($this->database))->save($course);
+        $this->saveModel($course);
 
         return $course;
     }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
-    }
 }
+
+

@@ -2,12 +2,8 @@
 
 declare(strict_types=1);
 
-class MovementConstraintRepository
+class MovementConstraintRepository extends GenericModelRepository
 {
-    public function __construct(
-        private readonly ?Database $database = null
-    ) {
-    }
 
     public function active(?DateTimeInterface $at = null): array
     {
@@ -27,14 +23,14 @@ class MovementConstraintRepository
 
     public function find(int|string $id): ?MovementConstraint
     {
-        return (new GenericModelRepository($this->database))->find(MovementConstraint::class, $id);
+        return $this->findModel(MovementConstraint::class, $id);
     }
 
     public function all(string $orderBy = 'id', string $direction = 'ASC'): array
     {
         return array_map(
             static fn (object $constraint): MovementConstraint => $constraint,
-            (new GenericModelRepository($this->database))->all(MovementConstraint::class, $orderBy, $direction)
+            $this->allModels(MovementConstraint::class, $orderBy, $direction)
         );
     }
 
@@ -90,13 +86,10 @@ class MovementConstraintRepository
             'is_active' => $data['is_active'] ?? 1,
             'created_by' => $data['created_by'] ?? null,
         ]);
-        (new GenericModelRepository($this->database))->save($constraint);
+        $this->saveModel($constraint);
 
         return $constraint;
     }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
-    }
 }
+
+

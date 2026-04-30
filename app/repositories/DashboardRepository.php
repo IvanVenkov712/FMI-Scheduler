@@ -2,12 +2,8 @@
 
 declare(strict_types=1);
 
-class DashboardRepository
+class DashboardRepository extends GenericModelRepository
 {
-    public function __construct(
-        private readonly ?Database $database = null
-    ) {
-    }
 
     public function stats(): array
     {
@@ -40,9 +36,6 @@ class DashboardRepository
             ['status' => 'pending']
         );
     }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
-    }
 }
+
+

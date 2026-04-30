@@ -2,12 +2,8 @@
 
 declare(strict_types=1);
 
-class ImportExportJobRepository
+class ImportExportJobRepository extends GenericModelRepository
 {
-    public function __construct(
-        private readonly ?Database $database = null
-    ) {
-    }
 
     public function recent(int $limit = 100): array
     {
@@ -45,9 +41,6 @@ class ImportExportJobRepository
             ]
         );
     }
-
-    private function db(): Database
-    {
-        return $this->database ?? Database::getInstance(Database::configFromFile());
-    }
 }
+
+
