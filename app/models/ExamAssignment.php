@@ -6,13 +6,13 @@ use App\core\Model;
 class ExamAssignment extends Model
 {
     public $id = 0;
-    public $examRequestId = 0;
-    public $roomId = 0;
-    public $examDate = '';
-    public $startTime = '';
-    public $endTime = '';
-    public $bufferBeforeMinutes = 0;
-    public $bufferAfterMinutes = 0;
-    public $allocationStatus = 'draft';
+    public $exam_request_id = 0;
+    public $room_id = 0;
+    public $exam_date = '';
+    public $start_time = '';
+    public $end_time = '';
+    public $buffer_before_minutes = 0;
+    public $buffer_after_minutes = 0;
+    public $allocation_status = 'draft';
     public $notes = '';
 }

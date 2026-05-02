@@ -6,8 +6,8 @@ use App\core\Model;
 
 class Room extends Model
 {
-    public  $id = 0;
-    public $floorId = 0;
+    public $id = 0;
+    public $floor_id = 0;
     public $name = '';
     public $roomType = 'physical';
     public $capacity = 0;

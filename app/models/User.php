@@ -1,0 +1,16 @@
+<?php
+namespace App\models;
+
+use App\core\Model;
+
+class User extends Model
+{
+    public $id = 0;
+    public $username = "";
+    public $first_name = '';
+    public $last_name = '';
+    public $email = '';
+    public $passwordHash = '';
+    public $role = 'student';
+    public $isActive = true;
+}

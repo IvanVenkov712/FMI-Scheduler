@@ -7,8 +7,8 @@ use App\core\Model;
 class ResourceRequirement extends Model
 {
     public $id = 0;
-    public $examRequestId = 0;
-    public $resourceName = '';
-    public $requiredQuantity = 1;
+    public $exam_request_id = 0;
+    public $resource_id = '';
+    public $required_quantity = 1;
     public $notes = '';
 }
