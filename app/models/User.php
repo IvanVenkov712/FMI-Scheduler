@@ -10,7 +10,7 @@ class User extends Model
     public $first_name = '';
     public $last_name = '';
     public $email = '';
-    public $passwordHash = '';
+    public $password_hash = '';
     public $role = 'student';
     public $isActive = true;
 }
