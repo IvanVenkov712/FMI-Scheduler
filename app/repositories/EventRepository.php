@@ -3,6 +3,7 @@ namespace App\Repositories;
 use App\Core\Repository;
 use App\models\User;
 use App\models\Event;
+use App\models\OnlineAccess;
 use App\models\Room;
 use App\models\ResourceRequirement;
 
@@ -68,8 +69,16 @@ class EventRepository extends Repository {
     }
 
     public function get_online_access($id) {
-        
+        $statement = $this->database->connection()->prepare(
+            "SELECT oa.* FROM `online_access` oa
+            INNER JOIN `events` e ON e.online_access_id = oa.id
+            WHERE e.id = ? LIMIT 1"
+        );
+        $statement->bindValue(1, $id);
+        $statement->execute();
+
+        $row = $statement->fetch();
+
+        return $row === false ? null : new OnlineAccess($row);
     }
-
-
 }

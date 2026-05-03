@@ -1,0 +1,52 @@
+Date : 2026-05-03 19:24:36
+Directory : c:\Users\ivanv\FMI\WebProject
+Total : 19 files,  721 codes, 4 comments, 144 blanks, all 869 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| PHP      |         17 |        562 |          4 |        130 |        696 |
+| MS SQL   |          1 |        158 |          0 |         13 |        171 |
+| Markdown |          1 |          1 |          0 |          1 |          2 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++--------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                               | files      | code       | comment    | blank      | total      |
++--------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                  |         19 |        721 |          4 |        144 |        869 |
+| . (Files)                                                          |          1 |          1 |          0 |          1 |          2 |
+| app                                                                |         17 |        562 |          4 |        130 |        696 |
+| app\core                                                           |          3 |        168 |          0 |         35 |        203 |
+| app\exceptions                                                     |          1 |          8 |          0 |          1 |          9 |
+| app\models                                                         |         10 |        122 |          0 |         35 |        157 |
+| app\repositories                                                   |          3 |        264 |          4 |         59 |        327 |
+| database                                                           |          1 |        158 |          0 |         13 |        171 |
++--------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++--------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                                           | language | code       | comment    | blank      | total      |
++--------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| c:\Users\ivanv\FMI\WebProject\README.md                            | Markdown |          1 |          0 |          1 |          2 |
+| c:\Users\ivanv\FMI\WebProject\app\core\Database.php                | PHP      |         31 |          0 |          6 |         37 |
+| c:\Users\ivanv\FMI\WebProject\app\core\Model.php                   | PHP      |         21 |          0 |          4 |         25 |
+| c:\Users\ivanv\FMI\WebProject\app\core\Repository.php              | PHP      |        116 |          0 |         25 |        141 |
+| c:\Users\ivanv\FMI\WebProject\app\exceptions\InsertException.php   | PHP      |          8 |          0 |          1 |          9 |
+| c:\Users\ivanv\FMI\WebProject\app\models\Building.php              | PHP      |         13 |          0 |          3 |         16 |
+| c:\Users\ivanv\FMI\WebProject\app\models\Event.php                 | PHP      |         17 |          0 |          6 |         23 |
+| c:\Users\ivanv\FMI\WebProject\app\models\Floor.php                 | PHP      |         12 |          0 |          3 |         15 |
+| c:\Users\ivanv\FMI\WebProject\app\models\OnlineAccess.php          | PHP      |         11 |          0 |          4 |         15 |
+| c:\Users\ivanv\FMI\WebProject\app\models\Resource.php              | PHP      |          8 |          0 |          2 |         10 |
+| c:\Users\ivanv\FMI\WebProject\app\models\ResourceRequirement.php   | PHP      |         11 |          0 |          4 |         15 |
+| c:\Users\ivanv\FMI\WebProject\app\models\Room.php                  | PHP      |         14 |          0 |          4 |         18 |
+| c:\Users\ivanv\FMI\WebProject\app\models\RoomResource.php          | PHP      |          8 |          0 |          2 |         10 |
+| c:\Users\ivanv\FMI\WebProject\app\models\RouteSegment.php          | PHP      |         14 |          0 |          4 |         18 |
+| c:\Users\ivanv\FMI\WebProject\app\models\User.php                  | PHP      |         14 |          0 |          3 |         17 |
+| c:\Users\ivanv\FMI\WebProject\app\repositories\EventRepository.php | PHP      |         61 |          0 |         15 |         76 |
+| c:\Users\ivanv\FMI\WebProject\app\repositories\RoomRepository.php  | PHP      |        137 |          4 |         26 |        167 |
+| c:\Users\ivanv\FMI\WebProject\app\repositories\UserRepository.php  | PHP      |         66 |          0 |         18 |         84 |
+| c:\Users\ivanv\FMI\WebProject\database\schema.sql                  | MS SQL   |        158 |          0 |         13 |        171 |
+| Total                                                              |          |        721 |          4 |        144 |        869 |
++--------------------------------------------------------------------+----------+------------+------------+------------+------------+

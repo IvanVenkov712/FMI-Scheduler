@@ -1,0 +1,227 @@
+"filename", "language", "PHP", "MS SQL", "CSV", "Log", "JavaScript", "PostCSS", "comment", "blank", "total"
+"c:\Users\ivanv\FMI\WebProject\app\controllers\AllocationController.php", "PHP", -121, 0, 0, 0, 0, 0, 0, -28, -149
+"c:\Users\ivanv\FMI\WebProject\app\controllers\AuthController.php", "PHP", -76, 0, 0, 0, 0, 0, 0, -22, -98
+"c:\Users\ivanv\FMI\WebProject\app\controllers\BuildingController.php", "PHP", -81, 0, 0, 0, 0, 0, -2, -20, -103
+"c:\Users\ivanv\FMI\WebProject\app\controllers\CrudController.php", "PHP", -217, 0, 0, 0, 0, 0, -1, -60, -278
+"c:\Users\ivanv\FMI\WebProject\app\controllers\DashboardController.php", "PHP", -15, 0, 0, 0, 0, 0, 0, -4, -19
+"c:\Users\ivanv\FMI\WebProject\app\controllers\EventController.php", "PHP", -151, 0, 0, 0, 0, 0, -2, -38, -191
+"c:\Users\ivanv\FMI\WebProject\app\controllers\FloorController.php", "PHP", -110, 0, 0, 0, 0, 0, -3, -24, -137
+"c:\Users\ivanv\FMI\WebProject\app\controllers\ImportExportController.php", "PHP", -236, 0, 0, 0, 0, 0, 0, -58, -294
+"c:\Users\ivanv\FMI\WebProject\app\controllers\RequestController.php", "PHP", -208, 0, 0, 0, 0, 0, -5, -56, -269
+"c:\Users\ivanv\FMI\WebProject\app\controllers\ResourceController.php", "PHP", -87, 0, 0, 0, 0, 0, -2, -23, -112
+"c:\Users\ivanv\FMI\WebProject\app\controllers\RoomController.php", "PHP", -116, 0, 0, 0, 0, 0, -2, -26, -144
+"c:\Users\ivanv\FMI\WebProject\app\controllers\RouteController.php", "PHP", -144, 0, 0, 0, 0, 0, -2, -35, -181
+"c:\Users\ivanv\FMI\WebProject\app\controllers\ScheduleController.php", "PHP", -91, 0, 0, 0, 0, 0, -2, -25, -118
+"c:\Users\ivanv\FMI\WebProject\app\controllers\UserController.php", "PHP", -128, 0, 0, 0, 0, 0, -3, -38, -169
+"c:\Users\ivanv\FMI\WebProject\app\core\App.php", "PHP", -146, 0, 0, 0, 0, 0, 0, -37, -183
+"c:\Users\ivanv\FMI\WebProject\app\core\Controller.php", "PHP", -57, 0, 0, 0, 0, 0, 0, -18, -75
+"c:\Users\ivanv\FMI\WebProject\app\core\Database.php", "PHP", -83, 0, 0, 0, 0, 0, 0, -22, -105
+"c:\Users\ivanv\FMI\WebProject\app\core\Model.php", "PHP", -81, 0, 0, 0, 0, 0, -2, -23, -106
+"c:\Users\ivanv\FMI\WebProject\app\core\Repository.php", "PHP", 116, 0, 0, 0, 0, 0, 0, 25, 141
+"c:\Users\ivanv\FMI\WebProject\app\core\Router.php", "PHP", -177, 0, 0, 0, 0, 0, 0, -54, -231
+"c:\Users\ivanv\FMI\WebProject\app\core\View.php", "PHP", -83, 0, 0, 0, 0, 0, 0, -24, -107
+"c:\Users\ivanv\FMI\WebProject\app\exceptions\InsertException.php", "PHP", 8, 0, 0, 0, 0, 0, 0, 1, 9
+"c:\Users\ivanv\FMI\WebProject\app\helpers\AsciiPlanParser.php", "PHP", -75, 0, 0, 0, 0, 0, 0, -22, -97
+"c:\Users\ivanv\FMI\WebProject\app\helpers\CsvParser.php", "PHP", -93, 0, 0, 0, 0, 0, 0, -29, -122
+"c:\Users\ivanv\FMI\WebProject\app\helpers\FileUploader.php", "PHP", -95, 0, 0, 0, 0, 0, 0, -24, -119
+"c:\Users\ivanv\FMI\WebProject\app\helpers\ResourceRequirementHelper.php", "PHP", -67, 0, 0, 0, 0, 0, 0, -22, -89
+"c:\Users\ivanv\FMI\WebProject\app\helpers\Response.php", "PHP", -75, 0, 0, 0, 0, 0, 0, -18, -93
+"c:\Users\ivanv\FMI\WebProject\app\helpers\SensitiveData.php", "PHP", -42, 0, 0, 0, 0, 0, 0, -14, -56
+"c:\Users\ivanv\FMI\WebProject\app\helpers\SessionHelper.php", "PHP", -191, 0, 0, 0, 0, 0, 0, -60, -251
+"c:\Users\ivanv\FMI\WebProject\app\helpers\Validator.php", "PHP", -143, 0, 0, 0, 0, 0, 0, -35, -178
+"c:\Users\ivanv\FMI\WebProject\app\helpers\XmlDataParser.php", "PHP", -113, 0, 0, 0, 0, 0, 0, -34, -147
+"c:\Users\ivanv\FMI\WebProject\app\middleware\AdminMiddleware.php", "PHP", -19, 0, 0, 0, 0, 0, 0, -8, -27
+"c:\Users\ivanv\FMI\WebProject\app\middleware\AuthMiddleware.php", "PHP", -124, 0, 0, 0, 0, 0, 0, -39, -163
+"c:\Users\ivanv\FMI\WebProject\app\middleware\CsrfMiddleware.php", "PHP", -52, 0, 0, 0, 0, 0, 0, -17, -69
+"c:\Users\ivanv\FMI\WebProject\app\middleware\RoleMiddleware.php", "PHP", -52, 0, 0, 0, 0, 0, 0, -14, -66
+"c:\Users\ivanv\FMI\WebProject\app\models\AllocationParameter.php", "PHP", -24, 0, 0, 0, 0, 0, 0, -7, -31
+"c:\Users\ivanv\FMI\WebProject\app\models\AuditLog.php", "PHP", -50, 0, 0, 0, 0, 0, 0, -12, -62
+"c:\Users\ivanv\FMI\WebProject\app\models\Building.php", "PHP", -44, 0, 0, 0, 0, 0, 0, -9, -53
+"c:\Users\ivanv\FMI\WebProject\app\models\Course.php", "PHP", -11, 0, 0, 0, 0, 0, 0, -3, -14
+"c:\Users\ivanv\FMI\WebProject\app\models\Event.php", "PHP", -54, 0, 0, 0, 0, 0, 0, -13, -67
+"c:\Users\ivanv\FMI\WebProject\app\models\ExamRequest.php", "PHP", -79, 0, 0, 0, 0, 0, 0, -18, -97
+"c:\Users\ivanv\FMI\WebProject\app\models\Floor.php", "PHP", -38, 0, 0, 0, 0, 0, 0, -7, -45
+"c:\Users\ivanv\FMI\WebProject\app\models\MovementConstraint.php", "PHP", -75, 0, 0, 0, 0, 0, 0, -23, -98
+"c:\Users\ivanv\FMI\WebProject\app\models\OnlineAccess.php", "PHP", 11, 0, 0, 0, 0, 0, 0, 4, 15
+"c:\Users\ivanv\FMI\WebProject\app\models\OnlineSession.php", "PHP", -40, 0, 0, 0, 0, 0, 0, -11, -51
+"c:\Users\ivanv\FMI\WebProject\app\models\ResolvedRoute.php", "PHP", -11, 0, 0, 0, 0, 0, 0, -4, -15
+"c:\Users\ivanv\FMI\WebProject\app\models\Resource.php", "PHP", -21, 0, 0, 0, 0, 0, 0, -5, -26
+"c:\Users\ivanv\FMI\WebProject\app\models\ResourceRequirement.php", "PHP", 11, 0, 0, 0, 0, 0, 0, 4, 15
+"c:\Users\ivanv\FMI\WebProject\app\models\Role.php", "PHP", -29, 0, 0, 0, 0, 0, 0, -9, -38
+"c:\Users\ivanv\FMI\WebProject\app\models\Room.php", "PHP", -60, 0, 0, 0, 0, 0, 0, -15, -75
+"c:\Users\ivanv\FMI\WebProject\app\models\RoomResource.php", "PHP", -23, 0, 0, 0, 0, 0, 0, -7, -30
+"c:\Users\ivanv\FMI\WebProject\app\models\RoomType.php", "PHP", -29, 0, 0, 0, 0, 0, 0, -7, -36
+"c:\Users\ivanv\FMI\WebProject\app\models\Route.php", "PHP", -105, 0, 0, 0, 0, 0, 0, -31, -136
+"c:\Users\ivanv\FMI\WebProject\app\models\RouteSegment.php", "PHP", 14, 0, 0, 0, 0, 0, 0, 4, 18
+"c:\Users\ivanv\FMI\WebProject\app\models\Schedule.php", "PHP", -50, 0, 0, 0, 0, 0, 0, -13, -63
+"c:\Users\ivanv\FMI\WebProject\app\models\StudentGroup.php", "PHP", -13, 0, 0, 0, 0, 0, 0, -3, -16
+"c:\Users\ivanv\FMI\WebProject\app\models\User.php", "PHP", -50, 0, 0, 0, 0, 0, 0, -13, -63
+"c:\Users\ivanv\FMI\WebProject\app\repositories\AllocationParameterRepository.php", "PHP", -57, 0, 0, 0, 0, 0, 0, -14, -71
+"c:\Users\ivanv\FMI\WebProject\app\repositories\AllocationRunRepository.php", "PHP", -48, 0, 0, 0, 0, 0, 0, -7, -55
+"c:\Users\ivanv\FMI\WebProject\app\repositories\AuditLogRepository.php", "PHP", -83, 0, 0, 0, 0, 0, 0, -20, -103
+"c:\Users\ivanv\FMI\WebProject\app\repositories\BuildingRepository.php", "PHP", -112, 0, 0, 0, 0, 0, 0, -34, -146
+"c:\Users\ivanv\FMI\WebProject\app\repositories\CourseRepository.php", "PHP", -42, 0, 0, 0, 0, 0, 0, -13, -55
+"c:\Users\ivanv\FMI\WebProject\app\repositories\DashboardRepository.php", "PHP", -40, 0, 0, 0, 0, 0, 0, -9, -49
+"c:\Users\ivanv\FMI\WebProject\app\repositories\EventRepository.php", "PHP", -203, 0, 0, 0, 0, 0, 0, -51, -254
+"c:\Users\ivanv\FMI\WebProject\app\repositories\FloorRepository.php", "PHP", -117, 0, 0, 0, 0, 0, 0, -36, -153
+"c:\Users\ivanv\FMI\WebProject\app\repositories\GenericModelRepository.php", "PHP", -95, 0, 0, 0, 0, 0, -2, -20, -117
+"c:\Users\ivanv\FMI\WebProject\app\repositories\ImportExportJobRepository.php", "PHP", -47, 0, 0, 0, 0, 0, 0, -7, -54
+"c:\Users\ivanv\FMI\WebProject\app\repositories\MovementConstraintRepository.php", "PHP", -81, 0, 0, 0, 0, 0, 0, -14, -95
+"c:\Users\ivanv\FMI\WebProject\app\repositories\OnlineSessionRepository.php", "PHP", -32, 0, 0, 0, 0, 0, 0, -8, -40
+"c:\Users\ivanv\FMI\WebProject\app\repositories\RequestRepository.php", "PHP", -95, 0, 0, 0, 0, 0, 0, -31, -126
+"c:\Users\ivanv\FMI\WebProject\app\repositories\ResourceRepository.php", "PHP", -218, 0, 0, 0, 0, 0, 0, -47, -265
+"c:\Users\ivanv\FMI\WebProject\app\repositories\RoleRepository.php", "PHP", -37, 0, 0, 0, 0, 0, 0, -10, -47
+"c:\Users\ivanv\FMI\WebProject\app\repositories\RoomRepository.php", "PHP", -123, 0, 0, 0, 0, 0, 4, -28, -147
+"c:\Users\ivanv\FMI\WebProject\app\repositories\RoomTypeRepository.php", "PHP", -29, 0, 0, 0, 0, 0, 0, -8, -37
+"c:\Users\ivanv\FMI\WebProject\app\repositories\RouteRepository.php", "PHP", -810, 0, 0, 0, 0, 0, 0, -170, -980
+"c:\Users\ivanv\FMI\WebProject\app\repositories\ScheduleRepository.php", "PHP", -146, 0, 0, 0, 0, 0, 0, -32, -178
+"c:\Users\ivanv\FMI\WebProject\app\repositories\StudentGroupRepository.php", "PHP", -86, 0, 0, 0, 0, 0, 0, -19, -105
+"c:\Users\ivanv\FMI\WebProject\app\repositories\UserRepository.php", "PHP", -111, 0, 0, 0, 0, 0, 0, -31, -142
+"c:\Users\ivanv\FMI\WebProject\app\services\AllocationParameterService.php", "PHP", -87, 0, 0, 0, 0, 0, 0, -22, -109
+"c:\Users\ivanv\FMI\WebProject\app\services\AllocationService.php", "PHP", -493, 0, 0, 0, 0, 0, -2, -106, -601
+"c:\Users\ivanv\FMI\WebProject\app\services\AuthService.php", "PHP", -109, 0, 0, 0, 0, 0, 0, -31, -140
+"c:\Users\ivanv\FMI\WebProject\app\services\BuildingService.php", "PHP", -99, 0, 0, 0, 0, 0, 0, -24, -123
+"c:\Users\ivanv\FMI\WebProject\app\services\ConstraintService.php", "PHP", -137, 0, 0, 0, 0, 0, 0, -32, -169
+"c:\Users\ivanv\FMI\WebProject\app\services\CourseService.php", "PHP", -53, 0, 0, 0, 0, 0, 0, -14, -67
+"c:\Users\ivanv\FMI\WebProject\app\services\DashboardService.php", "PHP", -17, 0, 0, 0, 0, 0, 0, -4, -21
+"c:\Users\ivanv\FMI\WebProject\app\services\EventService.php", "PHP", -258, 0, 0, 0, 0, 0, 0, -55, -313
+"c:\Users\ivanv\FMI\WebProject\app\services\ExportService.php", "PHP", -292, 0, 0, 0, 0, 0, 0, -65, -357
+"c:\Users\ivanv\FMI\WebProject\app\services\FloorService.php", "PHP", -135, 0, 0, 0, 0, 0, 0, -33, -168
+"c:\Users\ivanv\FMI\WebProject\app\services\ImportExportJobService.php", "PHP", -13, 0, 0, 0, 0, 0, 0, -4, -17
+"c:\Users\ivanv\FMI\WebProject\app\services\ImportService.php", "PHP", -640, 0, 0, 0, 0, 0, -2, -140, -782
+"c:\Users\ivanv\FMI\WebProject\app\services\RequestService.php", "PHP", -198, 0, 0, 0, 0, 0, 0, -44, -242
+"c:\Users\ivanv\FMI\WebProject\app\services\ResourceService.php", "PHP", -158, 0, 0, 0, 0, 0, 0, -41, -199
+"c:\Users\ivanv\FMI\WebProject\app\services\RoomService.php", "PHP", -188, 0, 0, 0, 0, 0, 0, -43, -231
+"c:\Users\ivanv\FMI\WebProject\app\services\RouteService.php", "PHP", -225, 0, 0, 0, 0, 0, 0, -48, -273
+"c:\Users\ivanv\FMI\WebProject\app\services\ScheduleService.php", "PHP", -201, 0, 0, 0, 0, 0, 0, -49, -250
+"c:\Users\ivanv\FMI\WebProject\app\services\StudentGroupService.php", "PHP", -70, 0, 0, 0, 0, 0, 0, -19, -89
+"c:\Users\ivanv\FMI\WebProject\app\services\UserService.php", "PHP", -148, 0, 0, 0, 0, 0, 0, -37, -185
+"c:\Users\ivanv\FMI\WebProject\app\services\ValidationService.php", "PHP", -77, 0, 0, 0, 0, 0, 0, -23, -100
+"c:\Users\ivanv\FMI\WebProject\app\views\allocation\auto-assign.php", "PHP", -22, 0, 0, 0, 0, 0, 0, -6, -28
+"c:\Users\ivanv\FMI\WebProject\app\views\allocation\result.php", "PHP", -73, 0, 0, 0, 0, 0, 0, -8, -81
+"c:\Users\ivanv\FMI\WebProject\app\views\allocation\search.php", "PHP", -70, 0, 0, 0, 0, 0, 0, -7, -77
+"c:\Users\ivanv\FMI\WebProject\app\views\auth\login.php", "PHP", -324, 0, 0, 0, 0, 0, 0, -49, -373
+"c:\Users\ivanv\FMI\WebProject\app\views\auth\register.php", "PHP", -427, 0, 0, 0, 0, 0, 0, -62, -489
+"c:\Users\ivanv\FMI\WebProject\app\views\buildings\create.php", "PHP", -30, 0, 0, 0, 0, 0, 0, -3, -33
+"c:\Users\ivanv\FMI\WebProject\app\views\buildings\details.php", "PHP", -47, 0, 0, 0, 0, 0, 0, -8, -55
+"c:\Users\ivanv\FMI\WebProject\app\views\buildings\edit.php", "PHP", -32, 0, 0, 0, 0, 0, 0, -3, -35
+"c:\Users\ivanv\FMI\WebProject\app\views\buildings\index.php", "PHP", -27, 0, 0, 0, 0, 0, 0, -3, -30
+"c:\Users\ivanv\FMI\WebProject\app\views\dashboard\index.php", "PHP", -137, 0, 0, 0, 0, 0, 0, -10, -147
+"c:\Users\ivanv\FMI\WebProject\app\views\errors\403.php", "PHP", -8, 0, 0, 0, 0, 0, 0, -2, -10
+"c:\Users\ivanv\FMI\WebProject\app\views\errors\404.php", "PHP", -8, 0, 0, 0, 0, 0, 0, -2, -10
+"c:\Users\ivanv\FMI\WebProject\app\views\errors\419.php", "PHP", -8, 0, 0, 0, 0, 0, 0, -2, -10
+"c:\Users\ivanv\FMI\WebProject\app\views\errors\500.php", "PHP", -8, 0, 0, 0, 0, 0, 0, -2, -10
+"c:\Users\ivanv\FMI\WebProject\app\views\events\create.php", "PHP", -35, 0, 0, 0, 0, 0, 0, -3, -38
+"c:\Users\ivanv\FMI\WebProject\app\views\events\details.php", "PHP", -47, 0, 0, 0, 0, 0, 0, -7, -54
+"c:\Users\ivanv\FMI\WebProject\app\views\events\edit.php", "PHP", -47, 0, 0, 0, 0, 0, 0, -3, -50
+"c:\Users\ivanv\FMI\WebProject\app\views\events\index.php", "PHP", -29, 0, 0, 0, 0, 0, 0, -3, -32
+"c:\Users\ivanv\FMI\WebProject\app\views\floors\create.php", "PHP", -27, 0, 0, 0, 0, 0, 0, -3, -30
+"c:\Users\ivanv\FMI\WebProject\app\views\floors\details.php", "PHP", -22, 0, 0, 0, 0, 0, 0, -3, -25
+"c:\Users\ivanv\FMI\WebProject\app\views\floors\edit.php", "PHP", -117, 0, 0, 0, 0, 0, 0, -12, -129
+"c:\Users\ivanv\FMI\WebProject\app\views\floors\index.php", "PHP", -30, 0, 0, 0, 0, 0, 0, -3, -33
+"c:\Users\ivanv\FMI\WebProject\app\views\import-export\export.php", "PHP", -44, 0, 0, 0, 0, 0, 0, -6, -50
+"c:\Users\ivanv\FMI\WebProject\app\views\import-export\history.php", "PHP", -46, 0, 0, 0, 0, 0, 0, -8, -54
+"c:\Users\ivanv\FMI\WebProject\app\views\import-export\import.php", "PHP", -50, 0, 0, 0, 0, 0, 0, -8, -58
+"c:\Users\ivanv\FMI\WebProject\app\views\layouts\footer.php", "PHP", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\app\views\layouts\header.php", "PHP", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\app\views\layouts\navbar.php", "PHP", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\app\views\layouts\sidebar.php", "PHP", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\app\views\requests\create.php", "PHP", -33, 0, 0, 0, 0, 0, 0, -3, -36
+"c:\Users\ivanv\FMI\WebProject\app\views\requests\details.php", "PHP", -28, 0, 0, 0, 0, 0, 0, -6, -34
+"c:\Users\ivanv\FMI\WebProject\app\views\requests\edit.php", "PHP", -36, 0, 0, 0, 0, 0, 0, -3, -39
+"c:\Users\ivanv\FMI\WebProject\app\views\requests\index.php", "PHP", -28, 0, 0, 0, 0, 0, 0, -3, -31
+"c:\Users\ivanv\FMI\WebProject\app\views\requests\review.php", "PHP", -49, 0, 0, 0, 0, 0, 0, -8, -57
+"c:\Users\ivanv\FMI\WebProject\app\views\resources\create.php", "PHP", -15, 0, 0, 0, 0, 0, 0, -3, -18
+"c:\Users\ivanv\FMI\WebProject\app\views\resources\details.php", "PHP", -18, 0, 0, 0, 0, 0, 0, -3, -21
+"c:\Users\ivanv\FMI\WebProject\app\views\resources\edit.php", "PHP", -18, 0, 0, 0, 0, 0, 0, -3, -21
+"c:\Users\ivanv\FMI\WebProject\app\views\resources\index.php", "PHP", -24, 0, 0, 0, 0, 0, 0, -3, -27
+"c:\Users\ivanv\FMI\WebProject\app\views\resources\manage.php", "PHP", -68, 0, 0, 0, 0, 0, 0, -7, -75
+"c:\Users\ivanv\FMI\WebProject\app\views\rooms\availability.php", "PHP", -77, 0, 0, 0, 0, 0, 0, -8, -85
+"c:\Users\ivanv\FMI\WebProject\app\views\rooms\create.php", "PHP", -32, 0, 0, 0, 0, 0, 0, -3, -35
+"c:\Users\ivanv\FMI\WebProject\app\views\rooms\details.php", "PHP", -42, 0, 0, 0, 0, 0, 0, -8, -50
+"c:\Users\ivanv\FMI\WebProject\app\views\rooms\edit.php", "PHP", -35, 0, 0, 0, 0, 0, 0, -3, -38
+"c:\Users\ivanv\FMI\WebProject\app\views\rooms\index.php", "PHP", -33, 0, 0, 0, 0, 0, 0, -3, -36
+"c:\Users\ivanv\FMI\WebProject\app\views\routes\create.php", "PHP", -26, 0, 0, 0, 0, 0, 0, -3, -29
+"c:\Users\ivanv\FMI\WebProject\app\views\routes\details.php", "PHP", -49, 0, 0, 0, 0, 0, 0, -7, -56
+"c:\Users\ivanv\FMI\WebProject\app\views\routes\edit.php", "PHP", -29, 0, 0, 0, 0, 0, 0, -3, -32
+"c:\Users\ivanv\FMI\WebProject\app\views\routes\index.php", "PHP", -32, 0, 0, 0, 0, 0, 0, -3, -35
+"c:\Users\ivanv\FMI\WebProject\app\views\routes\map.php", "PHP", -48, 0, 0, 0, 0, 0, 0, -7, -55
+"c:\Users\ivanv\FMI\WebProject\app\views\schedules\calendar.php", "PHP", -36, 0, 0, 0, 0, 0, 0, -7, -43
+"c:\Users\ivanv\FMI\WebProject\app\views\schedules\create.php", "PHP", -17, 0, 0, 0, 0, 0, 0, -3, -20
+"c:\Users\ivanv\FMI\WebProject\app\views\schedules\details.php", "PHP", -61, 0, 0, 0, 0, 0, 0, -7, -68
+"c:\Users\ivanv\FMI\WebProject\app\views\schedules\edit.php", "PHP", -20, 0, 0, 0, 0, 0, 0, -3, -23
+"c:\Users\ivanv\FMI\WebProject\app\views\schedules\index.php", "PHP", -33, 0, 0, 0, 0, 0, 0, -3, -36
+"c:\Users\ivanv\FMI\WebProject\app\views\shared\crud-details.php", "PHP", -58, 0, 0, 0, 0, 0, 0, -8, -66
+"c:\Users\ivanv\FMI\WebProject\app\views\shared\crud-form.php", "PHP", -139, 0, 0, 0, 0, 0, 0, -21, -160
+"c:\Users\ivanv\FMI\WebProject\app\views\shared\crud-index.php", "PHP", -101, 0, 0, 0, 0, 0, 0, -9, -110
+"c:\Users\ivanv\FMI\WebProject\app\views\shared\ui.php", "PHP", -630, 0, 0, 0, 0, 0, 0, -98, -728
+"c:\Users\ivanv\FMI\WebProject\app\views\users\create.php", "PHP", -24, 0, 0, 0, 0, 0, 0, -3, -27
+"c:\Users\ivanv\FMI\WebProject\app\views\users\edit.php", "PHP", -38, 0, 0, 0, 0, 0, 0, -3, -41
+"c:\Users\ivanv\FMI\WebProject\app\views\users\index.php", "PHP", -35, 0, 0, 0, 0, 0, 0, -3, -38
+"c:\Users\ivanv\FMI\WebProject\app\views\users\manage.php", "PHP", -3, 0, 0, 0, 0, 0, 0, -2, -5
+"c:\Users\ivanv\FMI\WebProject\app\views\users\profile.php", "PHP", -29, 0, 0, 0, 0, 0, 0, -4, -33
+"c:\Users\ivanv\FMI\WebProject\config\app.php", "PHP", -57, 0, 0, 0, 0, 0, 0, -10, -67
+"c:\Users\ivanv\FMI\WebProject\config\constants.php", "PHP", -96, 0, 0, 0, 0, 0, 0, -12, -108
+"c:\Users\ivanv\FMI\WebProject\config\database.php", "PHP", -23, 0, 0, 0, 0, 0, 0, -4, -27
+"c:\Users\ivanv\FMI\WebProject\config\routes.php", "PHP", -2, 0, 0, 0, 0, 0, -2, -3, -7
+"c:\Users\ivanv\FMI\WebProject\database\migrations\001_create_users_table.sql", "MS SQL", 0, -21, 0, 0, 0, 0, 0, -1, -22
+"c:\Users\ivanv\FMI\WebProject\database\migrations\002_create_roles_table.sql", "MS SQL", 0, -16, 0, 0, 0, 0, 0, -2, -18
+"c:\Users\ivanv\FMI\WebProject\database\migrations\003_create_buildings_table.sql", "MS SQL", 0, -19, 0, 0, 0, 0, 0, -1, -20
+"c:\Users\ivanv\FMI\WebProject\database\migrations\004_create_floors_table.sql", "MS SQL", 0, -39, 0, 0, 0, 0, 0, -2, -41
+"c:\Users\ivanv\FMI\WebProject\database\migrations\005_create_rooms_table.sql", "MS SQL", 0, -61, 0, 0, 0, 0, 0, -3, -64
+"c:\Users\ivanv\FMI\WebProject\database\migrations\006_create_resources_table.sql", "MS SQL", 0, -64, 0, 0, 0, 0, 0, -3, -67
+"c:\Users\ivanv\FMI\WebProject\database\migrations\007_create_events_table.sql", "MS SQL", 0, -93, 0, 0, 0, 0, 0, -4, -97
+"c:\Users\ivanv\FMI\WebProject\database\migrations\008_create_schedules_table.sql", "MS SQL", 0, -65, 0, 0, 0, 0, 0, -3, -68
+"c:\Users\ivanv\FMI\WebProject\database\migrations\009_create_routes_table.sql", "MS SQL", 0, -69, 0, 0, 0, 0, 0, -2, -71
+"c:\Users\ivanv\FMI\WebProject\database\migrations\010_create_constraints_table.sql", "MS SQL", 0, -83, 0, 0, 0, 0, 0, -3, -86
+"c:\Users\ivanv\FMI\WebProject\database\migrations\011_create_audit_logs_table.sql", "MS SQL", 0, -29, 0, 0, 0, 0, 0, -2, -31
+"c:\Users\ivanv\FMI\WebProject\database\migrations\012_alter_routes_multi_duration.sql", "MS SQL", 0, -20, 0, 0, 0, 0, 0, -3, -23
+"c:\Users\ivanv\FMI\WebProject\database\migrations\013_create_catalog_import_tables.sql", "MS SQL", 0, -65, 0, 0, 0, 0, 0, -4, -69
+"c:\Users\ivanv\FMI\WebProject\database\migrations\014_alter_online_sessions_access_fields.sql", "MS SQL", 0, -4, 0, 0, 0, 0, 0, -1, -5
+"c:\Users\ivanv\FMI\WebProject\database\migrations\015_alter_exam_requests_online_fields.sql", "MS SQL", 0, -12, 0, 0, 0, 0, 0, -1, -13
+"c:\Users\ivanv\FMI\WebProject\database\migrations\016_alter_events_required_resources.sql", "MS SQL", 0, -2, 0, 0, 0, 0, 0, -1, -3
+"c:\Users\ivanv\FMI\WebProject\database\migrations\017_alter_routes_directionality.sql", "MS SQL", 0, -15, 0, 0, 0, 0, 0, -3, -18
+"c:\Users\ivanv\FMI\WebProject\database\schema.sql", "MS SQL", 0, 107, 0, 0, 0, 0, 0, 7, 114
+"c:\Users\ivanv\FMI\WebProject\database\seed.sql", "MS SQL", 0, -6, 0, 0, 0, 0, 0, -2, -8
+"c:\Users\ivanv\FMI\WebProject\database\seeders\buildings_seeder.sql", "MS SQL", 0, -20, 0, 0, 0, 0, 0, -1, -21
+"c:\Users\ivanv\FMI\WebProject\database\seeders\floors_seeder.sql", "MS SQL", 0, -33, 0, 0, 0, 0, 0, -2, -35
+"c:\Users\ivanv\FMI\WebProject\database\seeders\roles_seeder.sql", "MS SQL", 0, -11, 0, 0, 0, 0, 0, -1, -12
+"c:\Users\ivanv\FMI\WebProject\database\seeders\rooms_seeder.sql", "MS SQL", 0, -77, 0, 0, 0, 0, 0, -6, -83
+"c:\Users\ivanv\FMI\WebProject\database\seeders\users_seeder.sql", "MS SQL", 0, -21, 0, 0, 0, 0, 0, -1, -22
+"c:\Users\ivanv\FMI\WebProject\index.php", "PHP", -134, 0, 0, 0, 0, 0, 0, -43, -177
+"c:\Users\ivanv\FMI\WebProject\public\css\dashboard.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\public\css\forms.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\public\css\layout.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\public\css\main.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\public\css\planner.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\public\css\schedule.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\public\index.php", "PHP", -3, 0, 0, 0, 0, 0, 0, -3, -6
+"c:\Users\ivanv\FMI\WebProject\public\js\allocation.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\public\js\api.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\public\js\building-editor.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\public\js\dragdrop.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\public\js\import-export.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\public\js\main.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\public\js\room-visualization.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\public\js\route-map.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\public\js\schedule-calendar.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\public\js\validation.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\routes\api.php", "PHP", -47, 0, 0, 0, 0, 0, -1, -15, -63
+"c:\Users\ivanv\FMI\WebProject\routes\web.php", "PHP", -126, 0, 0, 0, 0, 0, -1, -17, -144
+"c:\Users\ivanv\FMI\WebProject\storage\exports\buildings-20260422-173704.csv", "CSV", 0, 0, -4, 0, 0, 0, 0, -1, -5
+"c:\Users\ivanv\FMI\WebProject\storage\logs\app.log", "Log", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\storage\logs\audit.log", "Log", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\storage\logs\error.log", "Log", 0, 0, 0, 0, 0, 0, 0, -1, -1
+"c:\Users\ivanv\FMI\WebProject\tests\bootstrap.php", "PHP", -30, 0, 0, 0, 0, 0, 0, -7, -37
+"c:\Users\ivanv\FMI\WebProject\tests\integration\RequestServiceTest.php", "PHP", -224, 0, 0, 0, 0, 0, -2, -47, -273
+"c:\Users\ivanv\FMI\WebProject\tests\unit\EventModelTest.php", "PHP", -31, 0, 0, 0, 0, 0, 0, -8, -39
+"c:\Users\ivanv\FMI\WebProject\tests\unit\EventServiceTest.php", "PHP", -78, 0, 0, 0, 0, 0, 0, -16, -94
+"c:\Users\ivanv\FMI\WebProject\tests\unit\ImportExportControllerTest.php", "PHP", -20, 0, 0, 0, 0, 0, 0, -8, -28
+"c:\Users\ivanv\FMI\WebProject\tests\unit\RoomRepositoryTest.php", "PHP", -36, 0, 0, 0, 0, 0, 0, -10, -46
+"c:\Users\ivanv\FMI\WebProject\tests\unit\RoomServiceTest.php", "PHP", -85, 0, 0, 0, 0, 0, 0, -16, -101
+"c:\Users\ivanv\FMI\WebProject\tests\unit\RouteRepositoryTest.php", "PHP", -248, 0, 0, 0, 0, 0, 0, -28, -276
+"c:\Users\ivanv\FMI\WebProject\tests\unit\RouteServiceTest.php", "PHP", -46, 0, 0, 0, 0, 0, 0, -9, -55
+"c:\Users\ivanv\FMI\WebProject\tests\unit\ScheduleServiceTest.php", "PHP", -186, 0, 0, 0, 0, 0, 0, -31, -217
+"c:\Users\ivanv\FMI\WebProject\tests\unit\ValidationServiceTest.php", "PHP", -38, 0, 0, 0, 0, 0, 0, -10, -48
+"c:\Users\ivanv\FMI\WebProject\tests\unit\ValidatorTest.php", "PHP", -39, 0, 0, 0, 0, 0, 0, -8, -47
+"Total", "-", -15613, -738, -4, 0, 0, 0, -34, -3450, -19839

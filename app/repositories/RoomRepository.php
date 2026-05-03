@@ -6,6 +6,7 @@ use App\Models\Floor;
 use App\Models\Resource;
 use App\Models\RouteSegment;
 use App\Models\Room;
+use App\Models\RoomResource;
 
 class RoomRepository extends Repository {
     public function __construct($database) {
@@ -42,18 +43,17 @@ class RoomRepository extends Repository {
         );
     }
 
-    public function get_available_resources($id){
+    public function get_available_resources($id) {
         $statement = $this->database->connection()->prepare(
-            "SELECT r.* FROM `resources` r
-            INNER JOIN `room_resources` rr ON rr.resource_id = r.id
-            WHERE rr.room_id = ?
+            "SELECT * FROM `room_resources` r
+            WHERE r.room_id = ?
             ORDER BY r.id ASC"
         );
         $statement->bindValue(1, $id);
         $statement->execute();
 
-        return array_map(
-            fn ($row) => new Resource($row),
+        return array_map (
+            fn ($row) => new RoomResource($row),
             $statement->fetchAll()
         );
     }
@@ -79,11 +79,12 @@ class RoomRepository extends Repository {
         return true;
     }
 
+    // updates the quantity of the resource for the room.
+    // if the resource was not present, adds it in the room_resource table
+    // if $new_quantity = 0, removes the resource for the room.
     public function update_resource($room_id, $resource_id, $new_quantity) {
-        // updates the quantity of the resource for the room.
-        // if the resource was not present, adds it in the room_resource table
-        // if $new_quantity = 0, removes the resource for the room.
-        if ((int) $new_quantity <= 0) {
+        
+        if ($new_quantity <= 0) {
             $statement = $this->database->connection()->prepare(
                 "DELETE FROM `room_resources` WHERE room_id = ? AND resource_id = ?"
             );
@@ -119,15 +120,15 @@ class RoomRepository extends Repository {
 
         return true;
     }
-
+        
+    //checks if there are no events with status "approved" in this time period.
     public function is_room_available($id, $start_time, $end_time) {
-        //checks if there are no events with status "approved" in this time period.
         $statement = $this->database->connection()->prepare(
             "SELECT 1 FROM `events`
             WHERE room_id = ?
             AND status = 'approved'
-            AND start_time < ?
-            AND end_time > ?
+            AND start_time <= ?
+            AND end_time >= ?
             LIMIT 1"
         );
         $statement->bindValue(1, $id);
