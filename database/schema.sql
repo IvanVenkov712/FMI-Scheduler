@@ -114,14 +114,14 @@ CREATE TABLE IF NOT EXISTS `events` (
 
 CREATE TABLE IF NOT EXISTS `resource_requirements` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `event_request_id` INT UNSIGNED NOT NULL,
+    `event_id` INT UNSIGNED NOT NULL,
     `resource_id` INT UNSIGNED NOT NULL,
     `required_quantity` INT NOT NULL DEFAULT 1,
     `notes` TEXT NOT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_resource_requirements_request_resource` (`event_request_id`, `resource_id`),
-    CONSTRAINT `fk_resource_requirements_event_request`
-        FOREIGN KEY (`event_request_id`) REFERENCES `event_requests` (`id`)
+    CONSTRAINT `fk_resource_requirements_event`
+        FOREIGN KEY (`event_id`) REFERENCES `events` (`id`)
         ON UPDATE CASCADE
         ON DELETE CASCADE,
     CONSTRAINT `fk_resource_requirements_resource`
