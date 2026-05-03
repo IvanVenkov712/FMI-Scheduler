@@ -28,4 +28,9 @@ class Database
     public function close() {
         $this->connection = null;
     }
+
+    public function __destruct()
+    {
+        $this->close();
+    }
 }
