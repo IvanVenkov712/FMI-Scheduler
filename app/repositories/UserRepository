@@ -8,5 +8,27 @@ class UserRepository extends Repository {
         parent::__construct($database, User::class, "users");
     }
 
-    
+    public function find_by_username($username) {
+
+    }
+
+    public function find_by_email($email) {
+
+    }
+
+    public function get_requested_events($id) {
+
+    }
+
+    public function get_id_by_username($username) {
+
+    }
+
+    public function get_id_by_email($email) {
+
+    }
+
+    public function get_role($id) {
+        
+    }
 }
