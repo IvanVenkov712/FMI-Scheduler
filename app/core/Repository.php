@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Core;
+use \InvalidArgumentException;
+use \App\Exceptions\InsertException;
 
 class Repository
 {
@@ -17,7 +19,10 @@ class Repository
         $this->database = $database;
         $this->model_class = $model_class;
         $this->table = $table;
-        $this->table_fields = get_class_vars($this->model_class);
+        $this->table_fields = array_keys(get_class_vars($this->model_class));
+        if(!in_array('id', $this->table_fields)){
+            throw new InvalidArgumentException('The base repository works under the assumption there is id field');
+        }
     }
 
     public function find_all()
@@ -64,8 +69,8 @@ class Repository
         for( $i = 0; $i < count($values); $i++ ) {
             $statement->bindValue($i + 1, $values[$i]);
         }
-        $responce = $statement->execute();
-        return $responce;
+        $statement->execute();
+        return $this->database->connection()->lastInsertId();
     }
 
     public function update($id, $model)
@@ -84,7 +89,7 @@ class Repository
         }
 
         if ($assignments === []) {
-            return true;
+            return false;
         }
         $params['id'] = $id;
         $sql = sprintf(
