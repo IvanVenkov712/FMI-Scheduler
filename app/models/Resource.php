@@ -6,6 +6,5 @@ use App\Core\Model;
 class Resource extends Model {
     public $id = 0;
     public $name = '';
-    public $table = '';
     public $description = '';
 }

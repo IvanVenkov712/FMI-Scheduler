@@ -10,7 +10,6 @@ class Building extends Model
     public $code = '';
     public $address = '';
     public $campus_area = '';
-    public $vertical_view = 'north';
     public $floor_count = 0;
     public $is_active = true;
 }
