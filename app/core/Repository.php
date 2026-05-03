@@ -37,6 +37,16 @@ class Repository
         );
     }
 
+    public function exists($id) {
+        $statement = $this->database->connection()->prepare(
+            "SELECT 1 FROM `{$this->table}` WHERE id = ? LIMIT 1"
+        );
+        $statement->bindValue(1, $id);
+        $statement->execute();
+
+        return $statement->fetchColumn() !== false;
+    }
+
     public function find_by_id($id)
     {
         $statement = $this->database->connection()->prepare(
