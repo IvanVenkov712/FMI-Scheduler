@@ -112,14 +112,7 @@ class Repository
     protected function map_row_to_model($row)
     {
         $model = new $this->model_class();
-        $data = [];
-
-        foreach ($row as $column => $value) {
-            $data[$column] = $value;
-        }
-
-        $model->fill($data);
-
+        $model->fill($row);
         return $model;
     }
 }
