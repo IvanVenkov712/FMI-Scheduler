@@ -1,7 +1,7 @@
 <?php
 namespace App\models;
 
-use App\core\Model;
+use App\Core\Model;
 
 class Resource extends Model {
     public $id = 0;

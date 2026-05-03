@@ -2,7 +2,7 @@
 
 namespace App\models;
 
-use App\core\Model;
+use App\Core\Model;
 
 class ResourceRequirement extends Model
 {

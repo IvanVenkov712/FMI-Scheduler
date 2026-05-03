@@ -1,7 +1,7 @@
 <?php
 namespace App\models;
 
-use App\core\Model;
+use App\Core\Model;
 
 class Event extends Model {
     public $id = 0;    
