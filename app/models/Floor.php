@@ -9,6 +9,6 @@ class Floor extends Model
     public $building_id = 0;
     public $level = 0;
     public  $name = '';
-    public $asciiPlan = '';
+    public $ascii_plan = '';
     public $notes = '';
 }
