@@ -12,5 +12,5 @@ class User extends Model
     public $email = '';
     public $password_hash = '';
     public $role = 'student';
-    public $isActive = true;
+    public $is_active = true;
 }
