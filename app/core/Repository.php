@@ -3,6 +3,7 @@
 namespace App\Core;
 use \InvalidArgumentException;
 use \App\Exceptions\InsertException;
+use \Throwable;
 
 class Repository
 {
@@ -65,11 +66,16 @@ class Repository
             implode(', ', $placeholders)
         );
 
-        $statement = $this->database->connection()->prepare($sql);
-        for( $i = 0; $i < count($values); $i++ ) {
-            $statement->bindValue($i + 1, $values[$i]);
+        try {
+            $statement = $this->database->connection()->prepare($sql);
+            for( $i = 0; $i < count($values); $i++ ) {
+                $statement->bindValue($i + 1, $values[$i]);
+            }
+            $statement->execute();
+        } catch (Throwable $exception) {
+            throw new InsertException("Problem occured while inserting.");
         }
-        $statement->execute();
+
         return $this->database->connection()->lastInsertId();
     }
 
@@ -99,8 +105,9 @@ class Repository
         );
 
         $statement = $this->database->connection()->prepare($sql);
-        $result = $statement->execute($params);
-        return $result;
+        $statement->execute($params);
+
+        return $statement->rowCount() > 0;
     }
 
     public function delete($id)
@@ -109,9 +116,9 @@ class Repository
             "DELETE FROM `{$this->table}` WHERE id = ?"
         );
         $statement->bindValue(1, $id);
-        $result = $statement->execute();
+        $statement->execute();
 
-        return $result;
+        return $statement->rowCount() > 0;
     }
 
     protected function map_row_to_model($row)
