@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS `events` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `room_id` INT UNSIGNED NOT NULL,
     `requestor_id` INT UNSIGNED NOT NULL,
+    `online_access_id` INT UNSIGNED NULL,
     `name` VARCHAR(150) NOT NULL DEFAULT '',
     `type` VARCHAR(50) NOT NULL DEFAULT 'lecture',
     `start_time` DATETIME NOT NULL,
@@ -107,6 +108,10 @@ CREATE TABLE IF NOT EXISTS `events` (
         ON DELETE RESTRICT,
      CONSTRAINT `fk_events_user`
         FOREIGN KEY (`requestor_id`) REFERENCES `users` (`id`)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+     CONSTRAINT `fk_events_online_accesses`
+        FOREIGN KEY (`online_access_id`) REFERENCES `online_access` (`id`)
         ON UPDATE CASCADE
         ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -152,15 +157,14 @@ CREATE TABLE IF NOT EXISTS `route_segments` (
 
 CREATE TABLE IF NOT EXISTS `online_access` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `event_request_id` INT UNSIGNED NOT NULL,
+    `event_id` INT UNSIGNED NOT NULL,
     `platform` VARCHAR(100) NOT NULL DEFAULT '',
     `meeting_link` VARCHAR(500) NOT NULL DEFAULT '',
     `access_key` VARCHAR(255) NOT NULL DEFAULT '',
     `host_notes` TEXT NOT NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_online_access_exam_request_id` (`exam_request_id`),
-    CONSTRAINT `fk_online_access_event_request`
-        FOREIGN KEY (`event_request_id`) REFERENCES `event_requests` (`id`)
+    CONSTRAINT `fk_online_access_event`
+        FOREIGN KEY (`event_id`) REFERENCES `events` (`id`)
         ON UPDATE CASCADE
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

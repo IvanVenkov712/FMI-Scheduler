@@ -7,6 +7,7 @@ class Event extends Model {
     public $id = 0;
     public $requestor_id = 0;
     public $room_id = 0;
+    public $online_access_id = 0;
     public $name = '';
     public $type = 'lecture';
     public $start_time = '';

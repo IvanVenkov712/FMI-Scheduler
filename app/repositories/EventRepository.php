@@ -66,4 +66,10 @@ class EventRepository extends Repository {
             $statement->fetchAll()
         );
     }
+
+    public function get_online_access($id) {
+        
+    }
+
+
 }
