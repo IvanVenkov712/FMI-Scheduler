@@ -71,7 +71,7 @@ class RoomRepository extends Repository {
 
             $available_quantity = $statement->fetchColumn();
 
-            if ($available_quantity === false || (int) $available_quantity < (int) $requirement->required_quantity) {
+            if ($available_quantity === false || $available_quantity < $requirement->required_quantity) {
                 return false;
             }
         }
