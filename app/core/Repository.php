@@ -48,7 +48,7 @@ class Repository
     {
         $payload = $model->to_array();
         unset($payload["id"]);
-        $columns = array_keys($payload);
+        $columns = array_map(fn ($column) => "`$column`", array_keys($payload));
         $values = array_values($payload);
 
         $placeholders = array_map(fn ($key) => '?', $columns);
@@ -84,7 +84,7 @@ class Repository
         }
 
         if ($assignments === []) {
-            return $this->find_by_id($id);
+            return true;
         }
         $params['id'] = $id;
         $sql = sprintf(

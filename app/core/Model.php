@@ -17,7 +17,7 @@ abstract class Model
         }
     }
 
-    public function toArray()
+    public function to_array()
     {
         return get_object_vars($this);
     }
