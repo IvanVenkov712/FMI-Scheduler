@@ -81,4 +81,8 @@ class UserRepository extends Repository {
 
         return $row === false ? null : $row["role"];
     }
+
+    public function user_exists($id) {
+        
+    }
 }
