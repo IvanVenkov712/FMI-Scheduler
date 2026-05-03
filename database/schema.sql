@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS `room_resources` (
 CREATE TABLE IF NOT EXISTS `events` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `room_id` INT UNSIGNED NOT NULL,
+    `requestor_id` INT UNSIGNED NOT NULL,
     `name` VARCHAR(150) NOT NULL DEFAULT '',
     `type` VARCHAR(50) NOT NULL DEFAULT 'lecture',
     `date` DATE NULL,
@@ -98,30 +99,17 @@ CREATE TABLE IF NOT EXISTS `events` (
     `delivery_mode` VARCHAR(50) NOT NULL DEFAULT 'physical',
     `subject_name` VARCHAR(150) NOT NULL DEFAULT '',
     `student_count` INT NOT NULL DEFAULT 0,
+    `status` VARCHAR(50) NOT NULL DEFAULT 'pending',
     PRIMARY KEY (`id`),
     KEY `idx_events_room_date_time` (`room_id`, `date`, `start_time`),
     CONSTRAINT `fk_events_room`
         FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`)
         ON UPDATE CASCADE
-        ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS `event_requests` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `requestor_id` INT UNSIGNED NOT NULL,
-    `event_id` INT UNSIGNED NOT NULL,
-    `status` VARCHAR(50) NOT NULL DEFAULT 'pending',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_event_requests_event_id` (`event_id`),
-    KEY `idx_event_requests_requestor_status` (`requestor_id`, `status`),
-    CONSTRAINT `fk_event_requests_requestor`
+        ON DELETE RESTRICT,
+     CONSTRAINT `fk_events_user`
         FOREIGN KEY (`requestor_id`) REFERENCES `users` (`id`)
         ON UPDATE CASCADE
-        ON DELETE RESTRICT,
-    CONSTRAINT `fk_event_requests_event`
-        FOREIGN KEY (`event_id`) REFERENCES `events` (`id`)
-        ON UPDATE CASCADE
-        ON DELETE CASCADE
+        ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `resource_requirements` (
