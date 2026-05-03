@@ -9,7 +9,6 @@ class Event extends Model {
     public $room_id = 0;
     public $name = '';
     public $type = 'lecture';
-    public $date = '';
     public $start_time = '';
     public $end_time = '';
     public $delivery_mode = 'physical';
