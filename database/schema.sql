@@ -91,7 +91,6 @@ CREATE TABLE IF NOT EXISTS `events` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `room_id` INT UNSIGNED NOT NULL,
     `requestor_id` INT UNSIGNED NOT NULL,
-    `online_access_id` INT UNSIGNED NULL,
     `name` VARCHAR(150) NOT NULL DEFAULT '',
     `type` VARCHAR(50) NOT NULL DEFAULT 'lecture',
     `start_time` DATETIME NOT NULL,
@@ -101,19 +100,23 @@ CREATE TABLE IF NOT EXISTS `events` (
     `student_count` INT NOT NULL DEFAULT 0,
     `status` VARCHAR(50) NOT NULL DEFAULT 'pending',
     PRIMARY KEY (`id`),
-    KEY `idx_events_room_date_time` (`room_id`, `date`, `start_time`),
     CONSTRAINT `fk_events_room`
         FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
-     CONSTRAINT `fk_events_user`
+    CONSTRAINT `fk_events_user`
         FOREIGN KEY (`requestor_id`) REFERENCES `users` (`id`)
         ON UPDATE CASCADE
         ON DELETE RESTRICT
-     CONSTRAINT `fk_events_online_accesses`
-        FOREIGN KEY (`online_access_id`) REFERENCES `online_access` (`id`)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `schedules` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(150) NOT NULL DEFAULT '',
+    `description` TEXT NOT NULL,
+    `start_date` DATE NOT NULL,
+    `end_date` DATE NOT NULL,
+    PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `resource_requirements` (
@@ -154,6 +157,22 @@ CREATE TABLE IF NOT EXISTS `route_segments` (
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `movement_constraints` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `route_segment_id` INT UNSIGNED NOT NULL,
+    `constraint_type` VARCHAR(50) NOT NULL DEFAULT '',
+    `max_capacity` INT NOT NULL DEFAULT 0,
+    `start_time` DATETIME NOT NULL,
+    `end_time` DATETIME NOT NULL,
+    `notes` TEXT NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_movement_constraints_segment_time` (`route_segment_id`, `start_time`, `end_time`),
+    CONSTRAINT `fk_movement_constraints_route_segment`
+        FOREIGN KEY (`route_segment_id`) REFERENCES `route_segments` (`id`)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `online_access` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `event_id` INT UNSIGNED NOT NULL,
@@ -163,6 +182,20 @@ CREATE TABLE IF NOT EXISTS `online_access` (
     `host_notes` TEXT NOT NULL,
     PRIMARY KEY (`id`),
     CONSTRAINT `fk_online_access_event`
+        FOREIGN KEY (`event_id`) REFERENCES `events` (`id`)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `schedule_events` (
+    `schedule_id` INT UNSIGNED NOT NULL,
+    `event_id` INT UNSIGNED NOT NULL,
+    PRIMARY KEY (`schedule_id`, `event_id`),
+    CONSTRAINT `fk_schedule_events_schedule`
+        FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`id`)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+    CONSTRAINT `fk_schedule_events_event`
         FOREIGN KEY (`event_id`) REFERENCES `events` (`id`)
         ON UPDATE CASCADE
         ON DELETE CASCADE
