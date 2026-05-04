@@ -1,0 +1,20 @@
+<?php
+namespace App\Repositories;
+use App\Core\Repository;
+use App\Models\Schedule;
+use App\Models\Event;
+
+class ScheduleRepository extends Repository 
+{
+    public function __construct($database) 
+    {
+        parent::__construct($database, Schedule::class, 'schedules');
+    }
+
+    public function get_events($id)
+    {
+
+    }
+
+    
+}
