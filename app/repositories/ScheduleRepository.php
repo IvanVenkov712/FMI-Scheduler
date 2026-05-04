@@ -28,5 +28,16 @@ class ScheduleRepository extends Repository
         );
     }
 
-    
+    public function add_event_in_schedule($schedule_id, $event_id)
+    {
+        $statement = $this->database->connection()->prepare(
+            "INSERT INTO `schedule_events` (`schedule_id`, `event_id`)
+            VALUES (?, ?)"
+        );
+        $statement->bindValue(1, $schedule_id);
+        $statement->bindValue(2, $event_id);
+        $statement->execute();
+
+        return $statement->rowCount() > 0;
+    }
 }
