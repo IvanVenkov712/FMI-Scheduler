@@ -69,15 +69,59 @@ class EventRepository extends Repository {
     }
 
     public function get_online_access($id) {
+        $event = $this->find_by_id($id);
         $statement = $this->database->connection()->prepare(
-            "SELECT oa.* FROM `online_access` oa
-            WHERE oa.event_id = ? LIMIT 1"
+            "SELECT * FROM `online_access`
+            WHERE online_access.id = ? LIMIT 1"
         );
-        $statement->bindValue(1, $id);
+        $statement->bindValue(1, $event->online_access_id);
         $statement->execute();
 
         $row = $statement->fetch();
 
         return $row === false ? null : new OnlineAccess($row);
+    }
+
+    public function replace_resource_requirements($event_id, $resource_requirements)
+    {
+        $statement = $this->database->connection()->prepare(
+            "DELETE FROM `resource_requirements` WHERE event_id = ?"
+        );
+        $statement->bindValue(1, $event_id);
+        $statement->execute();
+
+        foreach ($resource_requirements as $requirement) {
+            $statement = $this->database->connection()->prepare(
+                "INSERT INTO `resource_requirements`
+                (`event_id`, `resource_id`, `required_quantity`, `notes`)
+                VALUES (?, ?, ?, ?)"
+            );
+            $statement->bindValue(1, $event_id);
+            $statement->bindValue(2, $requirement->resource_id);
+            $statement->bindValue(3, $requirement->required_quantity);
+            $statement->bindValue(4, $requirement->notes);
+            $statement->execute();
+        }
+    }
+
+    public function upsert_online_access($event_id, $online_access)
+    {
+        $event = $this->find_by_id($event_id);
+        if ($event === null) {
+            return;
+        }
+        $statement = $this->database->connection()->prepare(
+            "INSERT INTO `online_access`
+            (`platform`, `meeting_link`, `access_key`, `host_notes`)
+            VALUES (?, ?, ?, ?)"
+        );
+        $statement->bindValue(1, $online_access->platform);
+        $statement->bindValue(2, $online_access->meeting_link);
+        $statement->bindValue(3, $online_access->access_key);
+        $statement->bindValue(4, $online_access->host_notes);
+        $statement->execute();
+        $event->online_access_id = $statement->lastInsertid();
+        $this->update($event_id, $event);
+        return;
     }
 }

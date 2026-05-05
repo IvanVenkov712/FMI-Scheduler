@@ -89,7 +89,8 @@ CREATE TABLE IF NOT EXISTS `room_resources` (
 
 CREATE TABLE IF NOT EXISTS `events` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `room_id` INT UNSIGNED NOT NULL,
+    `room_id` INT UNSIGNED NULL,
+    `online_access_id` INT UNSIGNED NULL,
     `requestor_id` INT UNSIGNED NOT NULL,
     `name` VARCHAR(150) NOT NULL DEFAULT '',
     `type` VARCHAR(50) NOT NULL DEFAULT 'lecture',
@@ -102,6 +103,10 @@ CREATE TABLE IF NOT EXISTS `events` (
     PRIMARY KEY (`id`),
     CONSTRAINT `fk_events_room`
         FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+    CONSTRAINT `fk_events_online_access`
+        FOREIGN KEY (`online_access_id`) REFERENCES `online_access` (`id`)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
     CONSTRAINT `fk_events_user`
@@ -175,16 +180,11 @@ CREATE TABLE IF NOT EXISTS `movement_constraints` (
 
 CREATE TABLE IF NOT EXISTS `online_access` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `event_id` INT UNSIGNED NOT NULL,
     `platform` VARCHAR(100) NOT NULL DEFAULT '',
     `meeting_link` VARCHAR(500) NOT NULL DEFAULT '',
     `access_key` VARCHAR(255) NOT NULL DEFAULT '',
     `host_notes` TEXT NOT NULL,
-    PRIMARY KEY (`id`),
-    CONSTRAINT `fk_online_access_event`
-        FOREIGN KEY (`event_id`) REFERENCES `events` (`id`)
-        ON UPDATE CASCADE
-        ON DELETE CASCADE
+    PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `schedule_events` (
