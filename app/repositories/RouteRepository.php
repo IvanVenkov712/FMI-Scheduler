@@ -5,7 +5,7 @@ use App\Models\RouteSegment;
 use App\Models\Room;
 
 class RouteSegmentRepository extends Repository {
-    public function __construct($database) {
+    public function __construct($database = null) {
         parent::__construct($database, RouteSegment::class, 'route_segments');
     }
 

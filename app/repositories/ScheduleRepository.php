@@ -6,7 +6,7 @@ use App\Models\Event;
 
 class ScheduleRepository extends Repository 
 {
-    public function __construct($database) 
+    public function __construct($database = null) 
     {
         parent::__construct($database, Schedule::class, 'schedules');
     }

@@ -8,7 +8,7 @@ use App\models\Room;
 use App\models\ResourceRequirement;
 
 class EventRepository extends Repository {
-    public function __construct($database) {
+    public function __construct($database = null) {
         parent::__construct($database, Event::class, 'events');
     }
     public function get_requestor($id) {

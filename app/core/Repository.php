@@ -17,7 +17,7 @@ class Repository
         $model_class,
         $table,
     ) {
-        $this->database = $database;
+        $this->database = $database ?? new Database();
         $this->model_class = $model_class;
         $this->table = $table;
         $this->table_fields = array_keys(get_class_vars($this->model_class));

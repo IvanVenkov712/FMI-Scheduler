@@ -9,7 +9,7 @@ use App\Models\Room;
 use App\Models\RoomResource;
 
 class RoomRepository extends Repository {
-    public function __construct($database) {
+    public function __construct($database = null) {
         parent::__construct($database, Room::class, 'rooms');
     }
 

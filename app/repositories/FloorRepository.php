@@ -6,7 +6,7 @@ use App\Models\Building;
 use App\Models\Room;
 
 class FloorRepository extends Repository {
-    public function __construct($database) {
+    public function __construct($database = null) {
         parent::__construct($database, Floor::class, 'floors');
     }
 

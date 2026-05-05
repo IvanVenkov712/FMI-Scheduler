@@ -5,7 +5,7 @@ use App\Models\Event;
 use App\Models\User;
 
 class UserRepository extends Repository {
-    public function __construct($database) {
+    public function __construct($database = null) {
         parent::__construct($database, User::class, "users");
     }
 
