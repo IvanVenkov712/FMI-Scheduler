@@ -16,5 +16,16 @@ class Event extends Model {
     public $subject_name = '';
     public $student_count = 0;
     public $status = 'pending';
-}
 
+    public function is_pending() {
+        return $this->status === 'pending';
+    }
+
+    public function is_approved() {
+        return $this->status === 'approved';
+    }
+
+    public function is_rejected() {
+        return $this->status === 'rejected';
+    }
+}

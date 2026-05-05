@@ -34,10 +34,10 @@ class EventRequestService
         }
 
         $event_id = (int) $this->event_repository->insert($event);
-        $this->replace_resource_requirements($event_id, $requirements);
+        $this->event_repository->replace_resource_requirements($event_id, $requirements);
 
         if ($online_access !== null) {
-            $this->upsert_online_access($event_id, $online_access);
+            $this->event_repository->upsert_online_access($event_id, $online_access);
         }
 
         return $this->event_repository->find_by_id($event_id);
@@ -46,7 +46,7 @@ class EventRequestService
     public function edit_pending_request($event_id, $new_event, $new_requirements, $new_online_access)
     {
         $existing_event = $this->event_repository->find_by_id($event_id);
-        if ($existing_event === null || !$this->is_pending($existing_event)) {
+        if ($existing_event === null || $existing_event->status !== 'pending') {
             return null;
         }
         if ($new_requirements === null || !$this->is_request_bookable($new_event, $new_requirements)) {
@@ -54,12 +54,12 @@ class EventRequestService
         }
         $this->event_repository->update($event_id, $new_event);
         if ($new_requirements !== null) {
-            $this->replace_resource_requirements($event_id, $new_requirements);
+            $this->event_repository->replace_resource_requirements($event_id, $new_requirements);
         }
         if ($new_online_access === null) {
             $this->delete_online_access($event_id);
         } else {
-            $this->upsert_online_access($event_id, $new_online_access);
+            $this->event_repository->upsert_online_access($event_id, $new_online_access);
         }
         return $this->event_repository->find_by_id($event_id);
     }
@@ -67,21 +67,19 @@ class EventRequestService
     public function attach_resource_requirements($event_id, $resource_requirements)
     {
         $event = $this->event_repository->find_by_id($event_id);
-        if ($event === null || !$this->is_pending($event)) {
+        if (!$this->can_proceed($event)) {
             return false;
         }
-
-        $requirements = $this->normalize_resource_requirements($resource_requirements);
-        if ($requirements === null || !$this->is_request_bookable($event, $requirements)) {
+        if ($resource_requirements === null || !$this->is_request_bookable($event, $resource_requirements)) {
             return false;
         }
-        $this->replace_resource_requirements($event_id, $requirements);
+        $this->event_repository->replace_resource_requirements($event_id, $resource_requirements);
     }
 
     public function attach_online_access($event_id, $online_access)
     {
         $event = $this->event_repository->find_by_id($event_id);
-        if ($event === null || !$this->is_pending($event)) {
+        if (!$this->can_proceed($event)) {
             return null;
         }
 
@@ -89,7 +87,7 @@ class EventRequestService
             return null;
         }
 
-        $this->upsert_online_access($event_id, $online_access);
+        $this->online_access_repository->update($event->online_access_id, $online_access);
         return $this->event_repository->get_online_access($event_id);
     }
 
@@ -125,8 +123,7 @@ class EventRequestService
         }
     }
 
-    private function is_pending($event)
-    {
-        return strtolower(trim((string) $event->status)) === 'pending';
+    private function can_proceed($event) {
+       return $event != null && $event->is_pending();
     }
 }
