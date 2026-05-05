@@ -14,7 +14,7 @@ class LoginService
 
     public function login($identity, $password)
     {
-        $user = $this->find_user_by_identity($identity);
+        $user = $this->user_repository->find_user_by_identity($identity);
         if ($user === null || !$this->is_user_active($user)) {
             return null;
         }
@@ -23,24 +23,6 @@ class LoginService
             return null;
         }
         return $user;
-    }
-
-    private function find_user_by_identity($identity)
-    {
-        if ($identity === null) {
-            return null;
-        }
-
-        $identity = trim((string) $identity);
-        if ($identity === '') {
-            return null;
-        }
-
-        if (filter_var($identity, FILTER_VALIDATE_EMAIL)) {
-            return $this->user_repository->find_by_email($identity);
-        }
-
-        return $this->user_repository->find_by_username($identity);
     }
     
     private function verify_password($plain_password, $password_hash)

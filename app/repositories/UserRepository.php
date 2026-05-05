@@ -33,6 +33,27 @@ class UserRepository extends Repository {
         return $row === false ? null : $this->map_row_to_model($row);
     }
 
+    public function find_user_by_identity($identity)
+    {
+        if ($identity === null) {
+            return null;
+        }
+
+        $identity = trim((string) $identity);
+        if ($identity === '') {
+            return null;
+        }
+
+        if (ctype_digit($identity)) {
+            return $this->find_by_id((int) $identity);
+        }
+
+        if (filter_var($identity, FILTER_VALIDATE_EMAIL)) {
+            return $this->find_by_email(strtolower($identity));
+        }
+        return $this->find_by_username($identity);
+    }
+
     public function get_requested_events($id) {
         $statement = $this->database->connection()->prepare(
             "SELECT * FROM `events` WHERE requestor_id = ?"
