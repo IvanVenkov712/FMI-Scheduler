@@ -1,7 +1,7 @@
 <?php
 namespace App\Repositories;
 use App\Core\Repository;
-use App\Models\OnlineAccess;
+use App\models\OnlineAccess;
 
 class OnlineAccessRepository extends Repository {
     public function __construct($database = null) {

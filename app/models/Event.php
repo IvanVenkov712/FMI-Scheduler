@@ -15,7 +15,5 @@ class Event extends Model {
     public $subject_name = '';
     public $student_count = 0;
     public $status = 'pending';
-
-
 }
 
