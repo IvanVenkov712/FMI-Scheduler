@@ -150,3 +150,78 @@ CRUD за зали, тип на зала (`physical`, `online`, `hybrid`), ка�
 Това е добър баланс между изискванията и текущите `repositories`. Всичко останало (`MovementConstraintService`, `TrafficOptimizationService`, `VisualizationService`, `AuditLogService`) може да дойде веднага след това като втори слой.
 
 Ако искаш, в следващата стъпка мога да ти предложа и конкретна структура на `app/services/` с методи за всеки service, например `RoomService::findAvailableRooms(...)`, `AllocationService::assignBestRoom(...)`, `RouteService::findShortestPath(...)` и т.н.
+
+# Втори опит
+След прегледа на проекта ми се вижда, че в момента имате само 2 реални application services с бизнес стойност: [RegisterService.php](C:/Users/ivanv/FMI/WebProject/app/services/RegisterService.php) и [LoginService.php](C:/Users/ivanv/FMI/WebProject/app/services/LoginService.php). Останалата по-интересна домейн логика е разпиляна основно в repositories, най-вече [RoomRepository.php](C:/Users/ivanv/FMI/WebProject/app/repositories/RoomRepository.php), [EventRepository.php](C:/Users/ivanv/FMI/WebProject/app/repositories/EventRepository.php) и [ScheduleRepository.php](C:/Users/ivanv/FMI/WebProject/app/repositories/ScheduleRepository.php).
+
+Ако целта е service слой с значими, атомарни операции, а не общи CRUD-и, това са най-смислените кандидати:
+
+1. `AuthenticationService`
+Примери: `registerUser(...)`, `loginWithIdentity(...)`, `validateCredentials(...)`, `ensureActiveUser(...)`.
+Това е естествено продължение на сегашните `RegisterService` и `LoginService`.
+
+2. `RoomAvailabilityService`
+Примери: `isRoomBookable(roomId, interval, studentCount, resourceRequirements)`, `findConflictingEvents(...)`, `findEligibleRooms(...)`.
+Стъпва директно върху `RoomRepository::is_room_available()` и `has_available_resources()`.
+
+3. `EventRequestService`
+Примери: `submitEventRequest(...)`, `editPendingRequest(...)`, `attachResourceRequirements(...)`, `attachOnlineAccess(...)`.
+Тук атомарната операция е “подаване/редакция на заявка за събитие”, не просто `insert event`.
+
+4. `EventApprovalService`
+Примери: `approveEventRequest(eventId, approverId)`, `rejectEventRequest(...)`, `rescheduleApprovedEvent(...)`.
+Това е силен бизнес action, защото комбинира статус, зала, конфликт на време и изисквания за ресурси.
+
+5. `RoomAllocationService`
+Примери: `assignBestRoom(eventId)`, `reassignRoom(eventId, preferredRoomId = null)`, `rankCandidateRooms(...)`.
+Това е един от най-ценните service-и за вашия домейн.
+
+6. `SchedulePublishingService`
+Примери: `publishEventToSchedule(scheduleId, eventId)`, `removeEventFromSchedule(...)`, `publishBatch(events, scheduleId)`.
+Стъпва върху `ScheduleRepository::add_event_in_schedule()`, но прави това като бизнес операция.
+
+7. `RoomResourceService`
+Примери: `syncRoomResource(roomId, resourceId, quantity)`, `ensureRoomMeetsRequirements(roomId, requirements)`, `removeUnavailableResource(...)`.
+Тук вече имате добра основа в `RoomRepository::update_resource()`.
+
+8. `OnlineAccessService`
+Примери: `provisionOnlineAccess(eventId, platform, link, key)`, `rotateAccessKey(eventId)`, `validateHybridEventSetup(eventId)`.
+Има смисъл, защото в схемата имате отделна таблица `online_access`.
+
+9. `RoutePlanningService`
+Примери: `findRoute(fromRoomId, toRoomId)`, `findAccessibleRoute(...)`, `getAdjacentRooms(roomId)`.
+Стъпва върху `RouteSegmentRepository` и е смислен домейн service, а не CRUD за сегменти.
+
+10. `MovementConstraintService`
+Примери: `isRouteSegmentUsable(segmentId, interval)`, `validateMovementPlan(route, interval)`, `detectCapacityViolation(...)`.
+Това е добър service, защото `movement_constraints` са отделен домейн слой с правила.
+
+11. `ExamSessionSetupService`
+Примери: `createExamSession(...)`, `prepareHybridExam(...)`, `validateExamCapacityAndResources(...)`.
+Това е по-конкретен use-case service, много по-полезен от общ `EventService`.
+
+12. `UserEventAccessService`
+Примери: `canUserManageEvent(userId, eventId)`, `canUserApproveEvent(...)`, `listManageableEvents(userId)`.
+Използва `UserRepository::get_role()` и връзката потребител-събития.
+
+Ако трябва да ги подредя по стойност за текущия проект, бих започнал с:
+- `AuthenticationService`
+- `RoomAvailabilityService`
+- `EventRequestService`
+- `EventApprovalService`
+- `RoomAllocationService`
+- `SchedulePublishingService`
+- `RoutePlanningService`
+
+Най-важното архитектурно наблюдение е, че при вас “атомарната операция” почти винаги е нещо като:
+- заяви събитие
+- провери дали може да се проведе
+- намери подходяща зала
+- одобри събитието
+- публикувай го в график
+- осигури онлайн достъп
+- провери маршрут/ограничения
+
+Това са добрите services. `UserService`, `RoomService`, `EventService` като чисти CRUD контейнери биха били твърде общи и слаби.
+
+Ако искаш, следващата стъпка мога да ти дам и конкретна структура за `app/services/` с имена на методи за всеки от тези service-и, съобразени с текущите repositories.
