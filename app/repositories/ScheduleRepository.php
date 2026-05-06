@@ -40,4 +40,31 @@ class ScheduleRepository extends Repository
 
         return $statement->rowCount() > 0;
     }
+
+    public function has_event_in_schedule($schedule_id, $event_id)
+    {
+        $statement = $this->database->connection()->prepare(
+            "SELECT 1 FROM `schedule_events`
+            WHERE schedule_id = ? AND event_id = ?
+            LIMIT 1"
+        );
+        $statement->bindValue(1, $schedule_id);
+        $statement->bindValue(2, $event_id);
+        $statement->execute();
+
+        return $statement->fetchColumn() !== false;
+    }
+
+    public function remove_event_from_schedule($schedule_id, $event_id)
+    {
+        $statement = $this->database->connection()->prepare(
+            "DELETE FROM `schedule_events`
+            WHERE schedule_id = ? AND event_id = ?"
+        );
+        $statement->bindValue(1, $schedule_id);
+        $statement->bindValue(2, $event_id);
+        $statement->execute();
+
+        return $statement->rowCount() > 0;
+    }
 }
