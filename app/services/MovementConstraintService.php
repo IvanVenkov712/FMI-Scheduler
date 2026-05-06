@@ -10,13 +10,16 @@ class MovementConstraintService
 {
     private $route_segment_repository;
     private $movement_constraint_repository;
+    private $route_segment_service;
 
     public function __construct(
         $route_segment_repository = null,
         $movement_constraint_repository = null,
+        $route_segment_service = null
     ) {
         $this->route_segment_repository = $route_segment_repository ?? new RouteSegmentRepository();
         $this->movement_constraint_repository = $movement_constraint_repository ?? new MovementConstraintRepository();
+        $this->route_segment_service = $route_segment_service ?? new RouteSegmentService($route_segment_repository);
     }
 
     public function is_route_segment_usable($segmentId, $start_time, $end_time)
@@ -55,7 +58,7 @@ class MovementConstraintService
 
         $previous_segment = null;
         foreach ($route as $route_item) {
-            $segment = $this->resolve_route_segment($route_item);
+            $segment = $this->route_segment_service->resolve_route_segment($route_item);
             if ($segment === null || !$this->is_route_segment_usable($segment->id, $start_time, $end_time)) {
                 return false;
             }
@@ -77,7 +80,7 @@ class MovementConstraintService
         }
 
         foreach ($route as $route_item) {
-            $segment = $this->resolve_route_segment($route_item);
+            $segment = $this->route_segment_service->resolve_route_segment($route_item);
             if ($segment === null) {
                 return true;
             }
@@ -96,33 +99,6 @@ class MovementConstraintService
     private function get_overlapping_constraints($segment_id, $start_time, $end_time)
     {
         return $this->movement_constraint_repository->find_overlapping_for_segment($segment_id, $start_time, $end_time);
-    }
-
-    private function resolve_route_segment($route_item)
-    {
-        if (is_numeric($route_item)) {
-            return $this->route_segment_repository->find_by_id($route_item);
-        }
-
-        if (is_array($route_item)) {
-            $segment_id = $route_item['route_segment_id'] ?? $route_item['segment_id'] ?? $route_item['id'] ?? null;
-            return is_numeric($segment_id) ? $this->route_segment_repository->find_by_id($segment_id) : null;
-        }
-
-        if (is_object($route_item)) {
-            if (
-                property_exists($route_item, 'id')
-                && property_exists($route_item, 'from_room_id')
-                && property_exists($route_item, 'to_room_id')
-            ) {
-                return $route_item;
-            }
-
-            $segment_id = $route_item->route_segment_id ?? $route_item->segment_id ?? $route_item->id ?? null;
-            return is_numeric($segment_id) ? $this->route_segment_repository->find_by_id($segment_id) : null;
-        }
-
-        return null;
     }
 
     private function resolve_movement_size($route_item)
