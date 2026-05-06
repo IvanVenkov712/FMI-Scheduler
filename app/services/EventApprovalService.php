@@ -2,6 +2,7 @@
 namespace App\Services;
 
 use App\Helpers\EventDeliveryModeHelper;
+use App\Helpers\OnlineAccessHelper;
 use App\Repositories\EventRepository;
 
 class EventApprovalService
@@ -62,6 +63,10 @@ class EventApprovalService
 
     private function can_approve($event)
     {
+        if (!$this->has_valid_online_setup($event)) {
+            return false;
+        }
+
         if ($this->is_online_event($event)) {
             return true;
         }
@@ -80,5 +85,16 @@ class EventApprovalService
     private function is_online_event($event)
     {
         return EventDeliveryModeHelper::is_online($event->delivery_mode);
+    }
+
+    private function has_valid_online_setup($event)
+    {
+        $online_access = $this->event_repository->get_online_access($event->id);
+
+        if (!EventDeliveryModeHelper::online_access_matches($event->delivery_mode, $online_access)) {
+            return false;
+        }
+
+        return $online_access === null || OnlineAccessHelper::is_valid($online_access);
     }
 }

@@ -87,6 +87,15 @@ CREATE TABLE IF NOT EXISTS `room_resources` (
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `online_access` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `platform` VARCHAR(100) NOT NULL DEFAULT '',
+    `meeting_link` VARCHAR(500) NOT NULL DEFAULT '',
+    `access_key` VARCHAR(255) NOT NULL DEFAULT '',
+    `host_notes` TEXT NOT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `events` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `room_id` INT UNSIGNED NULL,
@@ -108,7 +117,7 @@ CREATE TABLE IF NOT EXISTS `events` (
     CONSTRAINT `fk_events_online_access`
         FOREIGN KEY (`online_access_id`) REFERENCES `online_access` (`id`)
         ON UPDATE CASCADE
-        ON DELETE RESTRICT,
+        ON DELETE SET NULL,
     CONSTRAINT `fk_events_user`
         FOREIGN KEY (`requestor_id`) REFERENCES `users` (`id`)
         ON UPDATE CASCADE
@@ -176,15 +185,6 @@ CREATE TABLE IF NOT EXISTS `movement_constraints` (
         FOREIGN KEY (`route_segment_id`) REFERENCES `route_segments` (`id`)
         ON UPDATE CASCADE
         ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS `online_access` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `platform` VARCHAR(100) NOT NULL DEFAULT '',
-    `meeting_link` VARCHAR(500) NOT NULL DEFAULT '',
-    `access_key` VARCHAR(255) NOT NULL DEFAULT '',
-    `host_notes` TEXT NOT NULL,
-    PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `schedule_events` (

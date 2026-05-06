@@ -131,6 +131,24 @@ class Repository
         return $statement->rowCount() > 0;
     }
 
+    public function begin_transaction()
+    {
+        $connection = $this->database->connection();
+        return !$connection->inTransaction() && $connection->beginTransaction();
+    }
+
+    public function commit()
+    {
+        $connection = $this->database->connection();
+        return $connection->inTransaction() && $connection->commit();
+    }
+
+    public function roll_back()
+    {
+        $connection = $this->database->connection();
+        return $connection->inTransaction() && $connection->rollBack();
+    }
+
     protected function map_row_to_model($row)
     {
         $model = new $this->model_class();

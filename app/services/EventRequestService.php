@@ -7,6 +7,7 @@ use App\Helpers\OnlineAccessHelper;
 use App\Helpers\TimeHelper;
 use App\Repositories\OnlineAccessRepository;
 use App\Repositories\EventRepository;
+use Throwable;
 
 class EventRequestService
 {
@@ -41,11 +42,20 @@ class EventRequestService
         }
 
         $event->status = 'pending';
-        $event_id = (int) $this->event_repository->insert($event);
-        $this->event_repository->replace_resource_requirements($event_id, $requirements);
+        $event->online_access_id = null;
+        $this->event_repository->begin_transaction();
+        try {
+            $event_id = (int) $this->event_repository->insert($event);
+            $this->event_repository->replace_resource_requirements($event_id, $requirements);
 
-        if ($online_access !== null) {
-            $this->event_repository->upsert_online_access($event_id, $online_access);
+            if ($online_access !== null) {
+                $this->event_repository->upsert_online_access($event_id, $online_access);
+            }
+
+            $this->event_repository->commit();
+        } catch (Throwable $exception) {
+            $this->event_repository->roll_back();
+            throw $exception;
         }
 
         return $this->event_repository->find_by_id($event_id);
@@ -69,14 +79,24 @@ class EventRequestService
         }
 
         $new_event->status = 'pending';
-        $this->event_repository->update($event_id, $new_event);
-        $this->event_repository->replace_resource_requirements($event_id, $new_requirements);
+        $new_event->online_access_id = $existing_event->online_access_id;
+        $this->event_repository->begin_transaction();
+        try {
+            $this->event_repository->update($event_id, $new_event);
+            $this->event_repository->replace_resource_requirements($event_id, $new_requirements);
 
-        if ($new_online_access === null) {
-            $this->delete_online_access($event_id);
-        } else {
-            $this->event_repository->upsert_online_access($event_id, $new_online_access);
+            if ($new_online_access === null) {
+                $this->delete_online_access($event_id);
+            } else {
+                $this->event_repository->upsert_online_access($event_id, $new_online_access);
+            }
+
+            $this->event_repository->commit();
+        } catch (Throwable $exception) {
+            $this->event_repository->roll_back();
+            throw $exception;
         }
+
         return $this->event_repository->find_by_id($event_id);
     }
 
@@ -148,9 +168,9 @@ class EventRequestService
 
     private function delete_online_access($event_id)
     {
-        $existing_online_access = $this->event_repository->get_online_access($event_id);
-        if ($existing_online_access !== null) {
-            $this->online_access_repository->delete($existing_online_access->id);
+        $online_access_id = $this->event_repository->detach_online_access($event_id);
+        if ($online_access_id !== null) {
+            $this->online_access_repository->delete($online_access_id);
         }
     }
 

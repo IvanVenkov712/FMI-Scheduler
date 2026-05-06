@@ -70,6 +70,10 @@ class EventRepository extends Repository {
 
     public function get_online_access($id) {
         $event = $this->find_by_id($id);
+        if ($event === null || $event->online_access_id === null) {
+            return null;
+        }
+
         $statement = $this->database->connection()->prepare(
             "SELECT * FROM `online_access`
             WHERE online_access.id = ? LIMIT 1"
@@ -110,6 +114,27 @@ class EventRepository extends Repository {
         if ($event === null) {
             return;
         }
+
+        if ($event->online_access_id !== null) {
+            if ($this->get_online_access($event_id) !== null) {
+                $online_access->id = $event->online_access_id;
+                $statement = $this->database->connection()->prepare(
+                    "UPDATE `online_access`
+                    SET `platform` = ?, `meeting_link` = ?, `access_key` = ?, `host_notes` = ?
+                    WHERE `id` = ?"
+                );
+                $statement->bindValue(1, $online_access->platform);
+                $statement->bindValue(2, $online_access->meeting_link);
+                $statement->bindValue(3, $online_access->access_key);
+                $statement->bindValue(4, $online_access->host_notes);
+                $statement->bindValue(5, $event->online_access_id);
+                $statement->execute();
+                return;
+            }
+
+            $event->online_access_id = null;
+        }
+
         $statement = $this->database->connection()->prepare(
             "INSERT INTO `online_access`
             (`platform`, `meeting_link`, `access_key`, `host_notes`)
@@ -123,5 +148,19 @@ class EventRepository extends Repository {
         $event->online_access_id = $statement->lastInsertid();
         $this->update($event_id, $event);
         return;
+    }
+
+    public function detach_online_access($event_id)
+    {
+        $event = $this->find_by_id($event_id);
+        if ($event === null || $event->online_access_id === null) {
+            return null;
+        }
+
+        $online_access_id = $event->online_access_id;
+        $event->online_access_id = null;
+        $this->update($event_id, $event);
+
+        return $online_access_id;
     }
 }

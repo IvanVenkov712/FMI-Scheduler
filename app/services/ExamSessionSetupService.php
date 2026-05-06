@@ -11,6 +11,7 @@ use App\Repositories\EventRepository;
 use App\Repositories\OnlineAccessRepository;
 use App\Repositories\RoomRepository;
 use App\Repositories\UserRepository;
+use Throwable;
 
 class ExamSessionSetupService
 {
@@ -92,21 +93,29 @@ class ExamSessionSetupService
             $name
         );
 
-        $event_id = (int) $this->event_repository->insert($event);
-        $this->event_repository->replace_resource_requirements($event_id, $normalized_requirements);
+        $this->event_repository->begin_transaction();
+        try {
+            $event_id = (int) $this->event_repository->insert($event);
+            $this->event_repository->replace_resource_requirements($event_id, $normalized_requirements);
 
-        if (EventDeliveryModeHelper::requires_room($delivery_mode) && $room_id === null) {
-            if ($this->room_allocation_service->assign_best_room($event_id) === null) {
-                $this->event_repository->delete($event_id);
-                return null;
+            if (EventDeliveryModeHelper::requires_room($delivery_mode) && $room_id === null) {
+                if ($this->room_allocation_service->assign_best_room($event_id) === null) {
+                    $this->event_repository->roll_back();
+                    return null;
+                }
             }
-        }
 
-        if ($online_access !== null) {
-            if (!$this->attach_online_access_from_payload($event_id, $online_access)) {
-                $this->event_repository->delete($event_id);
-                return null;
+            if ($online_access !== null) {
+                if (!$this->attach_online_access_from_payload($event_id, $online_access)) {
+                    $this->event_repository->roll_back();
+                    return null;
+                }
             }
+
+            $this->event_repository->commit();
+        } catch (Throwable $exception) {
+            $this->event_repository->roll_back();
+            throw $exception;
         }
 
         return $this->event_repository->find_by_id($event_id);
@@ -146,11 +155,21 @@ class ExamSessionSetupService
 
         $event->delivery_mode = 'hybrid';
         $event->room_id = $room_id;
-        $this->event_repository->update($event_id, $event);
-        $this->event_repository->replace_resource_requirements($event_id, $requirements);
 
-        if (!$this->attach_online_access_from_payload($event_id, $online_access)) {
-            return null;
+        $this->event_repository->begin_transaction();
+        try {
+            $this->event_repository->update($event_id, $event);
+            $this->event_repository->replace_resource_requirements($event_id, $requirements);
+
+            if (!$this->attach_online_access_from_payload($event_id, $online_access)) {
+                $this->event_repository->roll_back();
+                return null;
+            }
+
+            $this->event_repository->commit();
+        } catch (Throwable $exception) {
+            $this->event_repository->roll_back();
+            throw $exception;
         }
 
         return $this->event_repository->find_by_id($event_id);
