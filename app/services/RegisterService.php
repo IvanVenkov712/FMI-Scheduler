@@ -2,6 +2,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Helpers\StringHelper;
 use App\Repositories\UserRepository;
 
 // Registers a new user if it does not exist.
@@ -10,7 +11,9 @@ use App\Repositories\UserRepository;
 class RegisterService
 {
     private $user_repository;
-    public function __construct($user_repository) {
+
+    public function __construct($user_repository = null)
+    {
         $this->user_repository = $user_repository ?? new UserRepository();
     }
 
@@ -20,7 +23,7 @@ class RegisterService
             return null;
         }
 
-        $username = $this->normalize_string($data['username'] ?? null);
+        $username = StringHelper::normalize_string($data['username'] ?? null);
         $email = $this->normalize_email($data['email'] ?? null);
         $password = (string) ($data['password'] ?? '');
 
@@ -38,8 +41,8 @@ class RegisterService
 
         $user = new User([
             'username' => $username,
-            'first_name' => $this->normalize_string($data['first_name'] ?? ''),
-            'last_name' => $this->normalize_string($data['last_name'] ?? ''),
+            'first_name' => trim((string) ($data['first_name'] ?? '')),
+            'last_name' => trim((string) ($data['last_name'] ?? '')),
             'email' => $email,
             'password_hash' => password_hash($password, PASSWORD_DEFAULT),
             'role' => 'student',
@@ -49,15 +52,6 @@ class RegisterService
         $user_id = $this->user_repository->insert($user);
 
         return $this->user_repository->find_by_id((int) $user_id);
-    }
-
-    private function normalize_string($value)
-    {
-        if ($value === null) {
-            return '';
-        }
-
-        return trim((string) $value);
     }
 
     private function normalize_email($value)

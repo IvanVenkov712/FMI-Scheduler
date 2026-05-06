@@ -3,6 +3,7 @@ namespace App\Services;
 
 use App\Helpers\StringHelper;
 use App\Helpers\TimeHelper;
+use App\Helpers\ResourceRequirementsHelper;
 use App\Repositories\RoomRepository;
 use App\Repositories\EventRepository;
 
@@ -19,16 +20,24 @@ class RoomAvailabilityService
 
     public function is_room_bookable($room_id, $start_time, $end_time, $student_count, $resource_requirements = [])
     {
+        $resource_requirements = ResourceRequirementsHelper::normalize_requirements($resource_requirements);
+
         if (!TimeHelper::is_valid_interval($start_time, $end_time)) {
             return false;
         }
+
+        if (!is_numeric($student_count)) {
+            return false;
+        }
+
+        $student_count = (int) $student_count;
 
         $room = $this->room_repository->find_by_id($room_id);
         if ($room === null || !$room->is_active) {
             return false;
         }
 
-        if ($student_count < 0 || $room->capacity < $student_count) {
+        if ($student_count < 0 || (int) $room->capacity < $student_count) {
             return false;
         }
 
@@ -71,11 +80,14 @@ class RoomAvailabilityService
 
     public function find_eligible_rooms($start_time, $end_time, $student_count, $resource_requirements = [])
     {
-        if (!TimeHelper::is_valid_interval($start_time, $end_time) || $student_count < 0) {
+        $resource_requirements = ResourceRequirementsHelper::normalize_requirements($resource_requirements);
+
+        if (!TimeHelper::is_valid_interval($start_time, $end_time) || !is_numeric($student_count)) {
             return [];
         }
 
-        if ($resource_requirements === null) {
+        $student_count = (int) $student_count;
+        if ($student_count < 0 || $resource_requirements === null) {
             return [];
         }
 

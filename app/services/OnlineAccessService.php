@@ -23,14 +23,14 @@ class OnlineAccessService
         $this->room_repository = $room_repository ?? new RoomRepository();
     }
 
-    public function provision_online_access($eventId, $platform, $link, $key)
+    public function provision_online_access($event_id, $platform, $link, $key = null, $host_notes = '')
     {
-        $event = $this->event_repository->find_by_id($eventId);
+        $event = $this->event_repository->find_by_id($event_id);
         if ($event === null || !$this->event_can_have_online_access($event)) {
             return null;
         }
 
-        $online_access = $this->build_online_access($platform, $link, $key);
+        $online_access = $this->build_online_access($platform, $link, $key, $host_notes);
         if (!$this->is_valid_online_access($online_access)) {
             return null;
         }
@@ -52,9 +52,9 @@ class OnlineAccessService
         return $this->event_repository->get_online_access($event->id);
     }
 
-    public function rotate_access_key($eventId)
+    public function rotate_access_key($event_id)
     {
-        $event = $this->event_repository->find_by_id($eventId);
+        $event = $this->event_repository->find_by_id($event_id);
         if ($event === null || !$this->event_can_have_online_access($event) || $event->online_access_id === null) {
             return null;
         }
@@ -70,9 +70,9 @@ class OnlineAccessService
         return $this->online_access_repository->find_by_id($online_access->id);
     }
 
-    public function validate_hybrid_event_setup($eventId)
+    public function validate_hybrid_event_setup($event_id)
     {
-        $event = $this->event_repository->find_by_id($eventId);
+        $event = $this->event_repository->find_by_id($event_id);
         if ($event === null || StringHelper::normalize_string($event->delivery_mode) !== 'hybrid') {
             return false;
         }
@@ -107,12 +107,15 @@ class OnlineAccessService
         return $delivery_mode === 'online' || $delivery_mode === 'hybrid';
     }
 
-    private function build_online_access($platform, $link, $key)
+    private function build_online_access($platform, $link, $key = null, $host_notes = '')
     {
         $online_access = new OnlineAccess();
         $online_access->platform = trim((string) $platform);
         $online_access->meeting_link = trim((string) $link);
-        $online_access->access_key = trim((string) $key);
+        $online_access->access_key = $key === null || trim((string) $key) === ''
+            ? $this->generate_access_key()
+            : trim((string) $key);
+        $online_access->host_notes = trim((string) $host_notes);
 
         return $online_access;
     }

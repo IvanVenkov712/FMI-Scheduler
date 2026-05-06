@@ -29,6 +29,7 @@ class ResourceRequirementsHelper
             $normalized_requirement = new \stdClass();
             $normalized_requirement->resource_id = (int) $resource_id;
             $normalized_requirement->required_quantity = $required_quantity;
+            $normalized_requirement->notes = ResourceRequirementsHelper::read_requirement_value($requirement, 'notes') ?? '';
             $normalized_requirements[] = $normalized_requirement;
         }
 
