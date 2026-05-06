@@ -1,9 +1,6 @@
 <?php
 namespace App\Services;
 
-use App\Core\Database;
-use App\models\Event;
-use App\models\OnlineAccess;
 use App\Repositories\OnlineAccessRepository;
 use App\Repositories\EventRepository;
 use App\Repositories\ScheduleRepository;
