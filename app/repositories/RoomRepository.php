@@ -47,7 +47,7 @@ class RoomRepository extends Repository {
         $statement = $this->database->connection()->prepare(
             "SELECT * FROM `room_resources` r
             WHERE r.room_id = ?
-            ORDER BY r.id ASC"
+            ORDER BY r.resource_id ASC"
         );
         $statement->bindValue(1, $id);
         $statement->execute();
