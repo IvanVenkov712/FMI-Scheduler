@@ -1,7 +1,7 @@
 <?php
 namespace App\Services;
 
-use App\Helpers\StringHelper;
+use App\Helpers\EventDeliveryModeHelper;
 use App\Repositories\EventRepository;
 
 class EventApprovalService
@@ -79,6 +79,6 @@ class EventApprovalService
 
     private function is_online_event($event)
     {
-        return StringHelper::normalize_string($event->delivery_mode) === 'online';
+        return EventDeliveryModeHelper::is_online($event->delivery_mode);
     }
 }

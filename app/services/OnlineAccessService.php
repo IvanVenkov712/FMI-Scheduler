@@ -1,8 +1,8 @@
 <?php
 namespace App\Services;
 
-use App\Helpers\StringHelper;
-use App\models\OnlineAccess;
+use App\Helpers\EventDeliveryModeHelper;
+use App\Helpers\OnlineAccessHelper;
 use App\Repositories\EventRepository;
 use App\Repositories\OnlineAccessRepository;
 use App\Repositories\RoomRepository;
@@ -30,8 +30,8 @@ class OnlineAccessService
             return null;
         }
 
-        $online_access = $this->build_online_access($platform, $link, $key, $host_notes);
-        if (!$this->is_valid_online_access($online_access)) {
+        $online_access = OnlineAccessHelper::build($platform, $link, $key, $host_notes, true);
+        if (!OnlineAccessHelper::is_valid($online_access)) {
             return null;
         }
 
@@ -60,11 +60,11 @@ class OnlineAccessService
         }
 
         $online_access = $this->online_access_repository->find_by_id($event->online_access_id);
-        if ($online_access === null || !$this->is_valid_online_access($online_access)) {
+        if ($online_access === null || !OnlineAccessHelper::is_valid($online_access)) {
             return null;
         }
 
-        $online_access->access_key = $this->generate_access_key();
+        $online_access->access_key = OnlineAccessHelper::generate_access_key();
         $this->online_access_repository->update($online_access->id, $online_access);
 
         return $this->online_access_repository->find_by_id($online_access->id);
@@ -73,7 +73,7 @@ class OnlineAccessService
     public function validate_hybrid_event_setup($event_id)
     {
         $event = $this->event_repository->find_by_id($event_id);
-        if ($event === null || StringHelper::normalize_string($event->delivery_mode) !== 'hybrid') {
+        if ($event === null || EventDeliveryModeHelper::normalize($event->delivery_mode) !== 'hybrid') {
             return false;
         }
 
@@ -86,8 +86,7 @@ class OnlineAccessService
             return false;
         }
 
-        $room_type = StringHelper::normalize_string($room->room_type);
-        if ($room_type !== 'physical' && $room_type !== 'hybrid') {
+        if (!EventDeliveryModeHelper::is_room_type_compatible($event->delivery_mode, $room->room_type)) {
             return false;
         }
 
@@ -97,48 +96,11 @@ class OnlineAccessService
 
         $online_access = $this->online_access_repository->find_by_id($event->online_access_id);
 
-        return $this->is_valid_online_access($online_access);
+        return OnlineAccessHelper::is_valid($online_access);
     }
 
     private function event_can_have_online_access($event)
     {
-        $delivery_mode = StringHelper::normalize_string($event->delivery_mode);
-
-        return $delivery_mode === 'online' || $delivery_mode === 'hybrid';
-    }
-
-    private function build_online_access($platform, $link, $key = null, $host_notes = '')
-    {
-        $online_access = new OnlineAccess();
-        $online_access->platform = trim((string) $platform);
-        $online_access->meeting_link = trim((string) $link);
-        $online_access->access_key = $key === null || trim((string) $key) === ''
-            ? $this->generate_access_key()
-            : trim((string) $key);
-        $online_access->host_notes = trim((string) $host_notes);
-
-        return $online_access;
-    }
-
-    private function is_valid_online_access($online_access)
-    {
-        if ($online_access === null) {
-            return false;
-        }
-
-        if (StringHelper::normalize_string($online_access->platform) === '') {
-            return false;
-        }
-
-        if (trim((string) $online_access->meeting_link) === '') {
-            return false;
-        }
-
-        return filter_var($online_access->meeting_link, FILTER_VALIDATE_URL) !== false;
-    }
-
-    private function generate_access_key()
-    {
-        return bin2hex(random_bytes(16));
+        return EventDeliveryModeHelper::supports_online_access($event->delivery_mode);
     }
 }

@@ -2,10 +2,11 @@
 namespace App\Services;
 
 use App\Helpers\ResourceRequirementsHelper;
+use App\Helpers\EventDeliveryModeHelper;
+use App\Helpers\OnlineAccessHelper;
 use App\Helpers\StringHelper;
 use App\Helpers\TimeHelper;
 use App\models\Event;
-use App\models\OnlineAccess;
 use App\Repositories\EventRepository;
 use App\Repositories\OnlineAccessRepository;
 use App\Repositories\RoomRepository;
@@ -50,7 +51,7 @@ class ExamSessionSetupService
         $online_access = null,
         $name = null,
     ) {
-        $delivery_mode = StringHelper::normalize_string($delivery_mode);
+        $delivery_mode = EventDeliveryModeHelper::normalize($delivery_mode);
         $normalized_requirements = ResourceRequirementsHelper::normalize_requirements($resource_requirements);
 
         if (!$this->can_create_exam($requestor_id, $subject_name, $start_time, $end_time, $student_count, $delivery_mode)) {
@@ -61,26 +62,22 @@ class ExamSessionSetupService
             return null;
         }
 
-        if ($this->requires_room($delivery_mode) && $room_id !== null) {
+        if (EventDeliveryModeHelper::requires_room($delivery_mode) && $room_id !== null) {
             if (!$this->validate_exam_capacity_and_resources($room_id, $start_time, $end_time, $student_count, $normalized_requirements)
                 || !$this->is_room_compatible_with_delivery_mode($room_id, $delivery_mode)) {
                 return null;
             }
         }
 
-        if ($delivery_mode === 'online' && $room_id !== null) {
+        if (EventDeliveryModeHelper::is_online($delivery_mode) && $room_id !== null) {
             return null;
         }
 
-        if ($delivery_mode === 'physical' && $online_access !== null) {
+        if (!EventDeliveryModeHelper::online_access_matches($delivery_mode, $online_access)) {
             return null;
         }
 
-        if (($delivery_mode === 'online' || $delivery_mode === 'hybrid') && $online_access === null) {
-            return null;
-        }
-
-        if ($online_access !== null && !$this->is_valid_online_access_payload($online_access)) {
+        if ($online_access !== null && !OnlineAccessHelper::is_valid($online_access)) {
             return null;
         }
 
@@ -98,7 +95,7 @@ class ExamSessionSetupService
         $event_id = (int) $this->event_repository->insert($event);
         $this->event_repository->replace_resource_requirements($event_id, $normalized_requirements);
 
-        if ($this->requires_room($delivery_mode) && $room_id === null) {
+        if (EventDeliveryModeHelper::requires_room($delivery_mode) && $room_id === null) {
             if ($this->room_allocation_service->assign_best_room($event_id) === null) {
                 $this->event_repository->delete($event_id);
                 return null;
@@ -137,8 +134,8 @@ class ExamSessionSetupService
             return null;
         }
 
-        $online_access = $this->build_online_access($platform, $meeting_link, $access_key, $host_notes);
-        if (!$this->is_valid_online_access_payload($online_access)) {
+        $online_access = OnlineAccessHelper::build($platform, $meeting_link, $access_key, $host_notes);
+        if (!OnlineAccessHelper::is_valid($online_access)) {
             return null;
         }
 
@@ -197,7 +194,7 @@ class ExamSessionSetupService
             return false;
         }
 
-        return in_array($delivery_mode, ['physical', 'online', 'hybrid'], true);
+        return EventDeliveryModeHelper::is_valid($delivery_mode);
     }
 
     private function build_exam_event(
@@ -228,7 +225,7 @@ class ExamSessionSetupService
     private function attach_online_access_from_payload($event_id, $online_access)
     {
         $online_access = is_array($online_access)
-            ? $this->build_online_access_from_array($online_access)
+            ? OnlineAccessHelper::build_from_payload($online_access)
             : $online_access;
 
         if ($online_access === null) {
@@ -252,27 +249,6 @@ class ExamSessionSetupService
         return $this->event_repository->get_online_access($event_id) !== null;
     }
 
-    private function build_online_access_from_array($payload)
-    {
-        return $this->build_online_access(
-            $payload['platform'] ?? '',
-            $payload['meeting_link'] ?? ($payload['link'] ?? ''),
-            $payload['access_key'] ?? null,
-            $payload['host_notes'] ?? ''
-        );
-    }
-
-    private function build_online_access($platform, $meeting_link, $access_key = null, $host_notes = '')
-    {
-        $online_access = new OnlineAccess();
-        $online_access->platform = trim((string) $platform);
-        $online_access->meeting_link = trim((string) $meeting_link);
-        $online_access->access_key = $access_key === null ? bin2hex(random_bytes(16)) : trim((string) $access_key);
-        $online_access->host_notes = trim((string) $host_notes);
-
-        return $online_access;
-    }
-
     private function is_valid_online_access_for_event($event_id, $online_access)
     {
         $event = $this->event_repository->find_by_id($event_id);
@@ -280,29 +256,11 @@ class ExamSessionSetupService
             return false;
         }
 
-        if (!in_array(StringHelper::normalize_string($event->delivery_mode), ['online', 'hybrid'], true)) {
+        if (!EventDeliveryModeHelper::supports_online_access($event->delivery_mode)) {
             return false;
         }
 
-        return $this->is_valid_online_access_payload($online_access);
-    }
-
-    private function is_valid_online_access_payload($online_access)
-    {
-        $online_access = is_array($online_access)
-            ? $this->build_online_access_from_array($online_access)
-            : $online_access;
-
-        if ($online_access === null || StringHelper::normalize_string($online_access->platform) === '') {
-            return false;
-        }
-
-        return filter_var($online_access->meeting_link, FILTER_VALIDATE_URL) !== false;
-    }
-
-    private function requires_room($delivery_mode)
-    {
-        return $delivery_mode === 'physical' || $delivery_mode === 'hybrid';
+        return OnlineAccessHelper::is_valid($online_access);
     }
 
     private function is_room_compatible_with_delivery_mode($room_id, $delivery_mode)
@@ -312,11 +270,6 @@ class ExamSessionSetupService
             return false;
         }
 
-        $room_type = StringHelper::normalize_string($room->room_type);
-        if ($delivery_mode === 'physical' || $delivery_mode === 'hybrid') {
-            return $room_type === 'physical' || $room_type === 'hybrid';
-        }
-
-        return false;
+        return EventDeliveryModeHelper::is_room_type_compatible($delivery_mode, $room->room_type);
     }
 }

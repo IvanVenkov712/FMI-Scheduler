@@ -2,7 +2,8 @@
 namespace App\Services;
 
 use App\Helpers\ResourceRequirementsHelper;
-use App\Helpers\StringHelper;
+use App\Helpers\EventDeliveryModeHelper;
+use App\Helpers\OnlineAccessHelper;
 use App\Helpers\TimeHelper;
 use App\Repositories\OnlineAccessRepository;
 use App\Repositories\EventRepository;
@@ -123,7 +124,7 @@ class EventRequestService
 
     private function is_request_bookable($event, $resource_requirements)
     {
-        if (StringHelper::normalize_string($event->delivery_mode) === 'online') {
+        if (EventDeliveryModeHelper::is_online($event->delivery_mode)) {
             return true;
         }
 
@@ -138,19 +139,11 @@ class EventRequestService
 
     private function is_online_access_valid_for_event($event, $online_access)
     {
-        $delivery_mode = StringHelper::normalize_string($event->delivery_mode);
-
-        if ($delivery_mode === 'physical') {
-            return $online_access === null;
-        }
-
-        if ($delivery_mode !== 'online' && $delivery_mode !== 'hybrid') {
+        if (!EventDeliveryModeHelper::online_access_matches($event->delivery_mode, $online_access)) {
             return false;
         }
 
-        return $online_access !== null
-            && StringHelper::normalize_string($online_access->platform ?? '') !== ''
-            && filter_var($online_access->meeting_link ?? '', FILTER_VALIDATE_URL) !== false;
+        return $online_access === null || OnlineAccessHelper::is_valid($online_access);
     }
 
     private function delete_online_access($event_id)
@@ -188,10 +181,6 @@ class EventRequestService
             return false;
         }
 
-        return in_array(
-            StringHelper::normalize_string($event->delivery_mode ?? ''),
-            ['physical', 'online', 'hybrid'],
-            true
-        );
+        return EventDeliveryModeHelper::is_valid($event->delivery_mode ?? '');
     }
 }

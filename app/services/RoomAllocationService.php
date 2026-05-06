@@ -1,7 +1,7 @@
 <?php
 namespace App\Services;
 
-use App\Helpers\StringHelper;
+use App\Helpers\EventDeliveryModeHelper;
 use App\Helpers\TimeHelper;
 use App\Repositories\EventRepository;
 use App\Repositories\RoomRepository;
@@ -115,7 +115,7 @@ class RoomAllocationService
             return false;
         }
 
-        return StringHelper::normalize_string($event->delivery_mode) !== 'online';
+        return !EventDeliveryModeHelper::is_online($event->delivery_mode);
     }
 
     private function is_candidate_room($event, $room, $resource_requirements)
@@ -151,17 +151,6 @@ class RoomAllocationService
 
     private function is_room_type_compatible($delivery_mode, $room_type)
     {
-        $delivery_mode = StringHelper::normalize_string($delivery_mode);
-        $room_type = StringHelper::normalize_string($room_type);
-
-        if ($delivery_mode === 'hybrid') {
-            return $room_type === 'physical' || $room_type === 'hybrid';
-        }
-
-        if ($delivery_mode === 'physical') {
-            return $room_type === 'physical' || $room_type === 'hybrid';
-        }
-
-        return false;
+        return EventDeliveryModeHelper::is_room_type_compatible($delivery_mode, $room_type);
     }
 }
