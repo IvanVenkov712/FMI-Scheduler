@@ -7,7 +7,7 @@ use Throwable;
 
 abstract class BaseController extends Controller
 {
-    protected $session;
+    protected SessionHelper $session;
 
     public function __construct($request = [], $view = null, $session = null)
     {
@@ -114,7 +114,6 @@ abstract class BaseController extends Controller
             'current_user_id' => $this->session->get_user_id(),
             'current_user_role' => $this->session->get_user_role(),
             'flash' => $this->session->flashes(),
-            'csrf_token' => $this->session->csrf_token(),
         ];
     }
 
