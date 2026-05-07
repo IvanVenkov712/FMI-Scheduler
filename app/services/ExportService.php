@@ -24,9 +24,7 @@ class ExportService extends DataTransferService
             return null;
         }
 
-        $sections = [
-            'BUILDING ' . $building->code . ' - ' . $building->name,
-        ];
+        $sections = ['BUILDING ' . $building->code . ' - ' . $building->name];
 
         foreach ($this->building_repository->get_floors($building_id) as $floor) {
             $sections[] = implode(PHP_EOL, [
@@ -48,16 +46,16 @@ class ExportService extends DataTransferService
 
         $building = $this->floor_repository->get_building($floor_id);
         $rooms = $this->floor_repository->get_rooms($floor_id);
-        $content = [];
-
-        $content[] = 'Floor export';
-        $content[] = 'Building: ' . ($building === null ? 'N/A' : $building->name . ' (' . $building->code . ')');
-        $content[] = 'Floor: ' . $floor->name . ' / level ' . $floor->level;
-        $content[] = '';
-        $content[] = 'ASCII plan:';
-        $content[] = $this->export_floor_ascii_plan($floor_id) ?? '';
-        $content[] = '';
-        $content[] = 'Rooms:';
+        $content = [
+            'Floor export',
+            'Building: ' . ($building === null ? 'N/A' : $building->name . ' (' . $building->code . ')'),
+            'Floor: ' . $floor->name . ' / level ' . $floor->level,
+            '',
+            'ASCII plan:',
+            $this->export_floor_ascii_plan($floor_id) ?? '',
+            '',
+            'Rooms:',
+        ];
 
         foreach ($rooms as $room) {
             $content[] = sprintf(
@@ -71,10 +69,7 @@ class ExportService extends DataTransferService
             );
         }
 
-        return $this->write_export_file(
-            $filename ?? 'floor_' . $floor_id . '_' . date('Ymd_His') . '.txt',
-            implode(PHP_EOL, $content) . PHP_EOL
-        );
+        return $this->write_lines($filename ?? $this->dated_filename('floor', $floor_id, 'txt'), $content);
     }
 
     public function export_building_text_file($building_id, $filename = null)
@@ -84,20 +79,16 @@ class ExportService extends DataTransferService
             return null;
         }
 
-        $content = [];
-        $content[] = 'Building export';
-        $content[] = 'Name: ' . $building->name;
-        $content[] = 'Code: ' . $building->code;
-        $content[] = 'Address: ' . $building->address;
-        $content[] = 'Campus area: ' . $building->campus_area;
-        $content[] = 'Floors: ' . $building->floor_count;
-        $content[] = '';
-        $content[] = rtrim($this->export_building_ascii_plan($building_id) ?? '');
-
-        return $this->write_export_file(
-            $filename ?? 'building_' . $building_id . '_' . date('Ymd_His') . '.txt',
-            implode(PHP_EOL, $content) . PHP_EOL
-        );
+        return $this->write_lines($filename ?? $this->dated_filename('building', $building_id, 'txt'), [
+            'Building export',
+            'Name: ' . $building->name,
+            'Code: ' . $building->code,
+            'Address: ' . $building->address,
+            'Campus area: ' . $building->campus_area,
+            'Floors: ' . $building->floor_count,
+            '',
+            rtrim($this->export_building_ascii_plan($building_id) ?? ''),
+        ]);
     }
 
     public function export_schedule_text_file($schedule_id, $filename = null)
@@ -107,13 +98,14 @@ class ExportService extends DataTransferService
             return null;
         }
 
-        $content = [];
-        $content[] = 'Schedule export';
-        $content[] = 'Name: ' . $schedule->name;
-        $content[] = 'Period: ' . $schedule->start_date . ' - ' . $schedule->end_date;
-        $content[] = 'Description: ' . $schedule->description;
-        $content[] = '';
-        $content[] = 'Events:';
+        $content = [
+            'Schedule export',
+            'Name: ' . $schedule->name,
+            'Period: ' . $schedule->start_date . ' - ' . $schedule->end_date,
+            'Description: ' . $schedule->description,
+            '',
+            'Events:',
+        ];
 
         foreach ($this->schedule_repository->get_events($schedule_id) as $event) {
             $room = $event->room_id === null ? null : $this->room_repository->find_by_id($event->room_id);
@@ -130,24 +122,12 @@ class ExportService extends DataTransferService
             );
         }
 
-        return $this->write_export_file(
-            $filename ?? 'schedule_' . $schedule_id . '_' . date('Ymd_His') . '.txt',
-            implode(PHP_EOL, $content) . PHP_EOL
-        );
+        return $this->write_lines($filename ?? $this->dated_filename('schedule', $schedule_id, 'txt'), $content);
     }
 
     public function export_xml($filename = null)
     {
-        $data = [
-            'buildings' => $this->models_to_arrays($this->building_repository->find_all()),
-            'floors' => $this->models_to_arrays($this->floor_repository->find_all()),
-            'rooms' => $this->models_to_arrays($this->room_repository->find_all()),
-            'resources' => $this->models_to_arrays($this->resource_repository->find_all()),
-            'events' => $this->models_to_arrays($this->event_repository->find_all()),
-            'schedules' => $this->models_to_arrays($this->schedule_repository->find_all()),
-        ];
-
-        $xml = $this->array_to_xml('schedule_management_export', $data);
+        $xml = $this->array_to_xml('schedule_management_export', $this->export_data());
 
         if ($filename === null) {
             return $xml;
@@ -197,6 +177,28 @@ class ExportService extends DataTransferService
         file_put_contents($path, $this->normalize_newlines($content));
 
         return $path;
+    }
+
+    private function write_lines($filename, $lines)
+    {
+        return $this->write_export_file($filename, implode(PHP_EOL, $lines) . PHP_EOL);
+    }
+
+    private function dated_filename($prefix, $id, $extension)
+    {
+        return $prefix . '_' . $id . '_' . date('Ymd_His') . '.' . $extension;
+    }
+
+    private function export_data()
+    {
+        return [
+            'buildings' => $this->models_to_arrays($this->building_repository->find_all()),
+            'floors' => $this->models_to_arrays($this->floor_repository->find_all()),
+            'rooms' => $this->models_to_arrays($this->room_repository->find_all()),
+            'resources' => $this->models_to_arrays($this->resource_repository->find_all()),
+            'events' => $this->models_to_arrays($this->event_repository->find_all()),
+            'schedules' => $this->models_to_arrays($this->schedule_repository->find_all()),
+        ];
     }
 
     private function models_to_arrays($models)

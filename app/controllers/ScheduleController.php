@@ -14,20 +14,18 @@ class ScheduleController extends CrudController
 
     public function show($id = null)
     {
-        if ($guard = $this->guarded()) {
-            return $guard;
-        }
+        return $this->guarded_response(null, function () use ($id) {
+            $id = $this->resolve_id($id);
+            $schedule = $this->repository->find_by_id($id);
+            if ($schedule === null) {
+                return $this->not_found('Schedule not found.');
+            }
 
-        $id = $this->resolve_id($id);
-        $schedule = $this->repository->find_by_id($id);
-        if ($schedule === null) {
-            return $this->not_found('Schedule not found.');
-        }
-
-        return $this->respond('schedules/details', [
-            'schedule' => $schedule,
-            'events' => $this->repository->get_events($id),
-        ]);
+            return $this->respond('schedules/details', [
+                'schedule' => $schedule,
+                'events' => $this->repository->get_events($id),
+            ]);
+        });
     }
 
     public function calendar($id = null)
@@ -37,27 +35,21 @@ class ScheduleController extends CrudController
 
     public function publish_event($id = null)
     {
-        if ($guard = $this->guarded(['admin', 'schedule_manager'])) {
-            return $guard;
-        }
-
-        $schedule_id = $this->resolve_id($id);
-        $event_id = $this->int_param('event_id', $this->payload()['event_id'] ?? null);
-        $published = (new SchedulePublishingService($this->repository))->publish_event_to_schedule($event_id, $schedule_id);
-
-        return $this->ok($published);
+        return $this->schedule_event_response($id, 'publish_event_to_schedule');
     }
 
     public function remove_event($id = null)
     {
-        if ($guard = $this->guarded(['admin', 'schedule_manager'])) {
-            return $guard;
-        }
+        return $this->schedule_event_response($id, 'remove_event_from_schedule');
+    }
 
-        $schedule_id = $this->resolve_id($id);
-        $event_id = $this->int_param('event_id', $this->payload()['event_id'] ?? null);
-        $removed = (new SchedulePublishingService($this->repository))->remove_event_from_schedule($event_id, $schedule_id);
+    private function schedule_event_response($id, $method)
+    {
+        return $this->guarded_response(['admin', 'schedule_manager'], function () use ($id, $method) {
+            $schedule_id = $this->resolve_id($id);
+            $event_id = $this->int_param('event_id', $this->payload()['event_id'] ?? null);
 
-        return $this->ok($removed);
+            return $this->ok((new SchedulePublishingService($this->repository))->$method($event_id, $schedule_id));
+        });
     }
 }

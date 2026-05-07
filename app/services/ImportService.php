@@ -14,11 +14,7 @@ class ImportService extends DataTransferService
     {
         $floor = $this->floor_repository->find_by_id($floor_id);
         if ($floor === null || trim((string) $ascii_plan) === '') {
-            return [
-                'success' => false,
-                'imported' => 0,
-                'errors' => ['Floor not found or empty ASCII plan.'],
-            ];
+            return $this->failure_result('Floor not found or empty ASCII plan.');
         }
 
         $plan = $this->normalize_newlines($ascii_plan);
@@ -27,13 +23,7 @@ class ImportService extends DataTransferService
         $floor->ascii_plan = $plan;
         $this->floor_repository->update($floor_id, $floor);
 
-        $result = [
-            'success' => true,
-            'imported' => 0,
-            'updated' => 0,
-            'errors' => [],
-            'rooms' => $parsed_rooms,
-        ];
+        $result = $this->import_result(['updated' => 0, 'rooms' => $parsed_rooms]);
 
         if (!$sync_rooms) {
             return $result;
@@ -63,11 +53,7 @@ class ImportService extends DataTransferService
     public function import_ascii_plan_file($floor_id, $file_path, $sync_rooms = true)
     {
         if (!is_readable($file_path)) {
-            return [
-                'success' => false,
-                'imported' => 0,
-                'errors' => ['ASCII plan file is not readable.'],
-            ];
+            return $this->failure_result('ASCII plan file is not readable.');
         }
 
         return $this->import_ascii_plan($floor_id, file_get_contents($file_path), $sync_rooms);
@@ -91,22 +77,14 @@ class ImportService extends DataTransferService
     public function import_csv($file_path, $type)
     {
         if (!is_readable($file_path)) {
-            return [
-                'success' => false,
-                'imported' => 0,
-                'errors' => ['CSV file is not readable.'],
-            ];
+            return $this->failure_result('CSV file is not readable.');
         }
 
         $handle = fopen($file_path, 'r');
         $headers = fgetcsv($handle);
         if ($headers === false) {
             fclose($handle);
-            return [
-                'success' => false,
-                'imported' => 0,
-                'errors' => ['CSV file is empty.'],
-            ];
+            return $this->failure_result('CSV file is empty.');
         }
 
         $headers = array_map(fn ($header) => $this->normalize_key($header), $headers);
@@ -115,18 +93,10 @@ class ImportService extends DataTransferService
 
         if ($repository === null || $model_class === null) {
             fclose($handle);
-            return [
-                'success' => false,
-                'imported' => 0,
-                'errors' => ['Unsupported CSV import type: ' . $type],
-            ];
+            return $this->failure_result('Unsupported CSV import type: ' . $type);
         }
 
-        $result = [
-            'success' => true,
-            'imported' => 0,
-            'errors' => [],
-        ];
+        $result = $this->import_result();
         $line = 1;
 
         while (($row = fgetcsv($handle)) !== false) {
@@ -151,20 +121,12 @@ class ImportService extends DataTransferService
     public function import_xml($file_path)
     {
         if (!is_readable($file_path)) {
-            return [
-                'success' => false,
-                'imported' => 0,
-                'errors' => ['XML file is not readable.'],
-            ];
+            return $this->failure_result('XML file is not readable.');
         }
 
         $xml = simplexml_load_file($file_path);
         if ($xml === false) {
-            return [
-                'success' => false,
-                'imported' => 0,
-                'errors' => ['Invalid XML file.'],
-            ];
+            return $this->failure_result('Invalid XML file.');
         }
 
         return $this->import_xml_document($xml);
@@ -174,11 +136,7 @@ class ImportService extends DataTransferService
     {
         $xml = simplexml_load_string($xml_string);
         if ($xml === false) {
-            return [
-                'success' => false,
-                'imported' => 0,
-                'errors' => ['Invalid XML string.'],
-            ];
+            return $this->failure_result('Invalid XML string.');
         }
 
         return $this->import_xml_document($xml);
@@ -186,12 +144,7 @@ class ImportService extends DataTransferService
 
     private function import_xml_document($xml)
     {
-        $result = [
-            'success' => true,
-            'imported' => 0,
-            'by_type' => [],
-            'errors' => [],
-        ];
+        $result = $this->import_result(['by_type' => []]);
 
         foreach ($this->xml_import_order() as $type) {
             if (!isset($xml->{$type})) {
@@ -332,6 +285,16 @@ class ImportService extends DataTransferService
             'event' => ['repository' => $this->event_repository, 'model' => Event::class, 'xml' => 'events'],
             'schedule' => ['repository' => $this->schedule_repository, 'model' => Schedule::class, 'xml' => 'schedules'],
         ];
+    }
+
+    private function import_result($extra = [])
+    {
+        return array_merge(['success' => true, 'imported' => 0], $extra, ['errors' => []]);
+    }
+
+    private function failure_result($message)
+    {
+        return ['success' => false, 'imported' => 0, 'errors' => [$message]];
     }
 
     private function xml_node_to_array($node)

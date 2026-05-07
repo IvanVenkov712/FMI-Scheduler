@@ -20,31 +20,21 @@ class FloorController extends CrudController
 
     public function import_ascii_plan($id = null)
     {
-        if ($guard = $this->guarded($this->write_roles)) {
-            return $guard;
-        }
-
-        $data = $this->payload();
-        $result = (new ImportService())->import_ascii_plan(
-            $this->resolve_id($id),
-            $data['ascii_plan'] ?? '',
-            !isset($data['sync_rooms']) || filter_var($data['sync_rooms'], FILTER_VALIDATE_BOOLEAN)
-        );
-
-        return $this->json($result, $result['success'] ? 200 : 422);
+        return $this->guarded_response($this->write_roles, function () use ($id) {
+            $data = $this->payload();
+            return $this->json_result((new ImportService())->import_ascii_plan(
+                $this->resolve_id($id),
+                $data['ascii_plan'] ?? '',
+                !isset($data['sync_rooms']) || filter_var($data['sync_rooms'], FILTER_VALIDATE_BOOLEAN)
+            ));
+        });
     }
 
     public function export_ascii_plan($id = null)
     {
-        if ($guard = $this->guarded()) {
-            return $guard;
-        }
-
-        $plan = (new ExportService())->export_floor_ascii_plan($this->resolve_id($id));
-        if ($plan === null) {
-            return $this->not_found('Floor not found.');
-        }
-
-        return $this->json(['ascii_plan' => $plan]);
+        return $this->guarded_response(null, function () use ($id) {
+            $plan = (new ExportService())->export_floor_ascii_plan($this->resolve_id($id));
+            return $plan === null ? $this->not_found('Floor not found.') : $this->json(['ascii_plan' => $plan]);
+        });
     }
 }

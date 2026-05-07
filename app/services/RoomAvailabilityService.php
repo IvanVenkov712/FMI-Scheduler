@@ -33,19 +33,7 @@ class RoomAvailabilityService extends BaseService
         $student_count = (int) $student_count;
 
         $room = $this->room_repository->find_by_id($room_id);
-        if ($room === null || !$room->is_active) {
-            return false;
-        }
-
-        if ($student_count < 0 || (int) $room->capacity < $student_count) {
-            return false;
-        }
-
-        if ($resource_requirements === null) {
-            return false;
-        }
-
-        if (!$this->room_repository->has_available_resources($room_id, $resource_requirements)) {
+        if (!$this->is_eligible_room($room, $student_count, $resource_requirements)) {
             return false;
         }
 
@@ -93,19 +81,8 @@ class RoomAvailabilityService extends BaseService
 
         $eligible_rooms = [];
         foreach ($this->room_repository->find_all() as $room) {
-            if (!$room->is_active) {
-                continue;
-            }
-
-            if ($room->capacity < $student_count) {
-                continue;
-            }
-
-            if (!$this->room_repository->has_available_resources($room->id, $resource_requirements)) {
-                continue;
-            }
-
-            if (count($this->find_conflicting_events($room->id, $start_time, $end_time)) > 0) {
+            if (!$this->is_eligible_room($room, $student_count, $resource_requirements)
+                || count($this->find_conflicting_events($room->id, $start_time, $end_time)) > 0) {
                 continue;
             }
 
@@ -122,5 +99,16 @@ class RoomAvailabilityService extends BaseService
         });
 
         return $eligible_rooms;
+    }
+
+    private function is_eligible_room($room, $student_count, $resource_requirements)
+    {
+        if ($room === null || !$room->is_active || $student_count < 0) {
+            return false;
+        }
+
+        return (int) $room->capacity >= (int) $student_count
+            && $resource_requirements !== null
+            && $this->room_repository->has_available_resources($room->id, $resource_requirements);
     }
 }

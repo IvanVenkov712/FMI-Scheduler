@@ -15,65 +15,51 @@ class RoomController extends CrudController
 
     public function availability($id = null)
     {
-        if ($guard = $this->guarded()) {
-            return $guard;
-        }
+        return $this->guarded_response(null, function () use ($id) {
+            $data = $this->payload();
+            $service = new RoomAvailabilityService($this->repository);
 
-        $data = $this->payload();
-        $service = new RoomAvailabilityService($this->repository);
-        $bookable = $service->is_room_bookable(
-            $this->resolve_id($id),
-            $data['start_time'] ?? '',
-            $data['end_time'] ?? '',
-            $data['student_count'] ?? 0,
-            $data['resource_requirements'] ?? []
-        );
-
-        return $this->success([
-            'bookable' => $bookable,
-            'conflicts' => $service->find_conflicting_events(
-                $this->resolve_id($id),
-                $data['start_time'] ?? '',
-                $data['end_time'] ?? ''
-            ),
-        ]);
+            return $this->success([
+                'bookable' => $service->is_room_bookable(
+                    $this->resolve_id($id),
+                    $data['start_time'] ?? '',
+                    $data['end_time'] ?? '',
+                    $data['student_count'] ?? 0,
+                    $data['resource_requirements'] ?? []
+                ),
+                'conflicts' => $service->find_conflicting_events(
+                    $this->resolve_id($id),
+                    $data['start_time'] ?? '',
+                    $data['end_time'] ?? ''
+                ),
+            ]);
+        });
     }
 
     public function resources($id = null)
     {
-        if ($guard = $this->guarded()) {
-            return $guard;
-        }
-
-        return $this->success([
+        return $this->guarded_response(null, fn () => $this->success([
             'resources' => $this->repository->get_available_resources($this->resolve_id($id)),
-        ]);
+        ]));
     }
 
     public function sync_resource($id = null)
     {
-        if ($guard = $this->guarded($this->write_roles)) {
-            return $guard;
-        }
+        return $this->guarded_response($this->write_roles, function () use ($id) {
+            $data = $this->payload();
 
-        $data = $this->payload();
-        $ok = (new RoomResourceService($this->repository))->sync_room_resource(
-            $this->resolve_id($id),
-            $data['resource_id'] ?? null,
-            $data['quantity'] ?? 0
-        );
-
-        return $this->ok($ok);
+            return $this->ok((new RoomResourceService($this->repository))->sync_room_resource(
+                $this->resolve_id($id),
+                $data['resource_id'] ?? null,
+                $data['quantity'] ?? 0
+            ));
+        });
     }
 
     public function events($id = null)
     {
-        if ($guard = $this->guarded()) {
-            return $guard;
-        }
-
-        return $this->success([
+        return $this->guarded_response(null, fn () => $this->success([
             'events' => $this->repository->get_events($this->resolve_id($id)),
-        ]);
+        ]));
     }
 }

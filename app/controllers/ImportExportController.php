@@ -18,106 +18,78 @@ class ImportExportController extends BaseController
 
     public function import()
     {
-        if ($guard = $this->guarded(['admin', 'schedule_manager'])) {
-            return $guard;
-        }
-
-        return $this->respond('import-export/import', []);
+        return $this->guarded_response($this->import_roles(), fn () => $this->respond('import-export/import', []));
     }
 
     public function export()
     {
-        if ($guard = $this->guarded()) {
-            return $guard;
-        }
-
-        return $this->respond('import-export/export', []);
+        return $this->guarded_response(null, fn () => $this->respond('import-export/export', []));
     }
 
     public function import_csv()
     {
-        if ($guard = $this->guarded(['admin', 'schedule_manager'])) {
-            return $guard;
-        }
-
-        $data = $this->payload();
-        $result = $this->import_service->import_csv($data['file_path'] ?? '', $data['type'] ?? '');
-
-        return $this->json($result, $result['success'] ? 200 : 422);
+        return $this->import_response(fn ($data) => $this->import_service->import_csv($data['file_path'] ?? '', $data['type'] ?? ''));
     }
 
     public function import_xml()
     {
-        if ($guard = $this->guarded(['admin', 'schedule_manager'])) {
-            return $guard;
-        }
-
-        $data = $this->payload();
-        $result = isset($data['xml'])
+        return $this->import_response(fn ($data) => isset($data['xml'])
             ? $this->import_service->import_xml_string($data['xml'])
-            : $this->import_service->import_xml($data['file_path'] ?? '');
-
-        return $this->json($result, $result['success'] ? 200 : 422);
+            : $this->import_service->import_xml($data['file_path'] ?? '')
+        );
     }
 
     public function import_ascii_plan()
     {
-        if ($guard = $this->guarded(['admin', 'schedule_manager'])) {
-            return $guard;
-        }
-
-        $data = $this->payload();
-        $result = isset($data['file_path'])
+        return $this->import_response(fn ($data) => isset($data['file_path'])
             ? $this->import_service->import_ascii_plan_file($data['floor_id'] ?? 0, $data['file_path'], $data['sync_rooms'] ?? true)
-            : $this->import_service->import_ascii_plan($data['floor_id'] ?? 0, $data['ascii_plan'] ?? '', $data['sync_rooms'] ?? true);
-
-        return $this->json($result, $result['success'] ? 200 : 422);
+            : $this->import_service->import_ascii_plan($data['floor_id'] ?? 0, $data['ascii_plan'] ?? '', $data['sync_rooms'] ?? true)
+        );
     }
 
     public function export_floor($floor_id = null)
     {
-        if ($guard = $this->guarded()) {
-            return $guard;
-        }
-
-        $path = $this->export_service->export_floor_text_file($this->resolve_id($floor_id));
-
-        return $path === null ? $this->not_found('Floor not found.') : $this->success(['path' => $path]);
+        return $this->export_file_response(fn () => $this->export_service->export_floor_text_file($this->resolve_id($floor_id)), 'Floor not found.');
     }
 
     public function export_building($building_id = null)
     {
-        if ($guard = $this->guarded()) {
-            return $guard;
-        }
-
-        $path = $this->export_service->export_building_text_file($this->resolve_id($building_id, 'building_id'));
-
-        return $path === null ? $this->not_found('Building not found.') : $this->success(['path' => $path]);
+        return $this->export_file_response(
+            fn () => $this->export_service->export_building_text_file($this->resolve_id($building_id, 'building_id')),
+            'Building not found.'
+        );
     }
 
     public function export_schedule($schedule_id = null)
     {
-        if ($guard = $this->guarded()) {
-            return $guard;
-        }
-
-        $path = $this->export_service->export_schedule_text_file($this->resolve_id($schedule_id, 'schedule_id'));
-
-        return $path === null ? $this->not_found('Schedule not found.') : $this->success(['path' => $path]);
+        return $this->export_file_response(
+            fn () => $this->export_service->export_schedule_text_file($this->resolve_id($schedule_id, 'schedule_id')),
+            'Schedule not found.'
+        );
     }
 
     public function export_xml()
     {
-        if ($guard = $this->guarded()) {
-            return $guard;
-        }
+        return $this->guarded_response(null, function () {
+            $data = $this->payload();
+            return isset($data['filename'])
+                ? $this->success(['path' => $this->export_service->export_to_xml_file($data['filename'])])
+                : $this->json(['xml' => $this->export_service->export_xml()]);
+        });
+    }
 
-        $data = $this->payload();
-        if (isset($data['filename'])) {
-            return $this->success(['path' => $this->export_service->export_to_xml_file($data['filename'])]);
-        }
+    private function import_response($callback)
+    {
+        return $this->guarded_response($this->import_roles(), fn () => $this->json_result($callback($this->payload())));
+    }
 
-        return $this->json(['xml' => $this->export_service->export_xml()]);
+    private function export_file_response($callback, $not_found_message)
+    {
+        return $this->guarded_response(null, fn () => $this->found_result($callback(), 'path', $not_found_message));
+    }
+
+    private function import_roles()
+    {
+        return ['admin', 'schedule_manager'];
     }
 }

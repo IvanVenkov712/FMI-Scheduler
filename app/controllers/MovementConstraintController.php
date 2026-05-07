@@ -14,34 +14,29 @@ class MovementConstraintController extends CrudController
 
     public function usable()
     {
-        if ($guard = $this->guarded()) {
-            return $guard;
-        }
-
-        $data = $this->payload();
-        $usable = (new MovementConstraintService())->is_route_segment_usable(
-            $data['route_segment_id'] ?? null,
-            $data['start_time'] ?? '',
-            $data['end_time'] ?? ''
-        );
-
-        return $this->success(['usable' => $usable]);
+        return $this->guarded_response(null, function () {
+            $data = $this->payload();
+            return $this->success([
+                'usable' => (new MovementConstraintService())->is_route_segment_usable(
+                    $data['route_segment_id'] ?? null,
+                    $data['start_time'] ?? '',
+                    $data['end_time'] ?? ''
+                ),
+            ]);
+        });
     }
 
     public function overlapping()
     {
-        if ($guard = $this->guarded()) {
-            return $guard;
-        }
-
-        $data = $this->payload();
-
-        return $this->success([
-            'constraints' => $this->repository->find_overlapping_for_segment(
-                $data['route_segment_id'] ?? null,
-                $data['start_time'] ?? '',
-                $data['end_time'] ?? ''
-            ),
-        ]);
+        return $this->guarded_response(null, function () {
+            $data = $this->payload();
+            return $this->success([
+                'constraints' => $this->repository->find_overlapping_for_segment(
+                    $data['route_segment_id'] ?? null,
+                    $data['start_time'] ?? '',
+                    $data['end_time'] ?? ''
+                ),
+            ]);
+        });
     }
 }

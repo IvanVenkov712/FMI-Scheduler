@@ -124,9 +124,7 @@ class SessionHelper
 
     public function get_user_role()
     {
-        $role = $this->get(self::USER_ROLE_KEY);
-
-        return $role === null ? null : strtolower(trim((string) $role));
+        return $this->normalize_role($this->get(self::USER_ROLE_KEY));
     }
 
     public function has_role($roles)
@@ -141,7 +139,7 @@ class SessionHelper
         }
 
         foreach ($roles as $role) {
-            if ($current_role === strtolower(trim((string) $role))) {
+            if ($current_role === $this->normalize_role($role)) {
                 return true;
             }
         }
@@ -179,5 +177,10 @@ class SessionHelper
         unset($data['password_hash']);
 
         return $data;
+    }
+
+    private function normalize_role($role)
+    {
+        return $role === null ? null : strtolower(trim((string) $role));
     }
 }

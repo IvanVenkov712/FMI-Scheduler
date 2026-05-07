@@ -20,82 +20,78 @@ class RequestController extends BaseController
 
     public function index()
     {
-        if ($guard = $this->guarded()) {
-            return $guard;
-        }
-
-        $access = new UserEventAccessService(null, $this->event_repository);
-
-        return $this->respond('requests/index', [
-            'events' => $access->list_manageable_events($this->request_user_id()),
-            'approvable_events' => $access->list_approvable_events($this->request_user_id()),
-        ]);
+        return $this->guarded_response(null, function () {
+            $access = new UserEventAccessService(null, $this->event_repository);
+            return $this->respond('requests/index', [
+                'events' => $access->list_manageable_events($this->request_user_id()),
+                'approvable_events' => $access->list_approvable_events($this->request_user_id()),
+            ]);
+        });
     }
 
     public function create()
     {
-        if ($guard = $this->guarded(['admin', 'teacher', 'schedule_manager'])) {
-            return $guard;
-        }
-
-        return $this->respond('requests/create', []);
+        return $this->guarded_response($this->request_roles(), fn () => $this->respond('requests/create', []));
     }
 
     public function store()
     {
-        if ($guard = $this->guarded(['admin', 'teacher', 'schedule_manager'])) {
-            return $guard;
-        }
-
-        $data = $this->payload();
-        $event = new Event($data);
-        $event->requestor_id = $event->requestor_id ?: $this->request_user_id();
-
-        $created = $this->request_service->submit_event_request(
-            $event,
-            $data['resource_requirements'] ?? [],
-            $data['online_access'] ?? null
+        return $this->request_mutation_response(
+            fn ($id, $event, $data) => $this->request_service->submit_event_request(
+                $event,
+                $data['resource_requirements'] ?? [],
+                $data['online_access'] ?? null
+            ),
+            'Request could not be created.',
+            201
         );
-
-        return $this->result($created, 'event', 'Request could not be created.', 201);
     }
 
     public function update($id = null)
     {
-        if ($guard = $this->guarded(['admin', 'teacher', 'schedule_manager'])) {
-            return $guard;
-        }
-
-        $data = $this->payload();
-        $event = new Event($data);
-        $event->requestor_id = $event->requestor_id ?: $this->request_user_id();
-
-        $updated = $this->request_service->edit_pending_request(
-            $this->resolve_id($id),
-            $event,
-            $data['resource_requirements'] ?? [],
-            $data['online_access'] ?? null
+        return $this->request_mutation_response(
+            fn ($resolved_id, $event, $data) => $this->request_service->edit_pending_request(
+                $resolved_id,
+                $event,
+                $data['resource_requirements'] ?? [],
+                $data['online_access'] ?? null
+            ),
+            'Request could not be updated.',
+            200,
+            $id
         );
-
-        return $this->result($updated, 'event', 'Request could not be updated.');
     }
 
     public function review($id = null)
     {
-        if ($guard = $this->guarded(['admin', 'schedule_manager'])) {
-            return $guard;
-        }
+        return $this->guarded_response(['admin', 'schedule_manager'], function () use ($id) {
+            $id = $this->resolve_id($id);
+            $event = $this->event_repository->find_by_id($id);
+            if ($event === null) {
+                return $this->not_found('Request not found.');
+            }
 
-        $id = $this->resolve_id($id);
-        $event = $this->event_repository->find_by_id($id);
-        if ($event === null) {
-            return $this->not_found('Request not found.');
-        }
+            return $this->respond('requests/review', [
+                'event' => $event,
+                'resource_requirements' => $this->event_repository->get_resource_requirements($id),
+                'online_access' => $this->event_repository->get_online_access($id),
+            ]);
+        });
+    }
 
-        return $this->respond('requests/review', [
-            'event' => $event,
-            'resource_requirements' => $this->event_repository->get_resource_requirements($id),
-            'online_access' => $this->event_repository->get_online_access($id),
-        ]);
+    private function request_mutation_response($callback, $message, $status = 200, $id = null)
+    {
+        return $this->guarded_response($this->request_roles(), function () use ($callback, $message, $status, $id) {
+            $data = $this->payload();
+            $event = new Event($data);
+            $event->requestor_id = $event->requestor_id ?: $this->request_user_id();
+
+            return $this->result($callback($this->resolve_id($id), $event, $data), 'event', $message, $status);
+        });
+    }
+
+    private function request_roles()
+    {
+        return ['admin', 'teacher', 'schedule_manager'];
     }
 }

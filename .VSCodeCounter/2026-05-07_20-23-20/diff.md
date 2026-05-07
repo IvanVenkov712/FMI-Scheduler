@@ -1,24 +1,26 @@
 # Diff Summary
 
-Date : 2026-04-23 12:27:55
+Date : 2026-05-07 20:23:20
 
 Directory c:\\Users\\ivanv\\FMI\\WebProject
 
-Total : 13 files,  -71 codes, 0 comments, -13 blanks, all -84 lines
+Total : 37 files,  -250 codes, 0 comments, -26 blanks, all -276 lines
 
 [Summary](results.md) / [Details](details.md) / Diff Summary / [Diff Details](diff-details.md)
 
 ## Languages
 | language | files | code | comment | blank | total |
 | :--- | ---: | ---: | ---: | ---: | ---: |
-| PHP | 13 | -71 | 0 | -13 | -84 |
+| PHP | 37 | -250 | 0 | -26 | -276 |
 
 ## Directories
 | path | files | code | comment | blank | total |
 | :--- | ---: | ---: | ---: | ---: | ---: |
-| . | 13 | -71 | 0 | -13 | -84 |
-| app | 13 | -71 | 0 | -13 | -84 |
-| app\\controllers | 10 | -63 | 0 | -11 | -74 |
-| app\\core | 3 | -8 | 0 | -2 | -10 |
+| . | 37 | -250 | 0 | -26 | -276 |
+| app | 37 | -250 | 0 | -26 | -276 |
+| app\\controllers | 12 | -64 | 0 | -5 | -69 |
+| app\\core | 1 | 19 | 0 | 7 | 26 |
+| app\\repositories | 10 | -178 | 0 | -34 | -212 |
+| app\\services | 14 | -27 | 0 | 6 | -21 |
 
 [Summary](results.md) / [Details](details.md) / Diff Summary / [Diff Details](diff-details.md)

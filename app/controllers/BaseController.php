@@ -59,6 +59,25 @@ abstract class BaseController extends Controller
             : $this->success([$key => $value], $success_status);
     }
 
+    protected function guarded_response($roles, $callback)
+    {
+        if ($guard = $this->guarded($roles)) {
+            return $guard;
+        }
+
+        return $callback();
+    }
+
+    protected function json_result($result)
+    {
+        return $this->json($result, $result['success'] ? 200 : 422);
+    }
+
+    protected function found_result($value, $key, $message = 'Not found.')
+    {
+        return $value === null ? $this->not_found($message) : $this->success([$key => $value]);
+    }
+
     protected function guarded($roles = null)
     {
         if (!$this->session->is_authenticated()) {

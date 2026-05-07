@@ -15,71 +15,66 @@ class ExamSessionController extends BaseController
 
     public function create()
     {
-        if ($guard = $this->guarded(['admin', 'teacher', 'schedule_manager'])) {
-            return $guard;
-        }
-
-        return $this->respond('events/create', ['type' => 'exam']);
+        return $this->guarded_response($this->exam_roles(), fn () => $this->respond('events/create', ['type' => 'exam']));
     }
 
     public function store()
     {
-        if ($guard = $this->guarded(['admin', 'teacher', 'schedule_manager'])) {
-            return $guard;
-        }
+        return $this->guarded_response($this->exam_roles(), function () {
+            $data = $this->payload();
+            $event = $this->exam_service->create_exam_session(
+                $data['requestor_id'] ?? $this->request_user_id(),
+                $data['subject_name'] ?? '',
+                $data['start_time'] ?? '',
+                $data['end_time'] ?? '',
+                $data['student_count'] ?? 0,
+                $data['delivery_mode'] ?? 'physical',
+                $data['room_id'] ?? null,
+                $data['resource_requirements'] ?? [],
+                $data['online_access'] ?? null,
+                $data['name'] ?? null
+            );
 
-        $data = $this->payload();
-        $event = $this->exam_service->create_exam_session(
-            $data['requestor_id'] ?? $this->request_user_id(),
-            $data['subject_name'] ?? '',
-            $data['start_time'] ?? '',
-            $data['end_time'] ?? '',
-            $data['student_count'] ?? 0,
-            $data['delivery_mode'] ?? 'physical',
-            $data['room_id'] ?? null,
-            $data['resource_requirements'] ?? [],
-            $data['online_access'] ?? null,
-            $data['name'] ?? null
-        );
-
-        return $this->result($event, 'event', 'Exam session could not be created.', 201);
+            return $this->result($event, 'event', 'Exam session could not be created.', 201);
+        });
     }
 
     public function prepare_hybrid($event_id = null)
     {
-        if ($guard = $this->guarded(['admin', 'teacher', 'schedule_manager'])) {
-            return $guard;
-        }
+        return $this->guarded_response($this->exam_roles(), function () use ($event_id) {
+            $data = $this->payload();
+            $event = $this->exam_service->prepare_hybrid_exam(
+                $this->resolve_id($event_id, 'event_id'),
+                $data['room_id'] ?? null,
+                $data['platform'] ?? '',
+                $data['meeting_link'] ?? ($data['link'] ?? ''),
+                $data['access_key'] ?? null,
+                $data['resource_requirements'] ?? null,
+                $data['host_notes'] ?? ''
+            );
 
-        $data = $this->payload();
-        $event = $this->exam_service->prepare_hybrid_exam(
-            $this->resolve_id($event_id, 'event_id'),
-            $data['room_id'] ?? null,
-            $data['platform'] ?? '',
-            $data['meeting_link'] ?? ($data['link'] ?? ''),
-            $data['access_key'] ?? null,
-            $data['resource_requirements'] ?? null,
-            $data['host_notes'] ?? ''
-        );
-
-        return $this->result($event, 'event', 'Hybrid exam setup failed.');
+            return $this->result($event, 'event', 'Hybrid exam setup failed.');
+        });
     }
 
     public function validate_room()
     {
-        if ($guard = $this->guarded(['admin', 'teacher', 'schedule_manager'])) {
-            return $guard;
-        }
+        return $this->guarded_response($this->exam_roles(), function () {
+            $data = $this->payload();
+            return $this->success([
+                'valid' => $this->exam_service->validate_exam_capacity_and_resources(
+                    $data['room_id'] ?? null,
+                    $data['start_time'] ?? '',
+                    $data['end_time'] ?? '',
+                    $data['student_count'] ?? 0,
+                    $data['resource_requirements'] ?? []
+                ),
+            ]);
+        });
+    }
 
-        $data = $this->payload();
-        $valid = $this->exam_service->validate_exam_capacity_and_resources(
-            $data['room_id'] ?? null,
-            $data['start_time'] ?? '',
-            $data['end_time'] ?? '',
-            $data['student_count'] ?? 0,
-            $data['resource_requirements'] ?? []
-        );
-
-        return $this->success(['valid' => $valid]);
+    private function exam_roles()
+    {
+        return ['admin', 'teacher', 'schedule_manager'];
     }
 }
