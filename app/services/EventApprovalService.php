@@ -5,7 +5,7 @@ use App\Helpers\EventDeliveryModeHelper;
 use App\Helpers\OnlineAccessHelper;
 use App\Repositories\EventRepository;
 
-class EventApprovalService
+class EventApprovalService extends BaseService
 {
     private $event_repository;
     private $room_availability_service;
@@ -14,8 +14,8 @@ class EventApprovalService
         $event_repository = null,
         $room_availability_service = null,
     ) {
-        $this->event_repository = $event_repository ?? new EventRepository();
-        $this->room_availability_service = $room_availability_service ?? new RoomAvailabilityService(null, $this->event_repository);
+        $this->event_repository = $this->dependency($event_repository, EventRepository::class);
+        $this->room_availability_service = $this->dependency($room_availability_service, RoomAvailabilityService::class, null, $this->event_repository);
     }
 
     public function approve_event_request($event_id)
@@ -30,9 +30,7 @@ class EventApprovalService
         }
 
         $event->status = 'approved';
-        $this->event_repository->update($event_id, $event);
-
-        return $this->event_repository->find_by_id($event_id);
+        return $this->update_and_refresh($this->event_repository, $event_id, $event);
     }
 
     public function reject_event_request($event_id)
@@ -43,9 +41,7 @@ class EventApprovalService
         }
 
         $event->status = 'rejected';
-        $this->event_repository->update($event_id, $event);
-
-        return $this->event_repository->find_by_id($event_id);
+        return $this->update_and_refresh($this->event_repository, $event_id, $event);
     }
 
     public function reschedule_approved_event($event_id)
@@ -56,9 +52,7 @@ class EventApprovalService
         }
 
         $event->status = 'pending';
-        $this->event_repository->update($event_id, $event);
-
-        return $this->event_repository->find_by_id($event_id);
+        return $this->update_and_refresh($this->event_repository, $event_id, $event);
     }
 
     private function can_approve($event)

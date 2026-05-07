@@ -6,7 +6,7 @@ use App\Helpers\TimeHelper;
 use App\Repositories\MovementConstraintRepository;
 use App\Repositories\RouteSegmentRepository;
 
-class MovementConstraintService
+class MovementConstraintService extends BaseService
 {
     private $route_segment_repository;
     private $movement_constraint_repository;
@@ -17,9 +17,9 @@ class MovementConstraintService
         $movement_constraint_repository = null,
         $route_segment_service = null
     ) {
-        $this->route_segment_repository = $route_segment_repository ?? new RouteSegmentRepository();
-        $this->movement_constraint_repository = $movement_constraint_repository ?? new MovementConstraintRepository();
-        $this->route_segment_service = $route_segment_service ?? new RouteSegmentService($route_segment_repository);
+        $this->route_segment_repository = $this->dependency($route_segment_repository, RouteSegmentRepository::class);
+        $this->movement_constraint_repository = $this->dependency($movement_constraint_repository, MovementConstraintRepository::class);
+        $this->route_segment_service = $this->dependency($route_segment_service, RouteSegmentService::class, $this->route_segment_repository);
     }
 
     public function is_route_segment_usable($segmentId, $start_time, $end_time)

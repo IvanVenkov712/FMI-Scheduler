@@ -1,11 +1,10 @@
 <?php
 namespace App\Services;
 
-use App\Helpers\StringHelper;
 use App\Repositories\EventRepository;
 use App\Repositories\UserRepository;
 
-class UserEventAccessService
+class UserEventAccessService extends BaseService
 {
     private $user_repository;
     private $event_repository;
@@ -15,8 +14,8 @@ class UserEventAccessService
 
     public function __construct($user_repository = null, $event_repository = null)
     {
-        $this->user_repository = $user_repository ?? new UserRepository();
-        $this->event_repository = $event_repository ?? new EventRepository();
+        $this->user_repository = $this->dependency($user_repository, UserRepository::class);
+        $this->event_repository = $this->dependency($event_repository, EventRepository::class);
     }
 
     public function can_user_manage_event($user_id, $event_id)
@@ -31,7 +30,7 @@ class UserEventAccessService
         }
 
         $role = $this->get_user_role($user_id);
-        if ($this->has_any_role($role, self::EVENT_MANAGER_ROLES)) {
+        if ($this->has_role_value($role, self::EVENT_MANAGER_ROLES)) {
             return true;
         }
 
@@ -50,7 +49,7 @@ class UserEventAccessService
         }
 
         $role = $this->get_user_role($user_id);
-        if (!$this->has_any_role($role, self::EVENT_APPROVER_ROLES)) {
+        if (!$this->has_role_value($role, self::EVENT_APPROVER_ROLES)) {
             return false;
         }
 
@@ -68,7 +67,7 @@ class UserEventAccessService
             return [];
         }
 
-        if ($this->has_any_role($role, self::EVENT_MANAGER_ROLES)) {
+        if ($this->has_role_value($role, self::EVENT_MANAGER_ROLES)) {
             return $this->event_repository->find_all();
         }
 
@@ -82,7 +81,7 @@ class UserEventAccessService
         }
 
         $role = $this->get_user_role($user_id);
-        if (!$this->has_any_role($role, self::EVENT_APPROVER_ROLES)) {
+        if (!$this->has_role_value($role, self::EVENT_APPROVER_ROLES)) {
             return [];
         }
 
@@ -99,18 +98,6 @@ class UserEventAccessService
 
     private function get_user_role($user_id)
     {
-        $role = $this->user_repository->get_role((int) $user_id);
-        $role = StringHelper::normalize_string($role);
-
-        return $role === '' ? null : $role;
-    }
-
-    private function has_any_role($role, $allowed_roles)
-    {
-        if ($role === null) {
-            return false;
-        }
-
-        return in_array($role, $allowed_roles, true);
+        return $this->normalize_role($this->user_repository->get_role((int) $user_id));
     }
 }

@@ -7,15 +7,15 @@ use App\Helpers\ResourceRequirementsHelper;
 use App\Repositories\RoomRepository;
 use App\Repositories\EventRepository;
 
-class RoomAvailabilityService
+class RoomAvailabilityService extends BaseService
 {
     private $room_repository;
     private $event_repository;
 
     public function __construct($room_repository = null, $event_repository = null)
     {
-        $this->room_repository = $room_repository ?? new RoomRepository();
-        $this->event_repository = $event_repository ?? new EventRepository();
+        $this->room_repository = $this->dependency($room_repository, RoomRepository::class);
+        $this->event_repository = $this->dependency($event_repository, EventRepository::class);
     }
 
     public function is_room_bookable($room_id, $start_time, $end_time, $student_count, $resource_requirements = [])

@@ -8,13 +8,13 @@ use App\Repositories\UserRepository;
 // Registers a new user if it does not exist.
 // Default role is student
 // The user is active by default
-class RegisterService
+class RegisterService extends BaseService
 {
     private $user_repository;
 
     public function __construct($user_repository = null)
     {
-        $this->user_repository = $user_repository ?? new UserRepository();
+        $this->user_repository = $this->dependency($user_repository, UserRepository::class);
     }
 
     public function register($data)
@@ -51,18 +51,7 @@ class RegisterService
 
         $user_id = $this->user_repository->insert($user);
 
-        return $this->user_repository->find_by_id((int) $user_id);
+        return $this->refresh($this->user_repository, $user_id);
     }
 
-    private function normalize_email($value)
-    {
-        $email = trim((string) $value);
-        if ($email === '') {
-            return null;
-        }
-
-        $email = strtolower($email);
-
-        return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : null;
-    }
 }

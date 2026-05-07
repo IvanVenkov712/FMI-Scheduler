@@ -7,7 +7,7 @@ use App\Repositories\EventRepository;
 use App\Repositories\OnlineAccessRepository;
 use App\Repositories\RoomRepository;
 
-class OnlineAccessService
+class OnlineAccessService extends BaseService
 {
     private $event_repository;
     private $online_access_repository;
@@ -18,9 +18,9 @@ class OnlineAccessService
         $online_access_repository = null,
         $room_repository = null,
     ) {
-        $this->event_repository = $event_repository ?? new EventRepository();
-        $this->online_access_repository = $online_access_repository ?? new OnlineAccessRepository();
-        $this->room_repository = $room_repository ?? new RoomRepository();
+        $this->event_repository = $this->dependency($event_repository, EventRepository::class);
+        $this->online_access_repository = $this->dependency($online_access_repository, OnlineAccessRepository::class);
+        $this->room_repository = $this->dependency($room_repository, RoomRepository::class);
     }
 
     public function provision_online_access($event_id, $platform, $link, $key = null, $host_notes = '')
@@ -42,9 +42,7 @@ class OnlineAccessService
             }
 
             $online_access->id = $existing_online_access->id;
-            $this->online_access_repository->update($existing_online_access->id, $online_access);
-
-            return $this->online_access_repository->find_by_id($existing_online_access->id);
+            return $this->update_and_refresh($this->online_access_repository, $existing_online_access->id, $online_access);
         }
 
         $this->event_repository->upsert_online_access($event->id, $online_access);
@@ -65,9 +63,7 @@ class OnlineAccessService
         }
 
         $online_access->access_key = OnlineAccessHelper::generate_access_key();
-        $this->online_access_repository->update($online_access->id, $online_access);
-
-        return $this->online_access_repository->find_by_id($online_access->id);
+        return $this->update_and_refresh($this->online_access_repository, $online_access->id, $online_access);
     }
 
     public function validate_hybrid_event_setup($event_id)

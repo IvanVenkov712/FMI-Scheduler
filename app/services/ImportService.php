@@ -7,38 +7,9 @@ use App\Models\Floor;
 use App\Models\Resource;
 use App\Models\Room;
 use App\Models\Schedule;
-use App\Repositories\BuildingRepository;
-use App\Repositories\EventRepository;
-use App\Repositories\FloorRepository;
-use App\Repositories\ResourceRepository;
-use App\Repositories\RoomRepository;
-use App\Repositories\ScheduleRepository;
 
-class ImportService
+class ImportService extends DataTransferService
 {
-    private $building_repository;
-    private $floor_repository;
-    private $room_repository;
-    private $event_repository;
-    private $schedule_repository;
-    private $resource_repository;
-
-    public function __construct(
-        $building_repository = null,
-        $floor_repository = null,
-        $room_repository = null,
-        $event_repository = null,
-        $schedule_repository = null,
-        $resource_repository = null
-    ) {
-        $this->building_repository = $building_repository ?? new BuildingRepository();
-        $this->floor_repository = $floor_repository ?? new FloorRepository();
-        $this->room_repository = $room_repository ?? new RoomRepository();
-        $this->event_repository = $event_repository ?? new EventRepository();
-        $this->schedule_repository = $schedule_repository ?? new ScheduleRepository();
-        $this->resource_repository = $resource_repository ?? new ResourceRepository();
-    }
-
     public function import_ascii_plan($floor_id, $ascii_plan, $sync_rooms = true)
     {
         $floor = $this->floor_repository->find_by_id($floor_id);
@@ -331,52 +302,36 @@ class ImportService
 
     private function repository_for_type($type)
     {
-        $type = strtolower(trim($type));
-        $type = rtrim($type, ' ');
-
-        $map = [
-            'building' => $this->building_repository,
-            'buildings' => $this->building_repository,
-            'floor' => $this->floor_repository,
-            'floors' => $this->floor_repository,
-            'room' => $this->room_repository,
-            'rooms' => $this->room_repository,
-            'resource' => $this->resource_repository,
-            'resources' => $this->resource_repository,
-            'event' => $this->event_repository,
-            'events' => $this->event_repository,
-            'schedule' => $this->schedule_repository,
-            'schedules' => $this->schedule_repository,
-        ];
-
-        return $map[$type] ?? null;
+        return $this->import_type($type)['repository'] ?? null;
     }
 
     private function model_class_for_type($type)
     {
-        $type = strtolower(trim($type));
-
-        $map = [
-            'building' => Building::class,
-            'buildings' => Building::class,
-            'floor' => Floor::class,
-            'floors' => Floor::class,
-            'room' => Room::class,
-            'rooms' => Room::class,
-            'resource' => Resource::class,
-            'resources' => Resource::class,
-            'event' => Event::class,
-            'events' => Event::class,
-            'schedule' => Schedule::class,
-            'schedules' => Schedule::class,
-        ];
-
-        return $map[$type] ?? null;
+        return $this->import_type($type)['model'] ?? null;
     }
 
     private function xml_import_order()
     {
-        return ['buildings', 'floors', 'rooms', 'resources', 'events', 'schedules'];
+        return array_map(fn ($type) => $type['xml'], $this->import_types());
+    }
+
+    private function import_type($type)
+    {
+        $type = rtrim(strtolower(trim((string) $type)), 's');
+
+        return $this->import_types()[$type] ?? null;
+    }
+
+    private function import_types()
+    {
+        return [
+            'building' => ['repository' => $this->building_repository, 'model' => Building::class, 'xml' => 'buildings'],
+            'floor' => ['repository' => $this->floor_repository, 'model' => Floor::class, 'xml' => 'floors'],
+            'room' => ['repository' => $this->room_repository, 'model' => Room::class, 'xml' => 'rooms'],
+            'resource' => ['repository' => $this->resource_repository, 'model' => Resource::class, 'xml' => 'resources'],
+            'event' => ['repository' => $this->event_repository, 'model' => Event::class, 'xml' => 'events'],
+            'schedule' => ['repository' => $this->schedule_repository, 'model' => Schedule::class, 'xml' => 'schedules'],
+        ];
     }
 
     private function xml_node_to_array($node)
@@ -392,10 +347,5 @@ class ImportService
     private function normalize_key($key)
     {
         return strtolower(trim((string) $key));
-    }
-
-    private function normalize_newlines($value)
-    {
-        return str_replace(["\r\n", "\r"], "\n", (string) $value);
     }
 }

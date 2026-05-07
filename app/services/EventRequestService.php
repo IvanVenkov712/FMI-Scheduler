@@ -7,9 +7,8 @@ use App\Helpers\OnlineAccessHelper;
 use App\Helpers\TimeHelper;
 use App\Repositories\OnlineAccessRepository;
 use App\Repositories\EventRepository;
-use Throwable;
 
-class EventRequestService
+class EventRequestService extends BaseService
 {
     private $event_repository;
     private $online_access_repository;
@@ -20,9 +19,9 @@ class EventRequestService
         $online_access_repository = null,
         $room_availability_service = null,
     ) {
-        $this->event_repository = $event_repository ?? new EventRepository();
-        $this->online_access_repository = $online_access_repository ?? new OnlineAccessRepository();
-        $this->room_availability_service = $room_availability_service ?? new RoomAvailabilityService(null, $this->event_repository);
+        $this->event_repository = $this->dependency($event_repository, EventRepository::class);
+        $this->online_access_repository = $this->dependency($online_access_repository, OnlineAccessRepository::class);
+        $this->room_availability_service = $this->dependency($room_availability_service, RoomAvailabilityService::class, null, $this->event_repository);
     }
 
     public function submit_event_request($event, $requirements = [], $online_access = null)
@@ -43,8 +42,7 @@ class EventRequestService
 
         $event->status = 'pending';
         $event->online_access_id = null;
-        $this->event_repository->begin_transaction();
-        try {
+        $event_id = $this->transaction($this->event_repository, function () use ($event, $requirements, $online_access) {
             $event_id = (int) $this->event_repository->insert($event);
             $this->event_repository->replace_resource_requirements($event_id, $requirements);
 
@@ -52,13 +50,10 @@ class EventRequestService
                 $this->event_repository->upsert_online_access($event_id, $online_access);
             }
 
-            $this->event_repository->commit();
-        } catch (Throwable $exception) {
-            $this->event_repository->roll_back();
-            throw $exception;
-        }
+            return $event_id;
+        });
 
-        return $this->event_repository->find_by_id($event_id);
+        return $this->refresh($this->event_repository, $event_id);
     }
 
     public function edit_pending_request($event_id, $new_event, $new_requirements = [], $new_online_access = null)
@@ -80,8 +75,8 @@ class EventRequestService
 
         $new_event->status = 'pending';
         $new_event->online_access_id = $existing_event->online_access_id;
-        $this->event_repository->begin_transaction();
-        try {
+
+        $this->transaction($this->event_repository, function () use ($event_id, $new_event, $new_requirements, $new_online_access) {
             $this->event_repository->update($event_id, $new_event);
             $this->event_repository->replace_resource_requirements($event_id, $new_requirements);
 
@@ -91,13 +86,9 @@ class EventRequestService
                 $this->event_repository->upsert_online_access($event_id, $new_online_access);
             }
 
-            $this->event_repository->commit();
-        } catch (Throwable $exception) {
-            $this->event_repository->roll_back();
-            throw $exception;
-        }
+        });
 
-        return $this->event_repository->find_by_id($event_id);
+        return $this->refresh($this->event_repository, $event_id);
     }
 
     public function attach_resource_requirements($event_id, $resource_requirements)

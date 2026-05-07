@@ -6,7 +6,7 @@ use App\Helpers\TimeHelper;
 use App\Repositories\EventRepository;
 use App\Repositories\RoomRepository;
 
-class RoomAllocationService
+class RoomAllocationService extends BaseService
 {
     private $event_repository;
     private $room_repository;
@@ -17,8 +17,8 @@ class RoomAllocationService
         $room_repository = null,
         $room_availability_service = null,
     ) {
-        $this->event_repository = $event_repository ?? new EventRepository();
-        $this->room_repository = $room_repository ?? new RoomRepository();
+        $this->event_repository = $this->dependency($event_repository, EventRepository::class);
+        $this->room_repository = $this->dependency($room_repository, RoomRepository::class);
         $this->room_availability_service = $room_availability_service
             ?? new RoomAvailabilityService($this->room_repository, $this->event_repository);
     }
@@ -100,9 +100,7 @@ class RoomAllocationService
         }
 
         $event->room_id = $room_id;
-        $this->event_repository->update($event_id, $event);
-
-        return $this->event_repository->find_by_id($event_id);
+        return $this->update_and_refresh($this->event_repository, $event_id, $event);
     }
 
     private function can_allocate_room($event)

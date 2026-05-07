@@ -5,15 +5,15 @@ use App\Helpers\ResourceRequirementsHelper;
 use App\Repositories\ResourceRepository;
 use App\Repositories\RoomRepository;
 
-class RoomResourceService
+class RoomResourceService extends BaseService
 {
     private $room_repository;
     private $resource_repository;
 
     public function __construct($room_repository = null, $resource_repository = null)
     {
-        $this->room_repository = $room_repository ?? new RoomRepository();
-        $this->resource_repository = $resource_repository ?? new ResourceRepository();
+        $this->room_repository = $this->dependency($room_repository, RoomRepository::class);
+        $this->resource_repository = $this->dependency($resource_repository, ResourceRepository::class);
     }
 
     public function sync_room_resource($roomId, $resourceId, $quantity)

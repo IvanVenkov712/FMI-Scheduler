@@ -5,15 +5,15 @@ use App\Helpers\TimeHelper;
 use App\Repositories\EventRepository;
 use App\Repositories\ScheduleRepository;
 
-class SchedulePublishingService
+class SchedulePublishingService extends BaseService
 {
     private $schedule_repository;
     private $event_repository;
 
     public function __construct($schedule_repository = null, $event_repository = null)
     {
-        $this->schedule_repository = $schedule_repository ?? new ScheduleRepository();
-        $this->event_repository = $event_repository ?? new EventRepository();
+        $this->schedule_repository = $this->dependency($schedule_repository, ScheduleRepository::class);
+        $this->event_repository = $this->dependency($event_repository, EventRepository::class);
     }
 
     public function publish_event_to_schedule($event_id, $schedule_id)

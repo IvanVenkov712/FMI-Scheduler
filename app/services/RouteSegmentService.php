@@ -3,13 +3,13 @@ namespace App\Services;
 
 use App\Repositories\RouteSegmentRepository;
 
-class RouteSegmentService
+class RouteSegmentService extends BaseService
 {
     private $route_segment_repository;
 
     public function __construct($route_segment_repository = null)
     {
-        $this->route_segment_repository = $route_segment_repository ?? new RouteSegmentRepository();
+        $this->route_segment_repository = $this->dependency($route_segment_repository, RouteSegmentRepository::class);
     }
 
     public function resolve_route_segment($route_item)

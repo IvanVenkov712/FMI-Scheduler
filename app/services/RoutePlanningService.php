@@ -4,7 +4,7 @@ namespace App\Services;
 use App\Repositories\RoomRepository;
 use App\Repositories\RouteSegmentRepository;
 
-class RoutePlanningService
+class RoutePlanningService extends BaseService
 {
     private $room_repository;
     private $route_segment_repository;
@@ -17,11 +17,11 @@ class RoutePlanningService
         $movement_constraint_service = null,
         $route_segment_service = null
     ) {
-        $this->room_repository = $room_repository ?? new RoomRepository();
-        $this->route_segment_repository = $route_segment_repository ?? new RouteSegmentRepository();
+        $this->room_repository = $this->dependency($room_repository, RoomRepository::class);
+        $this->route_segment_repository = $this->dependency($route_segment_repository, RouteSegmentRepository::class);
         $this->movement_constraint_service = $movement_constraint_service
             ?? new MovementConstraintService($this->route_segment_repository);
-        $this->route_segment_service = $route_segment_service ?? new RouteSegmentService($this->route_segment_repository);
+        $this->route_segment_service = $this->dependency($route_segment_service, RouteSegmentService::class, $this->route_segment_repository);
     }
 
     public function find_route($fromRoomId, $toRoomId, $start_time, $end_time)

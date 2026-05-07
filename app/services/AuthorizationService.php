@@ -3,20 +3,20 @@ namespace App\Services;
 
 use App\Repositories\UserRepository;
 
-class AuthorizationService
+class AuthorizationService extends BaseService
 {
     private $user_repository;
 
     public function __construct($user_repository = null)
     {
-        $this->user_repository = $user_repository ?? new UserRepository();
+        $this->user_repository = $this->dependency($user_repository, UserRepository::class);
     }
 
     public function get_role($identity)
     {
         $user = $this->user_repository->find_user_by_identity($identity);
 
-        if ($user === null || !$this->is_user_active($user)) {
+        if ($user === null || !$this->is_active_user($user)) {
             return null;
         }
 
@@ -84,22 +84,6 @@ class AuthorizationService
     {
         $user = $this->user_repository->find_user_by_identity($identity);
 
-        return $user !== null && $this->is_user_active($user);
-    }
-
-    private function normalize_role($role)
-    {
-        if ($role === null) {
-            return null;
-        }
-
-        $role = strtolower(trim((string) $role));
-
-        return $role === '' ? null : $role;
-    }
-
-    private function is_user_active($user)
-    {
-        return isset($user->is_active) && (bool) $user->is_active;
+        return $user !== null && $this->is_active_user($user);
     }
 }

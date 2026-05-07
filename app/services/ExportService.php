@@ -1,41 +1,8 @@
 <?php
 namespace App\Services;
 
-use App\Repositories\BuildingRepository;
-use App\Repositories\EventRepository;
-use App\Repositories\FloorRepository;
-use App\Repositories\ResourceRepository;
-use App\Repositories\RoomRepository;
-use App\Repositories\ScheduleRepository;
-
-class ExportService
+class ExportService extends DataTransferService
 {
-    private $building_repository;
-    private $floor_repository;
-    private $room_repository;
-    private $event_repository;
-    private $schedule_repository;
-    private $resource_repository;
-    private $export_directory;
-
-    public function __construct(
-        $building_repository = null,
-        $floor_repository = null,
-        $room_repository = null,
-        $event_repository = null,
-        $schedule_repository = null,
-        $resource_repository = null,
-        $export_directory = null
-    ) {
-        $this->building_repository = $building_repository ?? new BuildingRepository();
-        $this->floor_repository = $floor_repository ?? new FloorRepository();
-        $this->room_repository = $room_repository ?? new RoomRepository();
-        $this->event_repository = $event_repository ?? new EventRepository();
-        $this->schedule_repository = $schedule_repository ?? new ScheduleRepository();
-        $this->resource_repository = $resource_repository ?? new ResourceRepository();
-        $this->export_directory = $export_directory ?? dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'exports';
-    }
-
     public function export_floor_ascii_plan($floor_id)
     {
         $floor = $this->floor_repository->find_by_id($floor_id);
@@ -289,10 +256,5 @@ class ExportService
     private function is_list($array)
     {
         return array_keys($array) === range(0, count($array) - 1);
-    }
-
-    private function normalize_newlines($value)
-    {
-        return str_replace(["\r\n", "\r"], "\n", (string) $value);
     }
 }

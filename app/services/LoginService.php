@@ -3,19 +3,19 @@ namespace App\Services;
 
 use App\Repositories\UserRepository;
 
-class LoginService 
+class LoginService extends BaseService
 {
     private $user_repository;
 
     public function __construct($user_repository = null)
     {
-        $this->user_repository = $user_repository ?? new UserRepository();
+        $this->user_repository = $this->dependency($user_repository, UserRepository::class);
     }
 
     public function login($identity, $password)
     {
         $user = $this->user_repository->find_user_by_identity($identity);
-        if ($user === null || !$this->is_user_active($user)) {
+        if ($user === null || !$this->is_active_user($user)) {
             return null;
         }
 
@@ -32,10 +32,5 @@ class LoginService
         }
 
         return password_verify($plain_password, $password_hash);
-    }
-
-    private function is_user_active($user)
-    {
-        return isset($user->is_active) && (bool) $user->is_active;
     }
 }

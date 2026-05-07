@@ -11,9 +11,8 @@ use App\Repositories\EventRepository;
 use App\Repositories\OnlineAccessRepository;
 use App\Repositories\RoomRepository;
 use App\Repositories\UserRepository;
-use Throwable;
 
-class ExamSessionSetupService
+class ExamSessionSetupService extends BaseService
 {
     private $event_repository;
     private $user_repository;
@@ -30,10 +29,10 @@ class ExamSessionSetupService
         $room_availability_service = null,
         $room_allocation_service = null,
     ) {
-        $this->event_repository = $event_repository ?? new EventRepository();
-        $this->user_repository = $user_repository ?? new UserRepository();
-        $this->online_access_repository = $online_access_repository ?? new OnlineAccessRepository();
-        $this->room_repository = $room_repository ?? new RoomRepository();
+        $this->event_repository = $this->dependency($event_repository, EventRepository::class);
+        $this->user_repository = $this->dependency($user_repository, UserRepository::class);
+        $this->online_access_repository = $this->dependency($online_access_repository, OnlineAccessRepository::class);
+        $this->room_repository = $this->dependency($room_repository, RoomRepository::class);
         $this->room_availability_service = $room_availability_service
             ?? new RoomAvailabilityService($this->room_repository, $this->event_repository);
         $this->room_allocation_service = $room_allocation_service
@@ -93,32 +92,30 @@ class ExamSessionSetupService
             $name
         );
 
-        $this->event_repository->begin_transaction();
-        try {
+        $event_id = $this->transaction($this->event_repository, function () use ($event, $normalized_requirements, $delivery_mode, $room_id, $online_access) {
             $event_id = (int) $this->event_repository->insert($event);
             $this->event_repository->replace_resource_requirements($event_id, $normalized_requirements);
 
             if (EventDeliveryModeHelper::requires_room($delivery_mode) && $room_id === null) {
                 if ($this->room_allocation_service->assign_best_room($event_id) === null) {
-                    $this->event_repository->roll_back();
-                    return null;
+                    $this->abort();
                 }
             }
 
             if ($online_access !== null) {
                 if (!$this->attach_online_access_from_payload($event_id, $online_access)) {
-                    $this->event_repository->roll_back();
-                    return null;
+                    $this->abort();
                 }
             }
 
-            $this->event_repository->commit();
-        } catch (Throwable $exception) {
-            $this->event_repository->roll_back();
-            throw $exception;
+            return $event_id;
+        });
+
+        if ($event_id === null) {
+            return null;
         }
 
-        return $this->event_repository->find_by_id($event_id);
+        return $this->refresh($this->event_repository, $event_id);
     }
 
     public function prepare_hybrid_exam(
@@ -156,23 +153,22 @@ class ExamSessionSetupService
         $event->delivery_mode = 'hybrid';
         $event->room_id = $room_id;
 
-        $this->event_repository->begin_transaction();
-        try {
+        $updated = $this->transaction($this->event_repository, function () use ($event_id, $event, $requirements, $online_access) {
             $this->event_repository->update($event_id, $event);
             $this->event_repository->replace_resource_requirements($event_id, $requirements);
 
             if (!$this->attach_online_access_from_payload($event_id, $online_access)) {
-                $this->event_repository->roll_back();
-                return null;
+                $this->abort();
             }
 
-            $this->event_repository->commit();
-        } catch (Throwable $exception) {
-            $this->event_repository->roll_back();
-            throw $exception;
+            return true;
+        });
+
+        if (!$updated) {
+            return null;
         }
 
-        return $this->event_repository->find_by_id($event_id);
+        return $this->refresh($this->event_repository, $event_id);
     }
 
     public function validate_exam_capacity_and_resources($room_id, $start_time, $end_time, $student_count, $resource_requirements = [])
@@ -258,9 +254,7 @@ class ExamSessionSetupService
         $event = $this->event_repository->find_by_id($event_id);
         if ($event->online_access_id !== null) {
             $online_access->id = $event->online_access_id;
-            $this->online_access_repository->update($event->online_access_id, $online_access);
-
-            return $this->online_access_repository->find_by_id($event->online_access_id) !== null;
+            return $this->update_and_refresh($this->online_access_repository, $event->online_access_id, $online_access) !== null;
         }
 
         $this->event_repository->upsert_online_access($event_id, $online_access);
