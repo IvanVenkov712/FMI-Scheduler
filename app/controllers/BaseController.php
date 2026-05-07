@@ -120,6 +120,6 @@ abstract class BaseController extends Controller
 
     protected function handle_exception(Throwable $exception)
     {
-        return $this->error($exception->getMessage(), 500);
+        return $this->error('Internal Server Error', 500);
     }
 }

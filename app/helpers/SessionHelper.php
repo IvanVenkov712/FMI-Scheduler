@@ -7,7 +7,6 @@ class SessionHelper
     public const USER_KEY = 'user';
     public const USER_ROLE_KEY = 'user_role';
     public const FLASH_KEY = '_flash';
-    public const CSRF_TOKEN_KEY = '_csrf_token';
 
     public function start()
     {
@@ -167,26 +166,6 @@ class SessionHelper
     public function flashes()
     {
         return $this->pull(self::FLASH_KEY, []);
-    }
-
-    public function csrf_token()
-    {
-        $this->start();
-
-        if (empty($_SESSION[self::CSRF_TOKEN_KEY])) {
-            $_SESSION[self::CSRF_TOKEN_KEY] = bin2hex(random_bytes(32));
-        }
-
-        return $_SESSION[self::CSRF_TOKEN_KEY];
-    }
-
-    public function verify_csrf($token)
-    {
-        $this->start();
-
-        return is_string($token)
-            && isset($_SESSION[self::CSRF_TOKEN_KEY])
-            && hash_equals($_SESSION[self::CSRF_TOKEN_KEY], $token);
     }
 
     private function serialize_user($user)
