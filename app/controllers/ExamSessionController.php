@@ -42,7 +42,7 @@ class ExamSessionController extends BaseController
             $data['name'] ?? null
         );
 
-        return $event === null ? $this->error('Exam session could not be created.', 422) : $this->success(['event' => $event], 201);
+        return $this->result($event, 'event', 'Exam session could not be created.', 201);
     }
 
     public function prepare_hybrid($event_id = null)
@@ -53,7 +53,7 @@ class ExamSessionController extends BaseController
 
         $data = $this->payload();
         $event = $this->exam_service->prepare_hybrid_exam(
-            $event_id !== null && is_numeric($event_id) ? (int) $event_id : ($data['event_id'] ?? 0),
+            $this->resolve_id($event_id, 'event_id'),
             $data['room_id'] ?? null,
             $data['platform'] ?? '',
             $data['meeting_link'] ?? ($data['link'] ?? ''),
@@ -62,7 +62,7 @@ class ExamSessionController extends BaseController
             $data['host_notes'] ?? ''
         );
 
-        return $event === null ? $this->error('Hybrid exam setup failed.', 422) : $this->success(['event' => $event]);
+        return $this->result($event, 'event', 'Hybrid exam setup failed.');
     }
 
     public function validate_room()

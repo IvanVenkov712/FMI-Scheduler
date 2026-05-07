@@ -6,36 +6,24 @@ use App\Models\Building;
 use App\Models\Room;
 
 class FloorRepository extends Repository {
-    public function __construct($database = null) {
-        parent::__construct($database, Floor::class, 'floors');
-    }
+    protected $model_class = Floor::class;
+    protected $table = 'floors';
 
     public function get_building($id) {
-        $statement = $this->database->connection()->prepare(
+        return $this->row(
             "SELECT b.* FROM `buildings` b
             INNER JOIN `floors` f ON f.building_id = b.id
-            WHERE f.id = ? LIMIT 1"
+            WHERE f.id = ? LIMIT 1",
+            [$id],
+            Building::class
         );
-        $statement->bindValue(1, $id);
-        $statement->execute();
-
-        $row = $statement->fetch();
-
-        return $row === false ? null : new Building($row);
     }
 
     public function get_rooms($id) {
-        $statement = $this->database->connection()->prepare(
-            "SELECT * FROM `rooms`
-            WHERE floor_id = ?
-            ORDER BY `position_code` ASC, `name` ASC"
-        );
-        $statement->bindValue(1, $id);
-        $statement->execute();
-
-        return array_map(
-            fn ($row) => new Room($row),
-            $statement->fetchAll()
+        return $this->rows(
+            "SELECT * FROM `rooms` WHERE floor_id = ? ORDER BY `position_code` ASC, `name` ASC",
+            [$id],
+            Room::class
         );
     }
 }

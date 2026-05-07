@@ -6,15 +6,11 @@ use App\Repositories\UserRepository;
 
 class UserController extends CrudController
 {
-    public function __construct($request = [], $view = null, $session = null, $repository = null)
-    {
-        parent::__construct($request, $view, $session);
-        $this->repository = $repository ?? new UserRepository();
-        $this->model_class = User::class;
-        $this->view_path = 'users';
-        $this->entity_name = 'user';
-        $this->write_roles = ['admin'];
-    }
+    protected $repository_class = UserRepository::class;
+    protected $model_class = User::class;
+    protected $view_path = 'users';
+    protected $entity_name = 'user';
+    protected $write_roles = ['admin'];
 
     public function profile()
     {
@@ -44,37 +40,14 @@ class UserController extends CrudController
         return $this->success(['events' => $this->repository->get_requested_events($id)]);
     }
 
-    protected function new_model($data)
+    protected function prepare_payload($data)
     {
-        if (isset($data['password'])) {
-            $data['password_hash'] = password_hash((string) $data['password'], PASSWORD_DEFAULT);
-            unset($data['password']);
-        }
-
-        return new User($data);
-    }
-
-    public function update($id = null)
-    {
-        if ($guard = $this->guarded($this->write_roles)) {
-            return $guard;
-        }
-
-        $id = $this->resolve_id($id);
-        $existing = $this->repository->find_by_id($id);
-        if ($existing === null) {
-            return $this->not_found('User not found.');
-        }
-
-        $data = $this->payload();
         if (isset($data['password']) && trim((string) $data['password']) !== '') {
             $data['password_hash'] = password_hash((string) $data['password'], PASSWORD_DEFAULT);
         }
 
         unset($data['password']);
-        $existing->fill($data);
-        $this->repository->update($id, $existing);
 
-        return $this->success(['user' => $this->repository->find_by_id($id)]);
+        return $data;
     }
 }

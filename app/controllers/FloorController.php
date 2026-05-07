@@ -8,31 +8,14 @@ use App\Services\ImportService;
 
 class FloorController extends CrudController
 {
-    public function __construct($request = [], $view = null, $session = null, $repository = null)
-    {
-        parent::__construct($request, $view, $session);
-        $this->repository = $repository ?? new FloorRepository();
-        $this->model_class = Floor::class;
-        $this->view_path = 'floors';
-        $this->entity_name = 'floor';
-    }
+    protected $repository_class = FloorRepository::class;
+    protected $model_class = Floor::class;
+    protected $view_path = 'floors';
+    protected $entity_name = 'floor';
 
     public function rooms($id = null)
     {
-        if ($guard = $this->guarded()) {
-            return $guard;
-        }
-
-        $id = $this->resolve_id($id);
-        $floor = $this->repository->find_by_id($id);
-        if ($floor === null) {
-            return $this->not_found('Floor not found.');
-        }
-
-        return $this->success([
-            'floor' => $floor,
-            'rooms' => $this->repository->get_rooms($id),
-        ]);
+        return $this->related($id, 'rooms', 'get_rooms');
     }
 
     public function import_ascii_plan($id = null)

@@ -47,6 +47,18 @@ abstract class BaseController extends Controller
         ], $status);
     }
 
+    protected function ok($ok)
+    {
+        return $this->json(['success' => (bool) $ok], $ok ? 200 : 422);
+    }
+
+    protected function result($value, $key, $message, $success_status = 200)
+    {
+        return $value === null
+            ? $this->error($message, 422)
+            : $this->success([$key => $value], $success_status);
+    }
+
     protected function guarded($roles = null)
     {
         if (!$this->session->is_authenticated()) {
@@ -100,6 +112,15 @@ abstract class BaseController extends Controller
         $value = $this->input($key, $default);
 
         return is_numeric($value) ? (int) $value : $default;
+    }
+
+    protected function resolve_id($id, $key = 'id', $default = 0)
+    {
+        if ($id !== null && is_numeric($id)) {
+            return (int) $id;
+        }
+
+        return $this->int_param($key, $this->payload()[$key] ?? $default);
     }
 
     protected function request_user_id()

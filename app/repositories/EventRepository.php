@@ -8,63 +8,39 @@ use App\models\Room;
 use App\models\ResourceRequirement;
 
 class EventRepository extends Repository {
-    public function __construct($database = null) {
-        parent::__construct($database, Event::class, 'events');
-    }
+    protected $model_class = Event::class;
+    protected $table = 'events';
+
     public function get_requestor($id) {
-        $statement = $this->database->connection()->prepare(
+        return $this->row(
             "SELECT u.* FROM `users` u
             INNER JOIN `events` e ON e.requestor_id = u.id
-            WHERE e.id = ? LIMIT 1"
+            WHERE e.id = ? LIMIT 1",
+            [$id],
+            User::class
         );
-        $statement->bindValue(1, $id);
-        $statement->execute();
-
-        $row = $statement->fetch();
-
-        return $row === false ? null : new User($row);
     }
 
     public function get_room($id) {
-        $statement = $this->database->connection()->prepare(
+        return $this->row(
             "SELECT r.* FROM `rooms` r
             INNER JOIN `events` e ON e.room_id = r.id
-            WHERE e.id = ? LIMIT 1"
+            WHERE e.id = ? LIMIT 1",
+            [$id],
+            Room::class
         );
-        $statement->bindValue(1, $id);
-        $statement->execute();
-
-        $row = $statement->fetch();
-
-        return $row === false ? null : new Room($row);
     }
 
     public function get_resource_requirements($id) {
-        $statement = $this->database->connection()->prepare(
-            "SELECT * FROM `resource_requirements` WHERE event_id = ?"
-        );
-        $statement->bindValue(1, $id);
-        $statement->execute();
-
-        return array_map(
-            fn ($row) => new ResourceRequirement($row),
-            $statement->fetchAll()
-        );
+        return $this->rows("SELECT * FROM `resource_requirements` WHERE event_id = ?", [$id], ResourceRequirement::class);
     }
 
     public function get_all_events($start_time, $end_time) {
-        $statement = $this->database->connection()->prepare(
+        return $this->rows(
             "SELECT * FROM `{$this->table}`
             WHERE start_time <= ? AND end_time >= ?
-            ORDER BY `start_time` ASC"
-        );
-        $statement->bindValue(1, $end_time);
-        $statement->bindValue(2, $start_time);
-        $statement->execute();
-
-        return array_map(
-            fn ($row) => $this->map_row_to_model($row),
-            $statement->fetchAll()
+            ORDER BY `start_time` ASC",
+            [$end_time, $start_time]
         );
     }
 
@@ -74,37 +50,25 @@ class EventRepository extends Repository {
             return null;
         }
 
-        $statement = $this->database->connection()->prepare(
+        return $this->row(
             "SELECT * FROM `online_access`
-            WHERE online_access.id = ? LIMIT 1"
+            WHERE online_access.id = ? LIMIT 1",
+            [$event->online_access_id],
+            OnlineAccess::class
         );
-        $statement->bindValue(1, $event->online_access_id);
-        $statement->execute();
-
-        $row = $statement->fetch();
-
-        return $row === false ? null : new OnlineAccess($row);
     }
 
     public function replace_resource_requirements($event_id, $resource_requirements)
     {
-        $statement = $this->database->connection()->prepare(
-            "DELETE FROM `resource_requirements` WHERE event_id = ?"
-        );
-        $statement->bindValue(1, $event_id);
-        $statement->execute();
+        $this->run("DELETE FROM `resource_requirements` WHERE event_id = ?", [$event_id]);
 
         foreach ($resource_requirements as $requirement) {
-            $statement = $this->database->connection()->prepare(
+            $this->run(
                 "INSERT INTO `resource_requirements`
                 (`event_id`, `resource_id`, `required_quantity`, `notes`)
-                VALUES (?, ?, ?, ?)"
+                VALUES (?, ?, ?, ?)",
+                [$event_id, $requirement->resource_id, $requirement->required_quantity, $requirement->notes]
             );
-            $statement->bindValue(1, $event_id);
-            $statement->bindValue(2, $requirement->resource_id);
-            $statement->bindValue(3, $requirement->required_quantity);
-            $statement->bindValue(4, $requirement->notes);
-            $statement->execute();
         }
     }
 
@@ -118,34 +82,36 @@ class EventRepository extends Repository {
         if ($event->online_access_id !== null) {
             if ($this->get_online_access($event_id) !== null) {
                 $online_access->id = $event->online_access_id;
-                $statement = $this->database->connection()->prepare(
+                $this->run(
                     "UPDATE `online_access`
                     SET `platform` = ?, `meeting_link` = ?, `access_key` = ?, `host_notes` = ?
-                    WHERE `id` = ?"
+                    WHERE `id` = ?",
+                    [
+                        $online_access->platform,
+                        $online_access->meeting_link,
+                        $online_access->access_key,
+                        $online_access->host_notes,
+                        $event->online_access_id,
+                    ]
                 );
-                $statement->bindValue(1, $online_access->platform);
-                $statement->bindValue(2, $online_access->meeting_link);
-                $statement->bindValue(3, $online_access->access_key);
-                $statement->bindValue(4, $online_access->host_notes);
-                $statement->bindValue(5, $event->online_access_id);
-                $statement->execute();
                 return;
             }
 
             $event->online_access_id = null;
         }
 
-        $statement = $this->database->connection()->prepare(
+        $statement = $this->run(
             "INSERT INTO `online_access`
             (`platform`, `meeting_link`, `access_key`, `host_notes`)
-            VALUES (?, ?, ?, ?)"
+            VALUES (?, ?, ?, ?)",
+            [
+                $online_access->platform,
+                $online_access->meeting_link,
+                $online_access->access_key,
+                $online_access->host_notes,
+            ]
         );
-        $statement->bindValue(1, $online_access->platform);
-        $statement->bindValue(2, $online_access->meeting_link);
-        $statement->bindValue(3, $online_access->access_key);
-        $statement->bindValue(4, $online_access->host_notes);
-        $statement->execute();
-        $event->online_access_id = $statement->lastInsertid();
+        $event->online_access_id = $this->database->connection()->lastInsertId();
         $this->update($event_id, $event);
         return;
     }

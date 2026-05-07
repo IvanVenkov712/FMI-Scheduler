@@ -8,14 +8,10 @@ use App\Services\RoomResourceService;
 
 class RoomController extends CrudController
 {
-    public function __construct($request = [], $view = null, $session = null, $repository = null)
-    {
-        parent::__construct($request, $view, $session);
-        $this->repository = $repository ?? new RoomRepository();
-        $this->model_class = Room::class;
-        $this->view_path = 'rooms';
-        $this->entity_name = 'room';
-    }
+    protected $repository_class = RoomRepository::class;
+    protected $model_class = Room::class;
+    protected $view_path = 'rooms';
+    protected $entity_name = 'room';
 
     public function availability($id = null)
     {
@@ -67,7 +63,7 @@ class RoomController extends CrudController
             $data['quantity'] ?? 0
         );
 
-        return $this->json(['success' => $ok], $ok ? 200 : 422);
+        return $this->ok($ok);
     }
 
     public function events($id = null)

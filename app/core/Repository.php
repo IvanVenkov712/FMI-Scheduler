@@ -12,14 +12,10 @@ class Repository
     protected $table;
     protected $table_fields;
 
-    public function __construct(
-        $database,
-        $model_class,
-        $table,
-    ) {
+    public function __construct($database = null, $model_class = null, $table = null) {
         $this->database = $database ?? new Database();
-        $this->model_class = $model_class;
-        $this->table = $table;
+        $this->model_class = $model_class ?? $this->model_class;
+        $this->table = $table ?? $this->table;
         $this->table_fields = array_keys(get_class_vars($this->model_class));
         if(!in_array('id', $this->table_fields)){
             throw new InvalidArgumentException('The base repository works under the assumption there is id field');
@@ -154,5 +150,35 @@ class Repository
         $model = new $this->model_class();
         $model->fill($row);
         return $model;
+    }
+
+    protected function rows($sql, $params = [], $class = null)
+    {
+        return array_map(
+            fn ($row) => $class === null ? $this->map_row_to_model($row) : new $class($row),
+            $this->run($sql, $params)->fetchAll()
+        );
+    }
+
+    protected function row($sql, $params = [], $class = null)
+    {
+        $row = $this->run($sql, $params)->fetch();
+
+        return $row === false ? null : ($class === null ? $this->map_row_to_model($row) : new $class($row));
+    }
+
+    protected function value($sql, $params = [])
+    {
+        $value = $this->run($sql, $params)->fetchColumn();
+
+        return $value === false ? null : $value;
+    }
+
+    protected function run($sql, $params = [])
+    {
+        $statement = $this->database->connection()->prepare($sql);
+        $statement->execute($params);
+
+        return $statement;
     }
 }

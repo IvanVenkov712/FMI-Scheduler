@@ -6,17 +6,9 @@ use App\Repositories\ResourceRepository;
 
 class ResourceController extends CrudController
 {
-    public function __construct($request = [], $view = null, $session = null, $repository = null)
-    {
-        parent::__construct($request, $view, $session);
-        $this->repository = $repository ?? new ResourceRepository();
-        $this->model_class = Resource::class;
-        $this->view_path = 'resources';
-        $this->entity_name = 'resource';
-    }
+    protected $repository_class = ResourceRepository::class;
+    protected $model_class = Resource::class;
+    protected $view_path = 'resources';
+    protected $entity_name = 'resource';
 
-    protected function collection_key()
-    {
-        return 'resources';
-    }
 }

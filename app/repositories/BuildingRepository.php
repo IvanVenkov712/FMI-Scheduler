@@ -7,22 +7,14 @@ use App\Models\Floor;
 use App\models\Room;
 
 class BuildingRepository extends Repository {
-    public function __construct($database = null) {
-        parent::__construct($database, Building::class, 'buildings');
-    }
+    protected $model_class = Building::class;
+    protected $table = 'buildings';
 
     public function get_floors($id) {
-        $statement = $this->database->connection()->prepare(
-            "SELECT * FROM `floors`
-            WHERE building_id = ?
-            ORDER BY `level` ASC"
-        );
-        $statement->bindValue(1, $id);
-        $statement->execute();
-
-        return array_map(
-            fn ($row) => new Floor($row),
-            $statement->fetchAll()
+        return $this->rows(
+            "SELECT * FROM `floors` WHERE building_id = ? ORDER BY `level` ASC",
+            [$id],
+            Floor::class
         );
     }
 }

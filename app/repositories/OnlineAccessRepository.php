@@ -4,7 +4,6 @@ use App\Core\Repository;
 use App\models\OnlineAccess;
 
 class OnlineAccessRepository extends Repository {
-    public function __construct($database = null) {
-        parent::__construct($database, OnlineAccess::class, 'online_access');
-    }
+    protected $model_class = OnlineAccess::class;
+    protected $table = 'online_access';
 }

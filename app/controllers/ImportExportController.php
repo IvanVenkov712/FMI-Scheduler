@@ -120,13 +120,4 @@ class ImportExportController extends BaseController
 
         return $this->json(['xml' => $this->export_service->export_xml()]);
     }
-
-    private function resolve_id($id, $key = 'id')
-    {
-        if ($id !== null && is_numeric($id)) {
-            return (int) $id;
-        }
-
-        return $this->int_param($key, $this->payload()[$key] ?? 0);
-    }
 }

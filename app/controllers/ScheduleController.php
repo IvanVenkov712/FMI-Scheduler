@@ -7,14 +7,10 @@ use App\Services\SchedulePublishingService;
 
 class ScheduleController extends CrudController
 {
-    public function __construct($request = [], $view = null, $session = null, $repository = null)
-    {
-        parent::__construct($request, $view, $session);
-        $this->repository = $repository ?? new ScheduleRepository();
-        $this->model_class = Schedule::class;
-        $this->view_path = 'schedules';
-        $this->entity_name = 'schedule';
-    }
+    protected $repository_class = ScheduleRepository::class;
+    protected $model_class = Schedule::class;
+    protected $view_path = 'schedules';
+    protected $entity_name = 'schedule';
 
     public function show($id = null)
     {
@@ -49,7 +45,7 @@ class ScheduleController extends CrudController
         $event_id = $this->int_param('event_id', $this->payload()['event_id'] ?? null);
         $published = (new SchedulePublishingService($this->repository))->publish_event_to_schedule($event_id, $schedule_id);
 
-        return $this->json(['success' => $published], $published ? 200 : 422);
+        return $this->ok($published);
     }
 
     public function remove_event($id = null)
@@ -62,6 +58,6 @@ class ScheduleController extends CrudController
         $event_id = $this->int_param('event_id', $this->payload()['event_id'] ?? null);
         $removed = (new SchedulePublishingService($this->repository))->remove_event_from_schedule($event_id, $schedule_id);
 
-        return $this->json(['success' => $removed], $removed ? 200 : 422);
+        return $this->ok($removed);
     }
 }

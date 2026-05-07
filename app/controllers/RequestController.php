@@ -57,7 +57,7 @@ class RequestController extends BaseController
             $data['online_access'] ?? null
         );
 
-        return $created === null ? $this->error('Request could not be created.', 422) : $this->success(['event' => $created], 201);
+        return $this->result($created, 'event', 'Request could not be created.', 201);
     }
 
     public function update($id = null)
@@ -71,13 +71,13 @@ class RequestController extends BaseController
         $event->requestor_id = $event->requestor_id ?: $this->request_user_id();
 
         $updated = $this->request_service->edit_pending_request(
-            is_numeric($id) ? (int) $id : $this->int_param('id', 0),
+            $this->resolve_id($id),
             $event,
             $data['resource_requirements'] ?? [],
             $data['online_access'] ?? null
         );
 
-        return $updated === null ? $this->error('Request could not be updated.', 422) : $this->success(['event' => $updated]);
+        return $this->result($updated, 'event', 'Request could not be updated.');
     }
 
     public function review($id = null)
@@ -86,7 +86,7 @@ class RequestController extends BaseController
             return $guard;
         }
 
-        $id = is_numeric($id) ? (int) $id : $this->int_param('id', 0);
+        $id = $this->resolve_id($id);
         $event = $this->event_repository->find_by_id($id);
         if ($event === null) {
             return $this->not_found('Request not found.');

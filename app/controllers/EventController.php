@@ -9,15 +9,11 @@ use App\Services\OnlineAccessService;
 
 class EventController extends CrudController
 {
-    public function __construct($request = [], $view = null, $session = null, $repository = null)
-    {
-        parent::__construct($request, $view, $session);
-        $this->repository = $repository ?? new EventRepository();
-        $this->model_class = Event::class;
-        $this->view_path = 'events';
-        $this->entity_name = 'event';
-        $this->write_roles = ['admin', 'teacher', 'schedule_manager'];
-    }
+    protected $repository_class = EventRepository::class;
+    protected $model_class = Event::class;
+    protected $view_path = 'events';
+    protected $entity_name = 'event';
+    protected $write_roles = ['admin', 'teacher', 'schedule_manager'];
 
     public function show($id = null)
     {
@@ -56,9 +52,7 @@ class EventController extends CrudController
             $data['online_access'] ?? null
         );
 
-        return $created === null
-            ? $this->error('Event request could not be submitted.', 422)
-            : $this->success(['event' => $created], 201);
+        return $this->result($created, 'event', 'Event request could not be submitted.', 201);
     }
 
     public function approve($id = null)
@@ -69,7 +63,7 @@ class EventController extends CrudController
 
         $event = (new EventApprovalService($this->repository))->approve_event_request($this->resolve_id($id));
 
-        return $event === null ? $this->error('Event could not be approved.', 422) : $this->success(['event' => $event]);
+        return $this->result($event, 'event', 'Event could not be approved.');
     }
 
     public function reject($id = null)
@@ -80,7 +74,7 @@ class EventController extends CrudController
 
         $event = (new EventApprovalService($this->repository))->reject_event_request($this->resolve_id($id));
 
-        return $event === null ? $this->error('Event could not be rejected.', 422) : $this->success(['event' => $event]);
+        return $this->result($event, 'event', 'Event could not be rejected.');
     }
 
     public function reschedule($id = null)
@@ -91,7 +85,7 @@ class EventController extends CrudController
 
         $event = (new EventApprovalService($this->repository))->reschedule_approved_event($this->resolve_id($id));
 
-        return $event === null ? $this->error('Event could not be rescheduled.', 422) : $this->success(['event' => $event]);
+        return $this->result($event, 'event', 'Event could not be rescheduled.');
     }
 
     public function attach_requirements($id = null)
@@ -105,7 +99,7 @@ class EventController extends CrudController
             $this->payload()['resource_requirements'] ?? []
         );
 
-        return $this->json(['success' => $ok], $ok ? 200 : 422);
+        return $this->ok($ok);
     }
 
     public function provision_online_access($id = null)
@@ -123,8 +117,6 @@ class EventController extends CrudController
             $data['host_notes'] ?? ''
         );
 
-        return $online_access === null
-            ? $this->error('Online access could not be provisioned.', 422)
-            : $this->success(['online_access' => $online_access]);
+        return $this->result($online_access, 'online_access', 'Online access could not be provisioned.');
     }
 }

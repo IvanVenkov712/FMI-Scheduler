@@ -7,19 +7,10 @@ use App\Services\RoutePlanningService;
 
 class RouteController extends CrudController
 {
-    public function __construct($request = [], $view = null, $session = null, $repository = null)
-    {
-        parent::__construct($request, $view, $session);
-        $this->repository = $repository ?? new RouteSegmentRepository();
-        $this->model_class = RouteSegment::class;
-        $this->view_path = 'routes';
-        $this->entity_name = 'route_segment';
-    }
-
-    protected function collection_key()
-    {
-        return 'route_segments';
-    }
+    protected $repository_class = RouteSegmentRepository::class;
+    protected $model_class = RouteSegment::class;
+    protected $view_path = 'routes';
+    protected $entity_name = 'route_segment';
 
     public function map()
     {
