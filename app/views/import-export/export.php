@@ -46,4 +46,4 @@ ui_page_start('Export Data', [
     </form>
 </section>
 
-<?php ui_page_end(); ?>
+<?php ui_page_end(['import-export.js']); ?>

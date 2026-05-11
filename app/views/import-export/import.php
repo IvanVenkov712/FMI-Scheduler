@@ -54,4 +54,4 @@ ui_page_start('Import Data', [
     </section>
 <?php endif; ?>
 
-<?php ui_page_end(); ?>
+<?php ui_page_end(['import-export.js']); ?>

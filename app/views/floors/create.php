@@ -26,4 +26,6 @@ $fields = [
     ['name' => 'plan_data', 'label' => 'Plan Data JSON', 'type' => 'textarea', 'full' => true, 'rows' => 8],
 ];
 
+$pageScripts = ['building-editor.js'];
+
 require dirname(__DIR__) . DIRECTORY_SEPARATOR . 'shared' . DIRECTORY_SEPARATOR . 'crud-form.php';

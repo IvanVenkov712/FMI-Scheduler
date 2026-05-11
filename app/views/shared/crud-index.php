@@ -106,4 +106,4 @@ ui_page_start($pageTitle, [
     <?php endif; ?>
 </section>
 
-<?php ui_page_end(); ?>
+<?php ui_page_end(isset($pageScripts) && is_array($pageScripts) ? $pageScripts : []); ?>

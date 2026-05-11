@@ -332,7 +332,7 @@ $value = static function (string $key) use ($old): string {
                 <div class="alert" role="alert"><?= View::escape($error) ?></div>
             <?php endif; ?>
 
-            <form method="post" action="/login" novalidate>
+            <form method="post" action="/login" novalidate id="login-form">
                 <label for="login">
                     <span>Имейл или потребителско име</span>
                     <input
@@ -357,7 +357,7 @@ $value = static function (string $key) use ($old): string {
                 </label>
 
                 <div class="actions">
-                    <button type="submit">Вход в системата</button>
+                    <button type="submit" id="login-btn">Вход в системата</button>
                     <p class="switch">Акаунтите се създават от администратор. Ако нямате достъп, свържете се с него.</p>
                 </div>
             </form>
@@ -368,5 +368,38 @@ $value = static function (string $key) use ($old): string {
             </p>
         </section>
     </main>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var form = document.getElementById('login-form');
+        if (!form) return;
+
+        form.addEventListener('submit', function (e) {
+            var login = form.querySelector('#login');
+            var password = form.querySelector('#password');
+            var errors = [];
+
+            form.querySelectorAll('.js-field-error').forEach(function (el) { el.remove(); });
+
+            if (!login.value.trim()) {
+                errors.push({ field: login, message: 'Моля, въведете имейл или потребителско име.' });
+            }
+            if (!password.value) {
+                errors.push({ field: password, message: 'Моля, въведете парола.' });
+            }
+
+            if (errors.length > 0) {
+                e.preventDefault();
+                errors.forEach(function (err) {
+                    var msg = document.createElement('div');
+                    msg.className = 'js-field-error';
+                    msg.style.cssText = 'color:var(--danger);font-size:13px;font-weight:700;margin-top:4px;';
+                    msg.textContent = err.message;
+                    err.field.parentNode.appendChild(msg);
+                });
+                errors[0].field.focus();
+            }
+        });
+    });
+    </script>
 </body>
 </html>

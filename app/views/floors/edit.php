@@ -125,4 +125,4 @@ ui_page_start('Floor Plan', [
     <?php endif; ?>
 </section>
 
-<?php ui_page_end(); ?>
+<?php ui_page_end(['building-editor.js', 'room-visualization.js', 'dragdrop.js']); ?>

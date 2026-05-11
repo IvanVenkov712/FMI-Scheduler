@@ -39,16 +39,36 @@ ui_page_start($title, [
         <h2>Vertical View</h2>
         <div class="pill-list">
             <?php foreach (['east', 'west', 'north', 'south'] as $view): ?>
+<<<<<<< HEAD
                 <a class="pill" href="/buildings/<?= ui_escape((string) ($building['id'] ?? '')) ?>/vertical-view/<?= ui_escape($view) ?>"><?= ui_escape(ucfirst($view)) ?></a>
             <?php endforeach; ?>
         </div>
         <p class="panel-copy">Current orientation: <?= ui_escape($orientation) ?></p>
         <?php if ($verticalView !== ''): ?>
             <pre class="code"><?= ui_escape($verticalView) ?></pre>
+=======
+                <a class="pill <?= $orientation === $view ? 'active' : '' ?>" href="/buildings/<?= ui_escape((string) ($building['id'] ?? '')) ?>/vertical-view/<?= ui_escape($view) ?>"><?= ui_escape(ucfirst($view)) ?></a>
+            <?php endforeach; ?>
+        </div>
+        <p class="panel-copy" style="margin-top:12px;">Current orientation: <strong><?= ui_escape($orientation) ?></strong></p>
+        <?php if ($verticalView !== ''): ?>
+            <pre class="ascii-preview"><?= ui_escape($verticalView) ?></pre>
+>>>>>>> 7329beb (Added frontend)
         <?php else: ?>
             <div class="empty">No vertical view content stored for this orientation.</div>
         <?php endif; ?>
     </article>
 </section>
 
+<<<<<<< HEAD
 <?php ui_page_end(); ?>
+=======
+<?php if (!empty($building['schematic_description']) && $verticalView !== ($building['schematic_description'] ?? '')): ?>
+<section class="panel">
+    <h2>Schematic Description</h2>
+    <pre class="ascii-preview"><?= ui_escape((string) $building['schematic_description']) ?></pre>
+</section>
+<?php endif; ?>
+
+<?php ui_page_end(['building-editor.js']); ?>
+>>>>>>> 7329beb (Added frontend)

@@ -12,7 +12,7 @@ ui_page_start('Auto Assign', [
 ?>
 
 <section class="panel">
-    <form method="post" class="stack">
+    <form method="post" class="stack" id="auto-assign-form">
         <div class="fields">
             <div class="field">
                 <label for="schedule_id">Schedule ID</label>
@@ -22,6 +22,7 @@ ui_page_start('Auto Assign', [
         </div>
         <button type="submit">Run Auto Assignment</button>
     </form>
+    <div id="auto-assign-result"></div>
 </section>
 
-<?php ui_page_end(); ?>
+<?php ui_page_end(['allocation.js']); ?>

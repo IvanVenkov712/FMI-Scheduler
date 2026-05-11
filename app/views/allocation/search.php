@@ -14,7 +14,11 @@ ui_page_start('Allocation Search', [
 ?>
 
 <section class="panel">
+<<<<<<< HEAD
     <form method="get" class="stack">
+=======
+    <form method="get" class="stack" id="allocation-search-form">
+>>>>>>> 7329beb (Added frontend)
         <div class="fields">
             <div class="field">
                 <label for="capacity">Capacity</label>
@@ -49,7 +53,11 @@ ui_page_start('Allocation Search', [
     </form>
 </section>
 
+<<<<<<< HEAD
 <section class="panel">
+=======
+<section class="panel" id="allocation-results">
+>>>>>>> 7329beb (Added frontend)
     <h2>Ranked Rooms</h2>
     <?php if ($rooms === []): ?>
         <div class="empty">Submit search criteria to see ranked room candidates.</div>
@@ -73,4 +81,8 @@ ui_page_start('Allocation Search', [
     <?php endif; ?>
 </section>
 
+<<<<<<< HEAD
 <?php ui_page_end(); ?>
+=======
+<?php ui_page_end(['allocation.js']); ?>
+>>>>>>> 7329beb (Added frontend)

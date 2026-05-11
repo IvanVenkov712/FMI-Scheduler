@@ -609,14 +609,20 @@ function ui_page_start(string $title, array $options = []): void
             }
         }
     </style>
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/forms.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/planner.css">
+    <link rel="stylesheet" href="/css/schedule.css">
 </head>
 <body>
     <div class="shell">
         <aside class="sidebar">
             <div class="brand">
-                <div class="brand-kicker">Minimal Frontend</div>
+                <div class="brand-kicker">FMI University</div>
                 <div class="brand-title">Schedule Management</div>
-                <p class="brand-copy">A lightweight UI for testing the backend flows for rooms, schedules, requests, routes, and import/export.</p>
+                <p class="brand-copy">Manage buildings, rooms, schedules, routes, and resources across FMI, Rectorate, and Block 2.</p>
             </div>
 
             <nav class="nav" aria-label="Primary navigation">
@@ -661,11 +667,19 @@ function ui_page_start(string $title, array $options = []): void
     <?php
 }
 
-function ui_page_end(): void
+function ui_page_end(array $extraScripts = []): void
 {
+    global $__pageScripts;
+    $scripts = array_merge($extraScripts, is_array($__pageScripts ?? null) ? $__pageScripts : []);
     ?>
         </main>
     </div>
+    <script src="/js/api.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/validation.js"></script>
+    <?php foreach ($scripts as $script): ?>
+        <script src="/js/<?= ui_escape($script) ?>"></script>
+    <?php endforeach; ?>
 </body>
 </html>
     <?php

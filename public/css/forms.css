@@ -1,0 +1,132 @@
+input[type="text"],
+input[type="email"],
+input[type="number"],
+input[type="datetime-local"],
+input[type="date"],
+input[type="password"],
+select,
+textarea {
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.field.has-error input,
+.field.has-error select,
+.field.has-error textarea {
+    border-color: var(--danger);
+}
+
+.field.has-error .field-error {
+    animation: fadeIn 0.2s ease-out;
+}
+
+.file-drop-zone {
+    position: relative;
+    border: 2px dashed var(--line);
+    border-radius: 14px;
+    padding: 32px 20px;
+    text-align: center;
+    background: #fafcf9;
+    color: var(--muted);
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.file-drop-zone:hover,
+.file-drop-zone.dragover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.file-drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.file-drop-zone .drop-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.file-drop-zone .drop-label {
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.file-drop-zone .drop-hint {
+    font-size: 13px;
+    margin-top: 6px;
+}
+
+.file-drop-zone .file-name {
+    margin-top: 10px;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.form-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.form-loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 28px;
+    height: 28px;
+    border: 3px solid var(--line);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--line);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.3s;
+}
+
+.inline-validation {
+    display: none;
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 4px;
+}
+
+.inline-validation.visible {
+    display: block;
+}
+
+.inline-validation.error {
+    color: var(--danger);
+}
+
+.inline-validation.success {
+    color: var(--success);
+}
+
+textarea.code-input {
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 13px;
+    tab-size: 4;
+    white-space: pre;
+    overflow-x: auto;
+}

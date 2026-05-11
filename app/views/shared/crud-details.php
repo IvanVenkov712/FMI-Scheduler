@@ -62,4 +62,4 @@ ui_page_start($pageTitle, [
     </section>
 <?php endforeach; ?>
 
-<?php ui_page_end(); ?>
+<?php ui_page_end(isset($pageScripts) && is_array($pageScripts) ? $pageScripts : []); ?>

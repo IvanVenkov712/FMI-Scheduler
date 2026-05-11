@@ -1,0 +1,54 @@
+.stat strong {
+    transition: color 0.2s;
+}
+
+.stat:hover strong {
+    color: var(--accent);
+}
+
+.pill {
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.pill:hover {
+    background: var(--accent-soft);
+    border-color: rgba(34, 84, 61, 0.2);
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+
+.quick-search-results {
+    margin-top: 16px;
+    animation: fadeIn 0.25s ease-out;
+}
+
+.quick-search-results .result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    background: var(--panel);
+    transition: border-color 0.15s;
+}
+
+.quick-search-results .result-item:hover {
+    border-color: var(--accent);
+}
+
+.quick-search-results .result-item .room-name {
+    font-weight: 700;
+}
+
+.quick-search-results .result-item .room-meta {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.quick-search-results .result-item .room-score {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--accent);
+}
