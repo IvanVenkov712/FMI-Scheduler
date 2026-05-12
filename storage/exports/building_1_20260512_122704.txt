@@ -1,0 +1,11 @@
+Building export
+Name: FMI
+Code: 1
+Address: James Baucher
+Campus area: Sofia
+Floors: 5
+
+BUILDING 1 - FMI
+
+FLOOR 0 - Floor1
+[1:325|300|physical]--[2:200|100|physical]
