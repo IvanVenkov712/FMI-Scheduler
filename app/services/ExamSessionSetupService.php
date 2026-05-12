@@ -6,7 +6,7 @@ use App\Helpers\EventDeliveryModeHelper;
 use App\Helpers\OnlineAccessHelper;
 use App\Helpers\StringHelper;
 use App\Helpers\TimeHelper;
-use App\models\Event;
+use App\Models\Event;
 use App\Repositories\EventRepository;
 use App\Repositories\OnlineAccessRepository;
 use App\Repositories\RoomRepository;

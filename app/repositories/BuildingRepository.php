@@ -4,7 +4,7 @@ namespace App\Repositories;
 use App\Core\Repository;
 use App\Models\Building;
 use App\Models\Floor;
-use App\models\Room;
+use App\Models\Room;
 
 class BuildingRepository extends Repository {
     protected $model_class = Building::class;

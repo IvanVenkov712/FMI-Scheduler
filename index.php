@@ -9,11 +9,48 @@ spl_autoload_register(function ($class) {
             $relative = str_replace('\\', '/', substr($class, strlen($prefix)));
             $file = $dir . $relative . '.php';
             if (is_file($file)) { require $file; return; }
-            $lower = $dir . strtolower($relative) . '.php';
-            if (is_file($lower)) { require $lower; return; }
+
+            $caseInsensitive = resolve_case_insensitive_path($dir, $relative . '.php');
+            if ($caseInsensitive !== null) { require $caseInsensitive; return; }
         }
     }
 });
+
+function resolve_case_insensitive_path(string $baseDir, string $relativePath): ?string
+{
+    $path = rtrim($baseDir, '/\\');
+    $parts = preg_split('#[\\\\/]#', $relativePath);
+
+    foreach ($parts as $part) {
+        if ($part === '') {
+            continue;
+        }
+
+        $next = $path . DIRECTORY_SEPARATOR . $part;
+        if (file_exists($next)) {
+            $path = $next;
+            continue;
+        }
+
+        $matches = glob($path . DIRECTORY_SEPARATOR . '*') ?: [];
+        $matched = null;
+
+        foreach ($matches as $candidate) {
+            if (strcasecmp(basename($candidate), $part) === 0) {
+                $matched = $candidate;
+                break;
+            }
+        }
+
+        if ($matched === null) {
+            return null;
+        }
+
+        $path = $matched;
+    }
+
+    return is_file($path) ? $path : null;
+}
 
 $session = new App\Helpers\SessionHelper();
 $session->start();
@@ -73,7 +110,7 @@ $routes = [
     'POST /rooms/{id}/update'       => ['RoomController', 'update'],
     'DELETE /rooms/{id}'            => ['RoomController', 'destroy'],
     'POST /rooms/{id}/delete'       => ['RoomController', 'destroy'],
-    'POST /rooms/{id}/availability' => ['RoomController', 'check_availability'],
+    'POST /rooms/{id}/availability' => ['RoomController', 'availability'],
     'GET  /rooms/{id}/resources'    => ['RoomController', 'resources'],
     'GET  /rooms/{id}/events'       => ['RoomController', 'events'],
 
@@ -103,7 +140,7 @@ $routes = [
     'POST /events/submit-request'   => ['EventController', 'submit_request'],
 
     'GET  /requests'                => ['RequestController', 'index'],
-    'GET  /requests/create'         => ['RequestController', 'create_form'],
+    'GET  /requests/create'         => ['RequestController', 'create'],
     'POST /requests'                => ['RequestController', 'store'],
     'GET  /requests/{id}/review'    => ['RequestController', 'review'],
 
@@ -120,12 +157,15 @@ $routes = [
     'POST /allocation/search'       => ['AllocationController', 'search'],
     'POST /allocation/{id}/assign'  => ['AllocationController', 'assign'],
 
-    'GET  /import-export/import'    => ['ImportExportController', 'import_form'],
-    'GET  /import-export/export'    => ['ImportExportController', 'export_form'],
+    'GET  /import-export/import'    => ['ImportExportController', 'import'],
+    'GET  /import-export/export'    => ['ImportExportController', 'export'],
     'POST /import-export/import-csv'  => ['ImportExportController', 'import_csv'],
     'POST /import-export/import-xml'  => ['ImportExportController', 'import_xml'],
     'POST /import-export/import-ascii-plan' => ['ImportExportController', 'import_ascii_plan'],
+    'GET  /import-export/export-floor/{id}' => ['ImportExportController', 'export_floor'],
+    'GET  /import-export/export-building/{id}' => ['ImportExportController', 'export_building'],
     'GET  /import-export/export-schedule/{id}' => ['ImportExportController', 'export_schedule'],
+    'GET  /import-export/export-xml' => ['ImportExportController', 'export_xml'],
 
     'GET  /users'                   => ['UserController', 'index'],
     'GET  /users/profile'           => ['UserController', 'profile'],
@@ -134,7 +174,7 @@ $routes = [
     'GET  /constraints'             => ['MovementConstraintController', 'index'],
     'POST /constraints'             => ['MovementConstraintController', 'store'],
 
-    'GET  /exam-sessions/create'    => ['ExamSessionController', 'create_form'],
+    'GET  /exam-sessions/create'    => ['ExamSessionController', 'create'],
     'POST /exam-sessions'           => ['ExamSessionController', 'store'],
 ];
 
@@ -174,6 +214,12 @@ $request = [
 ];
 
 $controller = new $controllerClass($request);
+if (!method_exists($controller, $methodName)) {
+    http_response_code(404);
+    echo '404 Not Found';
+    exit;
+}
+
 $result = $controller->$methodName(...array_values($params));
 
 if (is_string($result)) {

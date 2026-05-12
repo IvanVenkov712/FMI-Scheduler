@@ -1,11 +1,11 @@
 <?php
 namespace App\Repositories;
 use App\Core\Repository;
-use App\models\User;
-use App\models\Event;
-use App\models\OnlineAccess;
-use App\models\Room;
-use App\models\ResourceRequirement;
+use App\Models\User;
+use App\Models\Event;
+use App\Models\OnlineAccess;
+use App\Models\Room;
+use App\Models\ResourceRequirement;
 
 class EventRepository extends Repository {
     protected $model_class = Event::class;

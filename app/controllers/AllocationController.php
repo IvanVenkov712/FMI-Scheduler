@@ -31,6 +31,11 @@ class AllocationController extends BaseController
         });
     }
 
+    public function search_form()
+    {
+        return $this->guarded_response(null, fn () => $this->respond('allocation/search', []));
+    }
+
     public function candidates($event_id = null)
     {
         return $this->guarded_response(null, fn () => $this->success([

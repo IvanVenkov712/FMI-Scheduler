@@ -28,14 +28,17 @@ class ImportExportController extends BaseController
 
     public function import_csv()
     {
-        return $this->import_response(fn ($data) => $this->import_service->import_csv($data['file_path'] ?? '', $data['type'] ?? ''));
+        return $this->import_response(fn ($data) => $this->import_service->import_csv(
+            $this->uploaded_file_path('file') ?? ($data['file_path'] ?? ''),
+            $data['type'] ?? ''
+        ));
     }
 
     public function import_xml()
     {
-        return $this->import_response(fn ($data) => isset($data['xml'])
+        return $this->import_response(fn ($data) => trim((string) ($data['xml'] ?? '')) !== ''
             ? $this->import_service->import_xml_string($data['xml'])
-            : $this->import_service->import_xml($data['file_path'] ?? '')
+            : $this->import_service->import_xml($this->uploaded_file_path('file') ?? ($data['file_path'] ?? ''))
         );
     }
 
@@ -91,5 +94,21 @@ class ImportExportController extends BaseController
     private function import_roles()
     {
         return ['admin', 'schedule_manager'];
+    }
+
+    private function uploaded_file_path($field)
+    {
+        if (!isset($_FILES[$field]) || !is_array($_FILES[$field])) {
+            return null;
+        }
+
+        $file = $_FILES[$field];
+        if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return null;
+        }
+
+        return is_uploaded_file($file['tmp_name']) || is_readable($file['tmp_name'])
+            ? $file['tmp_name']
+            : null;
     }
 }

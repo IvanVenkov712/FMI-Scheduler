@@ -1,7 +1,7 @@
 <?php
 namespace App\Repositories;
 use App\Core\Repository;
-use App\models\OnlineAccess;
+use App\Models\OnlineAccess;
 
 class OnlineAccessRepository extends Repository {
     protected $model_class = OnlineAccess::class;

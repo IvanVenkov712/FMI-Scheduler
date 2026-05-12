@@ -13,7 +13,8 @@
     <div class="card">
         <h2>Import XML</h2>
         <form method="post" action="/import-export/import-xml" class="stack" enctype="multipart/form-data">
-            <div class="field"><label>XML File or Paste</label><textarea name="xml" rows="6" placeholder="Paste XML here or upload a file"></textarea></div>
+            <div class="field"><label>XML File</label><input type="file" name="file" accept=".xml"></div>
+            <div class="field"><label>Or paste XML</label><textarea name="xml" rows="6" placeholder="Paste XML here"></textarea></div>
             <button type="submit">Import XML</button>
         </form>
     </div>
