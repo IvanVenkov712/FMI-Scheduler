@@ -14,6 +14,10 @@
             <select name="delivery_mode"><option value="physical">Physical</option><option value="online">Online</option><option value="hybrid">Hybrid</option></select>
         </div>
         <div class="field"><label>Preferred Room ID</label><input type="number" name="room_id"></div>
+        <div class="field"><label>Online Platform</label><input type="text" name="online_access[platform]" placeholder="Zoom, Teams, Meet"></div>
+        <div class="field"><label>Meeting Link</label><input type="url" name="online_access[meeting_link]"></div>
+        <div class="field"><label>Access Key</label><input type="text" name="online_access[access_key]"></div>
+        <div class="field"><label>Host Notes</label><input type="text" name="online_access[host_notes]"></div>
     </div>
     <button type="submit">Submit Event Request</button>
 </form>

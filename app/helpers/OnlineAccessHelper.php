@@ -1,7 +1,7 @@
 <?php
 namespace App\Helpers;
 
-use App\models\OnlineAccess;
+use App\Models\OnlineAccess;
 
 class OnlineAccessHelper
 {

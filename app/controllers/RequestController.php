@@ -85,8 +85,11 @@ class RequestController extends BaseController
             $data = $this->payload();
             $event = new Event($data);
             $event->requestor_id = $event->requestor_id ?: $this->request_user_id();
+            $result = $callback($this->resolve_id($id), $event, $data);
 
-            return $this->result($callback($this->resolve_id($id), $event, $data), 'event', $message, $status);
+            return $result === null
+                ? $this->error($message, 422, $this->request_service->errors())
+                : $this->success(['event' => $result], $status);
         });
     }
 

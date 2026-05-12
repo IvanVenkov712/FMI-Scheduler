@@ -13,6 +13,7 @@ class EventRequestService extends BaseService
     private $event_repository;
     private $online_access_repository;
     private $room_availability_service;
+    private $errors = [];
 
     public function __construct(
         $event_repository = null,
@@ -26,7 +27,13 @@ class EventRequestService extends BaseService
 
     public function submit_event_request($event, $requirements = [], $online_access = null)
     {
+        $this->errors = [];
+        $this->normalize_event($event);
         $requirements = ResourceRequirementsHelper::normalize_requirements($requirements);
+        $online_access = $this->normalize_online_access($online_access);
+        if ($requirements === null) {
+            $this->add_error('resource_requirements', 'Resource requirements must contain numeric resource IDs and quantities.');
+        }
 
         if (!$this->is_valid_request_event($event) || $requirements === null) {
             return null;
@@ -58,8 +65,14 @@ class EventRequestService extends BaseService
 
     public function edit_pending_request($event_id, $new_event, $new_requirements = [], $new_online_access = null)
     {
+        $this->errors = [];
         $existing_event = $this->event_repository->find_by_id($event_id);
+        $this->normalize_event($new_event);
         $new_requirements = ResourceRequirementsHelper::normalize_requirements($new_requirements);
+        $new_online_access = $this->normalize_online_access($new_online_access);
+        if ($new_requirements === null) {
+            $this->add_error('resource_requirements', 'Resource requirements must contain numeric resource IDs and quantities.');
+        }
 
         if (!$this->can_proceed($existing_event) || !$this->is_valid_request_event($new_event)) {
             return null;
@@ -93,8 +106,12 @@ class EventRequestService extends BaseService
 
     public function attach_resource_requirements($event_id, $resource_requirements)
     {
+        $this->errors = [];
         $event = $this->event_repository->find_by_id($event_id);
         $resource_requirements = ResourceRequirementsHelper::normalize_requirements($resource_requirements);
+        if ($resource_requirements === null) {
+            $this->add_error('resource_requirements', 'Resource requirements must contain numeric resource IDs and quantities.');
+        }
 
         if (!$this->can_proceed($event)) {
             return false;
@@ -110,7 +127,9 @@ class EventRequestService extends BaseService
 
     public function attach_online_access($event_id, $online_access)
     {
+        $this->errors = [];
         $event = $this->event_repository->find_by_id($event_id);
+        $online_access = $this->normalize_online_access($online_access);
         if (!$this->can_proceed($event)) {
             return null;
         }
@@ -133,28 +152,50 @@ class EventRequestService extends BaseService
         return $this->event_repository->get_online_access($event_id);
     }
 
+    public function errors()
+    {
+        return $this->errors;
+    }
+
     private function is_request_bookable($event, $resource_requirements)
     {
         if (EventDeliveryModeHelper::is_online($event->delivery_mode)) {
             return true;
         }
 
-        return $this->room_availability_service->is_room_bookable(
+        if (!is_numeric($event->room_id ?? null)) {
+            $this->add_error('room_id', 'A valid room is required for physical or hybrid events.');
+            return false;
+        }
+
+        $bookable = $this->room_availability_service->is_room_bookable(
             $event->room_id,
             $event->start_time,
             $event->end_time,
             $event->student_count,
             $resource_requirements
         );
+
+        if (!$bookable) {
+            $this->add_error('room_id', 'The selected room is inactive, too small, missing required resources, or already booked.');
+        }
+
+        return $bookable;
     }
 
     private function is_online_access_valid_for_event($event, $online_access)
     {
         if (!EventDeliveryModeHelper::online_access_matches($event->delivery_mode, $online_access)) {
+            $this->add_error('online_access', 'Online access is required for online or hybrid events and must be omitted for physical events.');
             return false;
         }
 
-        return $online_access === null || OnlineAccessHelper::is_valid($online_access);
+        $valid = $online_access === null || OnlineAccessHelper::is_valid($online_access);
+        if (!$valid) {
+            $this->add_error('online_access', 'Online access must include a platform and a valid meeting URL.');
+        }
+
+        return $valid;
     }
 
     private function delete_online_access($event_id)
@@ -173,25 +214,71 @@ class EventRequestService extends BaseService
     private function is_valid_request_event($event)
     {
         if ($event === null || !is_object($event)) {
+            $this->add_error('event', 'Event payload is invalid.');
             return false;
         }
 
         if (!is_numeric($event->requestor_id ?? null)) {
+            $this->add_error('requestor_id', 'A valid requestor is required.');
             return false;
         }
 
         if (trim((string) ($event->name ?? '')) === '') {
+            $this->add_error('name', 'Name is required.');
             return false;
         }
 
         if (!is_numeric($event->student_count ?? null) || (int) $event->student_count < 0) {
+            $this->add_error('student_count', 'Student count must be zero or greater.');
             return false;
         }
 
         if (!TimeHelper::is_valid_interval($event->start_time ?? null, $event->end_time ?? null)) {
+            $this->add_error('start_time', 'Start and end time must form a valid interval.');
             return false;
         }
 
-        return EventDeliveryModeHelper::is_valid($event->delivery_mode ?? '');
+        $valid_delivery_mode = EventDeliveryModeHelper::is_valid($event->delivery_mode ?? '');
+        if (!$valid_delivery_mode) {
+            $this->add_error('delivery_mode', 'Delivery mode must be physical, online, or hybrid.');
+        }
+
+        return $valid_delivery_mode;
+    }
+
+    private function normalize_event($event)
+    {
+        if ($event === null || !is_object($event)) {
+            return;
+        }
+
+        $event->requestor_id = is_numeric($event->requestor_id ?? null) ? (int) $event->requestor_id : $event->requestor_id;
+        $event->student_count = is_numeric($event->student_count ?? null) ? (int) $event->student_count : $event->student_count;
+        $event->room_id = is_numeric($event->room_id ?? null) ? (int) $event->room_id : null;
+        $event->delivery_mode = EventDeliveryModeHelper::normalize($event->delivery_mode ?? '');
+    }
+
+    private function normalize_online_access($online_access)
+    {
+        $online_access = OnlineAccessHelper::build_from_payload($online_access);
+        if ($online_access === null) {
+            return null;
+        }
+
+        $platform = trim((string) ($online_access->platform ?? ''));
+        $meeting_link = trim((string) ($online_access->meeting_link ?? ''));
+        $access_key = trim((string) ($online_access->access_key ?? ''));
+        $host_notes = trim((string) ($online_access->host_notes ?? ''));
+
+        return $platform === '' && $meeting_link === '' && $access_key === '' && $host_notes === ''
+            ? null
+            : $online_access;
+    }
+
+    private function add_error($field, $message)
+    {
+        if (!isset($this->errors[$field])) {
+            $this->errors[$field] = $message;
+        }
     }
 }

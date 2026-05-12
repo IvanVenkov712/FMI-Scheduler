@@ -40,13 +40,16 @@ class EventController extends CrudController
             $data = $this->payload();
             $event = new Event($data);
             $event->requestor_id = $event->requestor_id ?: $this->request_user_id();
-            $created = (new EventRequestService($this->repository))->submit_event_request(
+            $service = new EventRequestService($this->repository);
+            $created = $service->submit_event_request(
                 $event,
                 $data['resource_requirements'] ?? [],
                 $data['online_access'] ?? null
             );
 
-            return $this->result($created, 'event', 'Event request could not be submitted.', 201);
+            return $created === null
+                ? $this->error('Event request could not be submitted.', 422, $service->errors())
+                : $this->success(['event' => $created], 201);
         });
     }
 
