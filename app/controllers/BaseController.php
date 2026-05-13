@@ -3,6 +3,7 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Helpers\SessionHelper;
+use App\Logger\Logger;
 use Throwable;
 
 abstract class BaseController extends Controller
@@ -35,6 +36,15 @@ abstract class BaseController extends Controller
 
     protected function success($data = [], $status = 200)
     {
+        Logger::operation('Controller operation succeeded', [
+            'controller' => static::class,
+            'method' => $this->request['method'] ?? null,
+            'path' => $this->request['path'] ?? null,
+            'status' => $status,
+            'user_id' => $this->session->get_user_id(),
+            'username' => $this->session->get_username(),
+        ]);
+
         if (!$this->wants_json()) {
             $this->session->flash('success', $this->success_message($data));
             return $this->redirect_back();
@@ -45,6 +55,17 @@ abstract class BaseController extends Controller
 
     protected function error($message, $status = 400, $errors = [])
     {
+        Logger::warning('Controller operation failed', [
+            'controller' => static::class,
+            'method' => $this->request['method'] ?? null,
+            'path' => $this->request['path'] ?? null,
+            'status' => $status,
+            'message' => $message,
+            'errors' => $errors,
+            'user_id' => $this->session->get_user_id(),
+            'username' => $this->session->get_username(),
+        ]);
+
         if (!$this->wants_json()) {
             $this->session->flash('error', $this->format_error_message($message, $errors));
             return $this->redirect_back();
@@ -169,6 +190,14 @@ abstract class BaseController extends Controller
 
     protected function handle_exception(Throwable $exception)
     {
+        Logger::exception($exception, [
+            'controller' => static::class,
+            'method' => $this->request['method'] ?? null,
+            'path' => $this->request['path'] ?? null,
+            'user_id' => $this->session->get_user_id(),
+            'username' => $this->session->get_username(),
+        ]);
+
         return $this->error('Internal Server Error', 500);
     }
 

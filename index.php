@@ -20,8 +20,43 @@ spl_autoload_register(function ($class) {
     }
 });
 
+App\Core\Config::load(ROOT . '/config/app.ini');
+
+set_error_handler(function (int $severity, string $message, string $file, int $line): bool {
+    if (!(error_reporting() & $severity)) {
+        return false;
+    }
+
+    App\Logger\Logger::error($message, current_request_context([
+        'severity' => $severity,
+        'file' => $file,
+        'line' => $line,
+    ]));
+
+    return false;
+});
+
 set_exception_handler(function (Throwable $exception) {
     render_error_response(500, 'Internal Server Error', $exception);
+});
+
+register_shutdown_function(function (): void {
+    $error = error_get_last();
+    if ($error === null) {
+        return;
+    }
+
+    $fatalTypes = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+    if (!in_array($error['type'], $fatalTypes, true)) {
+        return;
+    }
+
+    App\Logger\Logger::error($error['message'], current_request_context([
+        'severity' => $error['type'],
+        'file' => $error['file'],
+        'line' => $error['line'],
+        'fatal' => true,
+    ]));
 });
 
 function resolve_case_insensitive_path(string $baseDir, string $relativePath): ?string
@@ -72,10 +107,35 @@ function request_wants_json(): bool
         || ($_GET['format'] ?? null) === 'json';
 }
 
+function current_request_context(array $context = []): array
+{
+    $session = $_SESSION ?? [];
+    $user = $session[App\Helpers\SessionHelper::USER_KEY] ?? [];
+    $username = is_array($user) ? ($user['username'] ?? null) : null;
+
+    return $context + [
+        'method' => $_SERVER['REQUEST_METHOD'] ?? null,
+        'path' => parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/',
+        'ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+        'user_id' => $session[App\Helpers\SessionHelper::USER_ID_KEY] ?? null,
+        'username' => $username,
+    ];
+}
+
 function render_error_response(int $status, string $message, ?Throwable $exception = null): void
 {
     if ($exception !== null) {
-        error_log((string) $exception);
+        App\Logger\Logger::exception($exception, current_request_context([
+            'status' => $status,
+        ]));
+    } elseif ($status >= 500) {
+        App\Logger\Logger::error($message, current_request_context([
+            'status' => $status,
+        ]));
+    } else {
+        App\Logger\Logger::warning($message, current_request_context([
+            'status' => $status,
+        ]));
     }
 
     if (!headers_sent()) {
@@ -266,6 +326,14 @@ $request = [
 ];
 
 try {
+    App\Logger\Logger::operation('Request started', current_request_context([
+        'controller' => $controllerName,
+        'action' => $methodName,
+        'params' => $params,
+        'query' => $_GET,
+        'body' => $_POST,
+    ]));
+
     $controller = new $controllerClass($request);
     if (!method_exists($controller, $methodName)) {
         render_error_response(404, 'Not Found');
@@ -283,6 +351,12 @@ try {
             render_error_response(500, 'Internal Server Error');
         }
     }
+
+    App\Logger\Logger::operation('Request completed', current_request_context([
+        'controller' => $controllerName,
+        'action' => $methodName,
+        'status' => http_response_code(),
+    ]));
 } catch (Throwable $exception) {
     render_error_response(500, 'Internal Server Error', $exception);
 }

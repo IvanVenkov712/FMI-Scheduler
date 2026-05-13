@@ -123,6 +123,17 @@ class SessionHelper
         return $this->get(self::USER_KEY);
     }
 
+    public function get_username()
+    {
+        $user = $this->get_user();
+
+        if (is_array($user)) {
+            return $user['username'] ?? null;
+        }
+
+        return is_object($user) && isset($user->username) ? $user->username : null;
+    }
+
     public function get_user_role()
     {
         return $this->normalize_role($this->get(self::USER_ROLE_KEY));

@@ -7,11 +7,11 @@ class Database
     private $connection;
     public function __construct()
     {
-        $host = getenv('DB_HOST') ?: '127.0.0.1';
-        $port = getenv('DB_PORT') ?: '3306';
-        $dbname = getenv('DB_NAME') ?: 'schedule_management_system';
-        $username = getenv('DB_USER') ?: 'root';
-        $password = getenv('DB_PASS') ?: '';
+        $host = Config::get('DB_HOST', '127.0.0.1');
+        $port = Config::get('DB_PORT', '3306');
+        $dbname = Config::get('DB_NAME', 'schedule_management_system');
+        $username = Config::get('DB_USER_NAME', Config::get('DB_USER', 'root'));
+        $password = Config::get('DB_USER_PASSWORD', Config::get('DB_PASS', ''));
         $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4";
 
         $this->connection = new PDO($dsn, $username, $password, [
