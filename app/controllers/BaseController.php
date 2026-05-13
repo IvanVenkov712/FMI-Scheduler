@@ -18,7 +18,7 @@ abstract class BaseController extends Controller
 
     protected function respond($view, $data = [], $layout = null)
     {
-        if ($this->wants_json() || !$this->view->exists($view)) {
+        if ($this->wants_json()) {
             return $this->json($data);
         }
 
@@ -35,11 +35,21 @@ abstract class BaseController extends Controller
 
     protected function success($data = [], $status = 200)
     {
+        if (!$this->wants_json()) {
+            $this->session->flash('success', $this->success_message($data));
+            return $this->redirect_back();
+        }
+
         return $this->json(['success' => true, 'data' => $data], $status);
     }
 
     protected function error($message, $status = 400, $errors = [])
     {
+        if (!$this->wants_json()) {
+            $this->session->flash('error', $this->format_error_message($message, $errors));
+            return $this->redirect_back();
+        }
+
         return $this->json([
             'success' => false,
             'message' => $message,
@@ -160,5 +170,62 @@ abstract class BaseController extends Controller
     protected function handle_exception(Throwable $exception)
     {
         return $this->error('Internal Server Error', 500);
+    }
+
+    protected function redirect_back($fallback = '/dashboard')
+    {
+        return $this->redirect($this->safe_redirect_target($fallback));
+    }
+
+    private function safe_redirect_target($fallback)
+    {
+        $referer = $_SERVER['HTTP_REFERER'] ?? '';
+        if ($referer === '') {
+            return $fallback;
+        }
+
+        $parts = parse_url($referer);
+        if (!is_array($parts)) {
+            return $fallback;
+        }
+
+        $current = parse_url('http://' . ($_SERVER['HTTP_HOST'] ?? ''));
+        if (isset($parts['host'], $current['host']) && strcasecmp($parts['host'], $current['host']) !== 0) {
+            return $fallback;
+        }
+
+        if (isset($parts['port']) || isset($current['port'])) {
+            if (($parts['port'] ?? null) !== ($current['port'] ?? null)) {
+                return $fallback;
+            }
+        }
+
+        $path = $parts['path'] ?? $fallback;
+        $query = isset($parts['query']) ? '?' . $parts['query'] : '';
+
+        return '/' . ltrim($path, '/') . $query;
+    }
+
+    private function success_message($data)
+    {
+        if (isset($data['deleted'])) {
+            return 'Deleted successfully.';
+        }
+
+        return 'Operation completed successfully.';
+    }
+
+    private function format_error_message($message, $errors)
+    {
+        if (empty($errors) || !is_array($errors)) {
+            return $message;
+        }
+
+        $details = [];
+        foreach ($errors as $field => $error) {
+            $details[] = is_string($field) ? $field . ': ' . $error : (string) $error;
+        }
+
+        return $message . ' ' . implode(' ', $details);
     }
 }

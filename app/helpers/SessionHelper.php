@@ -11,6 +11,7 @@ class SessionHelper
     public function start()
     {
         if (session_status() === PHP_SESSION_NONE) {
+            $this->ensure_writable_session_path();
             session_start();
         }
     }
@@ -182,5 +183,25 @@ class SessionHelper
     private function normalize_role($role)
     {
         return $role === null ? null : strtolower(trim((string) $role));
+    }
+
+    private function ensure_writable_session_path()
+    {
+        if (ini_get('session.save_handler') !== 'files') {
+            return;
+        }
+
+        $path = session_save_path();
+        $usable = $path !== '' && is_dir($path) && is_writable($path);
+        if ($usable) {
+            return;
+        }
+
+        $fallback = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'sessions';
+        if (!is_dir($fallback)) {
+            mkdir($fallback, 0775, true);
+        }
+
+        session_save_path($fallback);
     }
 }

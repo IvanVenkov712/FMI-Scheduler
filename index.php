@@ -2,6 +2,10 @@
 
 define('ROOT', __DIR__);
 
+ini_set('display_errors', '0');
+ini_set('display_startup_errors', '0');
+error_reporting(E_ALL);
+
 spl_autoload_register(function ($class) {
     $map = ['App\\' => ROOT . '/app/'];
     foreach ($map as $prefix => $dir) {
@@ -14,6 +18,10 @@ spl_autoload_register(function ($class) {
             if ($caseInsensitive !== null) { require $caseInsensitive; return; }
         }
     }
+});
+
+set_exception_handler(function (Throwable $exception) {
+    render_error_response(500, 'Internal Server Error', $exception);
 });
 
 function resolve_case_insensitive_path(string $baseDir, string $relativePath): ?string
@@ -50,6 +58,52 @@ function resolve_case_insensitive_path(string $baseDir, string $relativePath): ?
     }
 
     return is_file($path) ? $path : null;
+}
+
+function request_wants_json(): bool
+{
+    $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+    $requestedWith = $_SERVER['HTTP_X_REQUESTED_WITH'] ?? '';
+    $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+
+    return str_contains($accept, 'application/json')
+        || strcasecmp($requestedWith, 'XMLHttpRequest') === 0
+        || str_starts_with($path, '/api')
+        || ($_GET['format'] ?? null) === 'json';
+}
+
+function render_error_response(int $status, string $message, ?Throwable $exception = null): void
+{
+    if ($exception !== null) {
+        error_log((string) $exception);
+    }
+
+    if (!headers_sent()) {
+        http_response_code($status);
+    }
+
+    if (request_wants_json()) {
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=utf-8');
+        }
+
+        echo json_encode([
+            'success' => false,
+            'message' => $message,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    $view = new App\Core\View();
+    $errorView = $status === 404 ? 'errors/404' : 'errors/500';
+
+    if ($view->exists($errorView)) {
+        echo $view->render($errorView, ['message' => $message]);
+    } else {
+        echo htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    exit;
 }
 
 $session = new App\Helpers\SessionHelper();
@@ -197,9 +251,7 @@ foreach ($routes as $pattern => $action) {
 }
 
 if (!$matched) {
-    http_response_code(404);
-    echo '404 Not Found';
-    exit;
+    render_error_response(404, 'Not Found');
 }
 
 [$controllerName, $methodName] = $matched;
@@ -213,18 +265,24 @@ $request = [
     'body' => $_POST,
 ];
 
-$controller = new $controllerClass($request);
-if (!method_exists($controller, $methodName)) {
-    http_response_code(404);
-    echo '404 Not Found';
-    exit;
-}
+try {
+    $controller = new $controllerClass($request);
+    if (!method_exists($controller, $methodName)) {
+        render_error_response(404, 'Not Found');
+    }
 
-$result = $controller->$methodName(...array_values($params));
+    $result = $controller->$methodName(...array_values($params));
 
-if (is_string($result)) {
-    echo $result;
-} elseif (is_array($result)) {
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($result, JSON_UNESCAPED_UNICODE);
+    if (is_string($result)) {
+        echo $result;
+    } elseif (is_array($result)) {
+        if (request_wants_json()) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        } else {
+            render_error_response(500, 'Internal Server Error');
+        }
+    }
+} catch (Throwable $exception) {
+    render_error_response(500, 'Internal Server Error', $exception);
 }

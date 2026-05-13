@@ -57,9 +57,11 @@ abstract class Controller
     protected function wants_json()
     {
         $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+        $requestedWith = $_SERVER['HTTP_X_REQUESTED_WITH'] ?? '';
         $path = $this->request()['path'] ?? '';
 
         return str_contains($accept, 'application/json')
+            || strcasecmp($requestedWith, 'XMLHttpRequest') === 0
             || str_starts_with($path, '/api')
             || $this->input('format') === 'json';
     }
