@@ -41,6 +41,10 @@ a:hover { text-decoration: underline; }
 .user-box strong { display: block; }
 .user-box span { color: var(--muted); }
 .user-box form { margin-top: 8px; }
+.user-box .btn-logout {
+    width: 100%; padding: 8px 10px; background: var(--danger);
+    font-size: 13px;
+}
 
 main { padding: 24px 28px; max-width: 1200px; }
 main > h1 { font-size: 28px; margin-bottom: 20px; }

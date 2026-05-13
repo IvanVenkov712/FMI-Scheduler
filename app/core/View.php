@@ -48,12 +48,22 @@ class View
             require_once $shared_ui;
         }
 
+        $this->expose_shared_globals($data);
         extract($data, EXTR_SKIP);
 
         ob_start();
         require $path;
 
         return (string) ob_get_clean();
+    }
+
+    private function expose_shared_globals(array $data): void
+    {
+        foreach (['current_user', 'current_user_id', 'current_user_role', 'flash'] as $key) {
+            if (array_key_exists($key, $data)) {
+                $GLOBALS[$key] = $data[$key];
+            }
+        }
     }
 
     private function resolve_view_path(string $view): string
