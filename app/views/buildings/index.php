@@ -1,6 +1,6 @@
 <?php require_once __DIR__ . '/../shared/ui.php'; page_start('Buildings', 'buildings'); ?>
 
-<div class="actions" style="margin-bottom:16px;">
+<div class="actions page-actions">
     <a href="/buildings/create" class="btn">New Building</a>
 </div>
 

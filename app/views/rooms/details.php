@@ -3,7 +3,7 @@ require_once __DIR__ . '/../shared/ui.php';
 $r = is_object($room ?? null) ? $room->to_array() : ($room ?? []);
 page_start($r['name'] ?? 'Room Details', 'rooms');
 ?>
-<div class="actions" style="margin-bottom:16px;">
+<div class="actions page-actions">
     <a href="/rooms/<?= e($r['id']) ?>/edit" class="btn">Edit</a>
     <a href="/rooms" class="btn btn-muted">Back</a>
 </div>

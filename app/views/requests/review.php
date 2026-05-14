@@ -18,7 +18,7 @@ page_start('Review Request', 'requests');
             <div><dt>End</dt><dd><?= fmt_dt($ev['end_time'] ?? null) ?></dd></div>
             <div><dt>Status</dt><dd><?= status_badge($ev['status'] ?? '') ?></dd></div>
         </dl>
-        <?php if ($reqs): ?><h3 style="margin-top:14px;">Resources</h3>
+        <?php if ($reqs): ?><h3 class="section-subtitle">Resources</h3>
         <ul><?php foreach ($reqs as $rq): $rq = is_object($rq) ? $rq->to_array() : $rq; ?>
             <li><?= e($rq['resource_id'] ?? '?') ?> &times; <?= e($rq['quantity'] ?? 1) ?></li>
         <?php endforeach; ?></ul><?php endif; ?>
@@ -26,9 +26,9 @@ page_start('Review Request', 'requests');
     <div class="card">
         <h2>Actions</h2>
         <?php if (($ev['status'] ?? '') === 'pending'): ?>
-        <div class="actions" style="flex-direction:column;gap:10px;">
-            <form method="post" action="/events/<?= e($ev['id']) ?>/approve"><button class="btn" style="width:100%;background:var(--success)">Approve</button></form>
-            <form method="post" action="/events/<?= e($ev['id']) ?>/reject"><button class="btn btn-danger" style="width:100%">Reject</button></form>
+        <div class="actions action-stack">
+            <form method="post" action="/events/<?= e($ev['id']) ?>/approve"><button class="btn btn-success btn-block">Approve</button></form>
+            <form method="post" action="/events/<?= e($ev['id']) ?>/reject"><button class="btn btn-danger btn-block">Reject</button></form>
         </div>
         <?php else: ?>
         <div class="empty">This request has already been <?= e($ev['status'] ?? 'processed') ?>.</div>

@@ -4,7 +4,7 @@ $b = is_object($building ?? null) ? $building->to_array() : ($building ?? []);
 page_start($b['name'] ?? 'Building Details', 'buildings');
 ?>
 
-<div class="actions" style="margin-bottom:16px;">
+<div class="actions page-actions">
     <a href="/buildings/<?= e($b['id']) ?>/edit" class="btn">Edit</a>
     <a href="/buildings/<?= e($b['id']) ?>/floors" class="btn btn-muted">Floors</a>
     <a href="/buildings" class="btn btn-muted">Back</a>

@@ -4,7 +4,7 @@ $s = is_object($schedule ?? null) ? $schedule->to_array() : ($schedule ?? []);
 $evs = $events ?? [];
 page_start($s['name'] ?? 'Schedule', 'schedules');
 ?>
-<div class="actions" style="margin-bottom:16px;">
+<div class="actions page-actions">
     <a href="/schedules" class="btn btn-muted">Back</a>
 </div>
 <div class="grid-2">

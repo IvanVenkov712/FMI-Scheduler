@@ -19,6 +19,15 @@ body { font-family: "Segoe UI", Arial, sans-serif; color: var(--ink); background
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
+.auth-page {
+    display: flex; align-items: center; justify-content: center; min-height: 100vh;
+}
+.login-card { width: 100%; max-width: 400px; }
+.reg-card { width: 100%; max-width: 420px; }
+.login-card h1 { margin-bottom: 6px; }
+.login-card p { color: var(--muted); margin-bottom: 20px; }
+.auth-switch { color: var(--muted); font-size: 13px; text-align: center; }
+
 .layout { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
 
 .sidebar {
@@ -118,19 +127,27 @@ button, .btn, input[type="submit"] {
 button:hover, .btn:hover { filter: brightness(.9); }
 .btn-muted { background: #eef2ec; color: var(--ink); }
 .btn-danger { background: var(--danger); }
+.btn-success { background: var(--success); }
 .btn-sm { padding: 6px 12px; font-size: 13px; }
+.btn-block { width: 100%; }
 
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.page-actions { margin-bottom: 16px; }
+.action-stack { flex-direction: column; gap: 10px; }
+.inline-form { display: inline; }
 
 dl.meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 dl.meta div { padding: 10px 12px; background: #f8faf6; border: 1px solid var(--line); border-radius: 10px; }
 dl.meta dt { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
 dl.meta dd { margin: 0; font-weight: 600; }
+.meta-spaced { margin-top: 12px; }
+.section-subtitle { margin-top: 14px; }
 
 pre.ascii {
     background: #12221c; color: #c8e6d0; padding: 14px; border-radius: 10px;
     overflow: auto; font-size: 12px; line-height: 1.4; white-space: pre;
 }
+.ascii-input { font-family: monospace; font-size: 12px; }
 
 .pills { display: flex; flex-wrap: wrap; gap: 6px; }
 .pill {

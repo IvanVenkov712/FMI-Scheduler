@@ -25,7 +25,7 @@
         <div class="fields">
             <div class="field"><label>Floor ID</label><input type="number" name="floor_id" required></div>
         </div>
-        <div class="field full"><label>ASCII Plan</label><textarea name="ascii_plan" rows="12" style="font-family:monospace;font-size:12px;" required placeholder="Paste your ASCII floor plan here..."></textarea></div>
+        <div class="field full"><label>ASCII Plan</label><textarea name="ascii_plan" rows="12" class="ascii-input" required placeholder="Paste your ASCII floor plan here..."></textarea></div>
         <button type="submit">Import Plan</button>
     </form>
 </div>

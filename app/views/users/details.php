@@ -5,7 +5,7 @@ $name = trim(($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? ''));
 page_start($u['username'] ?? 'User Details', 'users');
 ?>
 
-<div class="actions" style="margin-bottom:16px;">
+<div class="actions page-actions">
     <a href="/users" class="btn btn-muted">Back</a>
 </div>
 

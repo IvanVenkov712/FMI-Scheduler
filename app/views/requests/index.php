@@ -1,5 +1,5 @@
 <?php require_once __DIR__ . '/../shared/ui.php'; page_start('Requests', 'requests'); ?>
-<div class="actions" style="margin-bottom:16px;"><a href="/requests/create" class="btn">New Request</a></div>
+<div class="actions page-actions"><a href="/requests/create" class="btn">New Request</a></div>
 <div class="card">
 <?php $items = $events ?? $approvable_events ?? []; ?>
 <?php if (empty($items)): ?><div class="empty">No requests found.</div>

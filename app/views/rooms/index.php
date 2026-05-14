@@ -1,5 +1,5 @@
 <?php require_once __DIR__ . '/../shared/ui.php'; page_start('Rooms', 'rooms'); ?>
-<div class="actions" style="margin-bottom:16px;"><a href="/rooms/create" class="btn">New Room</a></div>
+<div class="actions page-actions"><a href="/rooms/create" class="btn">New Room</a></div>
 <div class="card">
 <?php if (empty($rooms)): ?><div class="empty">No rooms found.</div>
 <?php else: ?>

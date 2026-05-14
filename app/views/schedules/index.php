@@ -1,5 +1,5 @@
 <?php require_once __DIR__ . '/../shared/ui.php'; page_start('Schedules', 'schedules'); ?>
-<div class="actions" style="margin-bottom:16px;"><a href="/schedules/create" class="btn">New Schedule</a></div>
+<div class="actions page-actions"><a href="/schedules/create" class="btn">New Schedule</a></div>
 <div class="card">
 <?php if (empty($schedules)): ?><div class="empty">No schedules yet.</div>
 <?php else: ?>

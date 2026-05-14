@@ -1,5 +1,5 @@
 <?php require_once __DIR__ . '/../shared/ui.php'; page_start('Events', 'events'); ?>
-<div class="actions" style="margin-bottom:16px;">
+<div class="actions page-actions">
     <a href="/events/create" class="btn">New Event</a>
     <a href="/exam-sessions/create" class="btn btn-muted">New Exam Session</a>
 </div>

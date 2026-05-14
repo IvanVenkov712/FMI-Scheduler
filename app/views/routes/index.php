@@ -1,5 +1,5 @@
 <?php require_once __DIR__ . '/../shared/ui.php'; page_start('Routes', 'routes'); ?>
-<div class="actions" style="margin-bottom:16px;">
+<div class="actions page-actions">
     <a href="/routes/map" class="btn btn-muted">Map View</a>
 </div>
 <div class="card">

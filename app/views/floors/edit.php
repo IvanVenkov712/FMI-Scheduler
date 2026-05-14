@@ -11,7 +11,7 @@ page_start('Edit Floor', 'floors');
         <div class="field"><label>Floor Number</label><input type="number" name="floor_number" value="<?= e($f['floor_number'] ?? 0) ?>"></div>
         <div class="field"><label>Active</label><select name="is_active"><option value="1" <?= ($f['is_active'] ?? 1) ? 'selected' : '' ?>>Yes</option><option value="0" <?= !($f['is_active'] ?? 1) ? 'selected' : '' ?>>No</option></select></div>
     </div>
-    <div class="field full"><label>ASCII Plan</label><textarea name="ascii_plan" rows="10" style="font-family:monospace;font-size:12px;"><?= e($f['ascii_plan'] ?? '') ?></textarea></div>
+    <div class="field full"><label>ASCII Plan</label><textarea name="ascii_plan" rows="10" class="ascii-input"><?= e($f['ascii_plan'] ?? '') ?></textarea></div>
     <button type="submit">Save</button>
 </form>
 </div>
