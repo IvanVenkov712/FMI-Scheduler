@@ -9,11 +9,32 @@ use App\Services\OnlineAccessService;
 
 class EventController extends CrudController
 {
+    private const APPROVAL_ROLES = ['admin', 'schedule_manager'];
+
+    private $request_service;
+    private $approval_service;
+    private $online_access_service;
+
     protected $repository_class = EventRepository::class;
     protected $model_class = Event::class;
     protected $view_path = 'events';
     protected $entity_name = 'event';
     protected $write_roles = ['admin', 'teacher', 'schedule_manager'];
+
+    public function __construct(
+        $request = [],
+        $view = null,
+        $session = null,
+        $repository = null,
+        $request_service = null,
+        $approval_service = null,
+        $online_access_service = null,
+    ) {
+        parent::__construct($request, $view, $session, $repository);
+        $this->request_service = $request_service ?? new EventRequestService($this->repository);
+        $this->approval_service = $approval_service ?? new EventApprovalService($this->repository);
+        $this->online_access_service = $online_access_service ?? new OnlineAccessService($this->repository);
+    }
 
     public function show($id = null)
     {
@@ -24,13 +45,7 @@ class EventController extends CrudController
                 return $this->not_found('Event not found.');
             }
 
-            return $this->respond('events/details', [
-                'event' => $event,
-                'requestor' => $this->repository->get_requestor($id),
-                'room' => $this->repository->get_room($id),
-                'resource_requirements' => $this->repository->get_resource_requirements($id),
-                'online_access' => $this->repository->get_online_access($id),
-            ]);
+            return $this->respond('events/details', $this->details_data($id, $event));
         });
     }
 
@@ -38,17 +53,15 @@ class EventController extends CrudController
     {
         return $this->guarded_response($this->write_roles, function () {
             $data = $this->payload();
-            $event = new Event($data);
-            $event->requestor_id = $event->requestor_id ?: $this->request_user_id();
-            $service = new EventRequestService($this->repository);
-            $created = $service->submit_event_request(
+            $event = $this->event_from_payload($data);
+            $created = $this->request_service->submit_event_request(
                 $event,
                 $data['resource_requirements'] ?? [],
                 $data['online_access'] ?? null
             );
 
             return $created === null
-                ? $this->error('Event request could not be submitted.', 422, $service->errors())
+                ? $this->error('Event request could not be submitted.', 422, $this->request_service->errors())
                 : $this->success(['event' => $created], 201);
         });
     }
@@ -71,7 +84,7 @@ class EventController extends CrudController
     public function attach_requirements($id = null)
     {
         return $this->guarded_response($this->write_roles, fn () => $this->ok(
-            (new EventRequestService($this->repository))->attach_resource_requirements(
+            $this->request_service->attach_resource_requirements(
                 $this->resolve_id($id),
                 $this->payload()['resource_requirements'] ?? []
             )
@@ -81,13 +94,13 @@ class EventController extends CrudController
     public function provision_online_access($id = null)
     {
         return $this->guarded_response($this->write_roles, function () use ($id) {
-            $data = $this->payload();
-            $online_access = (new OnlineAccessService($this->repository))->provision_online_access(
+            $online_access_data = $this->online_access_payload($this->payload());
+            $online_access = $this->online_access_service->provision_online_access(
                 $this->resolve_id($id),
-                $data['platform'] ?? '',
-                $data['meeting_link'] ?? ($data['link'] ?? ''),
-                $data['access_key'] ?? null,
-                $data['host_notes'] ?? ''
+                $online_access_data['platform'],
+                $online_access_data['meeting_link'],
+                $online_access_data['access_key'],
+                $online_access_data['host_notes']
             );
 
             return $this->result($online_access, 'online_access', 'Online access could not be provisioned.');
@@ -96,9 +109,39 @@ class EventController extends CrudController
 
     private function approval_response($id, $method, $message)
     {
-        return $this->guarded_response(['admin', 'schedule_manager'], function () use ($id, $method, $message) {
-            $event = (new EventApprovalService($this->repository))->$method($this->resolve_id($id));
+        return $this->guarded_response(self::APPROVAL_ROLES, function () use ($id, $method, $message) {
+            $event = $this->approval_service->$method($this->resolve_id($id));
             return $this->result($event, 'event', $message);
         });
     }
+
+    private function details_data($event_id, $event)
+    {
+        return [
+            'event' => $event,
+            'requestor' => $this->repository->get_requestor($event_id),
+            'room' => $this->repository->get_room($event_id),
+            'resource_requirements' => $this->repository->get_resource_requirements($event_id),
+            'online_access' => $this->repository->get_online_access($event_id),
+        ];
+    }
+
+    private function event_from_payload($data)
+    {
+        $event = new Event($data);
+        $event->requestor_id = $event->requestor_id ?: $this->request_user_id();
+
+        return $event;
+    }
+
+    private function online_access_payload($data)
+    {
+        return [
+            'platform' => $data['platform'] ?? '',
+            'meeting_link' => $data['meeting_link'] ?? ($data['link'] ?? ''),
+            'access_key' => $data['access_key'] ?? null,
+            'host_notes' => $data['host_notes'] ?? '',
+        ];
+    }
+
 }

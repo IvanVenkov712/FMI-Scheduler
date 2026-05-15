@@ -8,27 +8,43 @@ use App\Services\RoomResourceService;
 
 class RoomController extends CrudController
 {
+    private $availability_service;
+    private $resource_service;
+
     protected $repository_class = RoomRepository::class;
     protected $model_class = Room::class;
     protected $view_path = 'rooms';
     protected $entity_name = 'room';
 
+    public function __construct(
+        $request = [],
+        $view = null,
+        $session = null,
+        $repository = null,
+        $availability_service = null,
+        $resource_service = null,
+    ) {
+        parent::__construct($request, $view, $session, $repository);
+        $this->availability_service = $availability_service ?? new RoomAvailabilityService($this->repository);
+        $this->resource_service = $resource_service ?? new RoomResourceService($this->repository);
+    }
+
     public function availability($id = null)
     {
         return $this->guarded_response(null, function () use ($id) {
             $data = $this->payload();
-            $service = new RoomAvailabilityService($this->repository);
+            $room_id = $this->resolve_id($id);
 
             return $this->success([
-                'bookable' => $service->is_room_bookable(
-                    $this->resolve_id($id),
+                'bookable' => $this->availability_service->is_room_bookable(
+                    $room_id,
                     $data['start_time'] ?? '',
                     $data['end_time'] ?? '',
                     $data['student_count'] ?? 0,
                     $data['resource_requirements'] ?? []
                 ),
-                'conflicts' => $service->find_conflicting_events(
-                    $this->resolve_id($id),
+                'conflicts' => $this->availability_service->find_conflicting_events(
+                    $room_id,
                     $data['start_time'] ?? '',
                     $data['end_time'] ?? ''
                 ),
@@ -48,7 +64,7 @@ class RoomController extends CrudController
         return $this->guarded_response($this->write_roles, function () use ($id) {
             $data = $this->payload();
 
-            return $this->ok((new RoomResourceService($this->repository))->sync_room_resource(
+            return $this->ok($this->resource_service->sync_room_resource(
                 $this->resolve_id($id),
                 $data['resource_id'] ?? null,
                 $data['quantity'] ?? 0

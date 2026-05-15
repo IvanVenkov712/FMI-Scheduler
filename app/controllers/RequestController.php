@@ -11,20 +11,22 @@ class RequestController extends BaseController
     private $event_repository;
     private $request_service;
 
-    public function __construct($request = [], $view = null, $session = null, $event_repository = null, $request_service = null)
+    private $access;
+
+    public function __construct($request = [], $view = null, $session = null, $event_repository = null, $request_service = null, $user_event_access_service = null)
     {
         parent::__construct($request, $view, $session);
         $this->event_repository = $event_repository ?? new EventRepository();
         $this->request_service = $request_service ?? new EventRequestService($this->event_repository);
+        $this->access = $user_event_access_service ?? new UserEventAccessService(null, $this->event_repository);
     }
 
     public function index()
     {
         return $this->guarded_response(null, function () {
-            $access = new UserEventAccessService(null, $this->event_repository);
             return $this->respond('requests/index', [
-                'events' => $access->list_manageable_events($this->request_user_id()),
-                'approvable_events' => $access->list_approvable_events($this->request_user_id()),
+                'events' => $this->access->list_manageable_events($this->request_user_id()),
+                'approvable_events' => $this->access->list_approvable_events($this->request_user_id()),
             ]);
         });
     }

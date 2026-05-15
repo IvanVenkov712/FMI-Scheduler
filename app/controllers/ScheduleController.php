@@ -7,10 +7,23 @@ use App\Services\SchedulePublishingService;
 
 class ScheduleController extends CrudController
 {
+    private $publishing_service;
+
     protected $repository_class = ScheduleRepository::class;
     protected $model_class = Schedule::class;
     protected $view_path = 'schedules';
     protected $entity_name = 'schedule';
+
+    public function __construct(
+        $request = [],
+        $view = null,
+        $session = null,
+        $repository = null,
+        $publishing_service = null,
+    ) {
+        parent::__construct($request, $view, $session, $repository);
+        $this->publishing_service = $publishing_service ?? new SchedulePublishingService($this->repository);
+    }
 
     public function show($id = null)
     {
@@ -49,7 +62,7 @@ class ScheduleController extends CrudController
             $schedule_id = $this->resolve_id($id);
             $event_id = $this->int_param('event_id', $this->payload()['event_id'] ?? null);
 
-            return $this->ok((new SchedulePublishingService($this->repository))->$method($event_id, $schedule_id));
+            return $this->ok($this->publishing_service->$method($event_id, $schedule_id));
         });
     }
 }

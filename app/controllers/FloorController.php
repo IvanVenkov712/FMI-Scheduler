@@ -8,10 +8,26 @@ use App\Services\ImportService;
 
 class FloorController extends CrudController
 {
+    private $import_service;
+    private $export_service;
+
     protected $repository_class = FloorRepository::class;
     protected $model_class = Floor::class;
     protected $view_path = 'floors';
     protected $entity_name = 'floor';
+
+    public function __construct(
+        $request = [],
+        $view = null,
+        $session = null,
+        $repository = null,
+        $import_service = null,
+        $export_service = null,
+    ) {
+        parent::__construct($request, $view, $session, $repository);
+        $this->import_service = $import_service ?? new ImportService();
+        $this->export_service = $export_service ?? new ExportService();
+    }
 
     public function rooms($id = null)
     {
@@ -22,7 +38,7 @@ class FloorController extends CrudController
     {
         return $this->guarded_response($this->write_roles, function () use ($id) {
             $data = $this->payload();
-            return $this->json_result((new ImportService())->import_ascii_plan(
+            return $this->json_result($this->import_service->import_ascii_plan(
                 $this->resolve_id($id),
                 $data['ascii_plan'] ?? '',
                 !isset($data['sync_rooms']) || filter_var($data['sync_rooms'], FILTER_VALIDATE_BOOLEAN)
@@ -33,7 +49,7 @@ class FloorController extends CrudController
     public function export_ascii_plan($id = null)
     {
         return $this->guarded_response(null, function () use ($id) {
-            $plan = (new ExportService())->export_floor_ascii_plan($this->resolve_id($id));
+            $plan = $this->export_service->export_floor_ascii_plan($this->resolve_id($id));
             return $plan === null ? $this->not_found('Floor not found.') : $this->json(['ascii_plan' => $plan]);
         });
     }
