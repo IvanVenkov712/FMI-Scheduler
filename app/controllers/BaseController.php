@@ -4,6 +4,7 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Helpers\SessionHelper;
 use App\Logger\Logger;
+use App\Services\AuditLogService;
 use Throwable;
 
 abstract class BaseController extends Controller
@@ -36,6 +37,8 @@ abstract class BaseController extends Controller
 
     protected function success($data = [], $status = 200)
     {
+        $this->audit_success($data);
+
         Logger::operation('Controller operation succeeded', [
             'controller' => static::class,
             'method' => $this->request['method'] ?? null,
@@ -80,6 +83,10 @@ abstract class BaseController extends Controller
 
     protected function ok($ok)
     {
+        if ($ok) {
+            $this->audit_success(['success' => true]);
+        }
+
         return $this->json(['success' => (bool) $ok], $ok ? 200 : 422);
     }
 
@@ -101,6 +108,10 @@ abstract class BaseController extends Controller
 
     protected function json_result($result)
     {
+        if (!empty($result['success'])) {
+            $this->audit_success($result['data'] ?? ['success' => true]);
+        }
+
         return $this->json($result, $result['success'] ? 200 : 422);
     }
 
@@ -199,6 +210,27 @@ abstract class BaseController extends Controller
         ]);
 
         return $this->error('Internal Server Error', 500);
+    }
+
+    protected function audit_success($details = [])
+    {
+        $method = strtoupper((string) ($this->request['method'] ?? ''));
+        if (!in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
+            return;
+        }
+
+        try {
+            (new AuditLogService())->record(
+                $this->request,
+                $this->session->get_user_id(),
+                $this->session->get_username(),
+                is_array($details) ? $details : []
+            );
+        } catch (Throwable $exception) {
+            Logger::warning('Audit log service could not be initialized', [
+                'exception' => get_class($exception),
+            ]);
+        }
     }
 
     protected function redirect_back($fallback = '/dashboard')

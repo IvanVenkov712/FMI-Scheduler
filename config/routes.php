@@ -103,6 +103,7 @@ return [
     'GET  /users'                   => ['UserController', 'index'],
     'GET  /users/profile'           => ['UserController', 'profile'],
     'GET  /users/{id}'              => ['UserController', 'show'],
+    'GET  /audit-logs'              => ['AuditLogController', 'index'],
 
     'GET  /constraints'             => ['MovementConstraintController', 'index'],
     'POST /constraints'             => ['MovementConstraintController', 'store'],

@@ -21,6 +21,9 @@ function page_start($title, $active = 'dashboard') {
         'import'     => 'Import/Export',
         'users'      => 'Users',
     ];
+    if ($role === 'admin') {
+        $nav['audit-logs'] = 'Audit Log';
+    }
 ?>
 <!DOCTYPE html>
 <html lang="bg">

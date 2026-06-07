@@ -62,6 +62,8 @@ class Kernel
         $request = Request::capture($params);
         $request['method'] = $method;
         $request['path'] = $uri;
+        $request['controller'] = $controller_name;
+        $request['action'] = $method_name;
 
         try {
             Logger::operation('Request started', Request::context([

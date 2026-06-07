@@ -37,6 +37,7 @@ class AuthController extends BaseController
         $this->session->login($user);
 
         if (!$this->wants_json()) {
+            $this->audit_success(['user' => $this->session->get_user()]);
             return $this->redirect('/dashboard');
         }
 
@@ -68,13 +69,14 @@ class AuthController extends BaseController
 
     public function logout()
     {
+        $this->audit_success(['logged_out' => true]);
         $this->session->logout();
 
         if (!$this->wants_json()) {
             return $this->redirect('/login');
         }
 
-        return $this->success(['logged_out' => true]);
+        return $this->json(['success' => true, 'data' => ['logged_out' => true]]);
     }
 
     public function me()
