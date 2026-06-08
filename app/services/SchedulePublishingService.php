@@ -9,17 +9,23 @@ class SchedulePublishingService extends BaseService
 {
     private $schedule_repository;
     private $event_repository;
+    private $approval_service;
 
-    public function __construct($schedule_repository = null, $event_repository = null)
+    public function __construct($schedule_repository = null, $event_repository = null, $approval_service = null)
     {
         $this->schedule_repository = $this->dependency($schedule_repository, ScheduleRepository::class);
         $this->event_repository = $this->dependency($event_repository, EventRepository::class);
+        $this->approval_service = $this->dependency($approval_service, EventApprovalService::class, $this->event_repository);
     }
 
     public function publish_event_to_schedule($event_id, $schedule_id)
     {
         $event = $this->event_repository->find_by_id($event_id);
         $schedule = $this->schedule_repository->find_by_id($schedule_id);
+
+        if ($event !== null && $event->is_pending()) {
+            $event = $this->approval_service->approve_event_request($event_id);
+        }
 
         if (!$this->can_publish_event($event, $schedule)) {
             return null;

@@ -21,6 +21,24 @@ class ScheduleRepository extends Repository
         );
     }
 
+    public function get_publishable_events($id)
+    {
+        return $this->rows(
+            "SELECT e.* FROM `events` e
+            INNER JOIN `schedules` s ON s.id = ?
+            WHERE e.status IN ('pending', 'approved')
+            AND e.start_time >= CONCAT(s.start_date, ' 00:00:00')
+            AND e.end_time <= CONCAT(s.end_date, ' 23:59:59')
+            AND NOT EXISTS (
+                SELECT 1 FROM `schedule_events` se
+                WHERE se.schedule_id = s.id AND se.event_id = e.id
+            )
+            ORDER BY e.start_time ASC",
+            [$id],
+            Event::class
+        );
+    }
+
     public function add_event_in_schedule($schedule_id, $event_id)
     {
         $statement = $this->run(
