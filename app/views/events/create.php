@@ -2,12 +2,12 @@
 <div class="card">
 <form method="post" action="/events/submit-request" class="stack">
     <div class="fields">
-        <div class="field"><label>Name</label><input type="text" name="name" required></div>
+        <div class="field"><label>Name</label><input type="text" name="name" maxlength="150" required></div>
         <div class="field"><label>Subject</label><input type="text" name="subject_name"></div>
         <div class="field"><label>Type</label>
             <select name="type"><?php foreach (['lecture','exam','practice','consultation'] as $event_type): ?><option value="<?= $event_type ?>" <?= ($type ?? '') === $event_type ? 'selected' : '' ?>><?= ucfirst($event_type) ?></option><?php endforeach; ?></select>
         </div>
-        <div class="field"><label>Students</label><input type="number" name="student_count" value="30"></div>
+        <div class="field"><label>Students</label><input type="number" name="student_count" value="30" min="0" step="1"></div>
         <div class="field"><label>Start Time</label><input type="datetime-local" name="start_time" required></div>
         <div class="field"><label>End Time</label><input type="datetime-local" name="end_time" required></div>
         <div class="field"><label>Delivery Mode</label>

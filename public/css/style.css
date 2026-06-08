@@ -109,7 +109,8 @@ form.stack { display: grid; gap: 14px; }
 .field small { color: var(--muted); font-size: 12px; }
 
 input[type="text"], input[type="email"], input[type="number"],
-input[type="password"], input[type="datetime-local"], input[type="date"],
+input[type="password"], input[type="url"], input[type="file"],
+input[type="datetime-local"], input[type="date"],
 select, textarea {
     width: 100%; border: 1px solid var(--line); border-radius: 8px;
     padding: 10px 11px; font: inherit; color: var(--ink); background: #fff;
@@ -117,6 +118,17 @@ select, textarea {
 input:focus, select:focus, textarea:focus {
     outline: 3px solid rgba(34,84,61,.12); border-color: var(--accent);
 }
+input.is-invalid, select.is-invalid, textarea.is-invalid {
+    border-color: var(--danger);
+    background: var(--danger-soft);
+}
+input.is-invalid:focus, select.is-invalid:focus, textarea.is-invalid:focus {
+    outline-color: rgba(183,66,48,.16);
+}
+input:disabled, select:disabled, textarea:disabled {
+    background: #eef2ec; color: var(--muted); cursor: not-allowed;
+}
+.field .field-error { color: var(--danger); min-height: 0; }
 textarea { min-height: 100px; resize: vertical; }
 
 button, .btn, input[type="submit"] {

@@ -10,9 +10,9 @@
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="field"><label>Name</label><input type="text" name="name" required></div>
-        <div class="field"><label>Position Code</label><input type="text" name="position_code"></div>
-        <div class="field"><label>Capacity</label><input type="number" name="capacity" value="30"></div>
+        <div class="field"><label>Name</label><input type="text" name="name" maxlength="100" required></div>
+        <div class="field"><label>Position Code</label><input type="text" name="position_code" maxlength="50"></div>
+        <div class="field"><label>Capacity</label><input type="number" name="capacity" value="30" min="0" step="1"></div>
         <div class="field"><label>Type</label>
             <select name="room_type"><option value="physical">Physical</option><option value="online">Online</option><option value="hybrid">Hybrid</option></select>
         </div>

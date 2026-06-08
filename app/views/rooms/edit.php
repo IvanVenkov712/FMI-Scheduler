@@ -14,9 +14,9 @@ page_start('Edit Room', 'rooms');
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="field"><label>Name</label><input type="text" name="name" value="<?= e($r['name'] ?? '') ?>" required></div>
-        <div class="field"><label>Position Code</label><input type="text" name="position_code" value="<?= e($r['position_code'] ?? '') ?>"></div>
-        <div class="field"><label>Capacity</label><input type="number" name="capacity" value="<?= e($r['capacity'] ?? 30) ?>"></div>
+        <div class="field"><label>Name</label><input type="text" name="name" value="<?= e($r['name'] ?? '') ?>" maxlength="100" required></div>
+        <div class="field"><label>Position Code</label><input type="text" name="position_code" value="<?= e($r['position_code'] ?? '') ?>" maxlength="50"></div>
+        <div class="field"><label>Capacity</label><input type="number" name="capacity" value="<?= e($r['capacity'] ?? 30) ?>" min="0" step="1"></div>
         <div class="field"><label>Type</label>
             <select name="room_type">
                 <?php foreach (['physical','online','hybrid'] as $t): ?>

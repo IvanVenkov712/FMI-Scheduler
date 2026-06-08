@@ -23,7 +23,7 @@
                 </select>
             </div>
             <div class="field"><label>Distance (m)</label><input type="number" name="distance" min="0" step="0.1"></div>
-            <div class="field"><label>Corridor Capacity</label><input type="number" name="corridor_capacity" min="0"></div>
+            <div class="field"><label>Corridor Capacity</label><input type="number" name="corridor_capacity" min="0" step="1"></div>
             <div class="field"><label>Stairs</label><select name="is_stairs"><option value="0">No</option><option value="1">Yes</option></select></div>
             <div class="field"><label>Elevator</label><select name="is_elevator"><option value="0">No</option><option value="1">Yes</option></select></div>
         </div>

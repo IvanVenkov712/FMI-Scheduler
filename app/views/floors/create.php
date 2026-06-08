@@ -10,8 +10,8 @@
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="field"><label>Name</label><input type="text" name="name" required></div>
-        <div class="field"><label>Level</label><input type="number" name="level" value="0" required></div>
+        <div class="field"><label>Name</label><input type="text" name="name" maxlength="100" required></div>
+        <div class="field"><label>Level</label><input type="number" name="level" value="0" step="1" required></div>
     </div>
     <div class="field full"><label>ASCII Plan</label><textarea name="ascii_plan" rows="10" class="ascii-input"></textarea></div>
     <button type="submit">Create Floor</button>

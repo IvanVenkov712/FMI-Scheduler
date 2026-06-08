@@ -3,7 +3,7 @@
     <h2>Add Resource</h2>
     <form method="post" action="/resources" class="stack">
         <div class="fields">
-            <div class="field"><label>Name</label><input type="text" name="name" required></div>
+            <div class="field"><label>Name</label><input type="text" name="name" maxlength="100" required></div>
             <div class="field"><label>Description</label><input type="text" name="description"></div>
         </div>
         <button type="submit">Add</button>

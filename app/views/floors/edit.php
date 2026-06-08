@@ -14,8 +14,8 @@ page_start('Edit Floor', 'floors');
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="field"><label>Name</label><input type="text" name="name" value="<?= e($f['name'] ?? '') ?>" required></div>
-        <div class="field"><label>Level</label><input type="number" name="level" value="<?= e($f['level'] ?? 0) ?>" required></div>
+        <div class="field"><label>Name</label><input type="text" name="name" value="<?= e($f['name'] ?? '') ?>" maxlength="100" required></div>
+        <div class="field"><label>Level</label><input type="number" name="level" value="<?= e($f['level'] ?? 0) ?>" step="1" required></div>
     </div>
     <div class="field full"><label>ASCII Plan</label><textarea name="ascii_plan" rows="10" class="ascii-input"><?= e($f['ascii_plan'] ?? '') ?></textarea></div>
     <button type="submit">Save</button>

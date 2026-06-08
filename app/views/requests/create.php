@@ -2,12 +2,12 @@
 <div class="card">
 <form method="post" action="/requests" class="stack">
     <div class="fields">
-        <div class="field"><label>Name</label><input type="text" name="name" required></div>
+        <div class="field"><label>Name</label><input type="text" name="name" maxlength="150" required></div>
         <div class="field"><label>Subject</label><input type="text" name="subject_name"></div>
         <div class="field"><label>Type</label>
             <select name="type"><option value="exam">Exam</option><option value="lecture">Lecture</option><option value="practice">Practice</option><option value="consultation">Consultation</option></select>
         </div>
-        <div class="field"><label>Students</label><input type="number" name="student_count" value="30" required></div>
+        <div class="field"><label>Students</label><input type="number" name="student_count" value="30" min="0" step="1" required></div>
         <div class="field"><label>Start Time</label><input type="datetime-local" name="start_time" required></div>
         <div class="field"><label>End Time</label><input type="datetime-local" name="end_time" required></div>
         <div class="field"><label>Delivery Mode</label>

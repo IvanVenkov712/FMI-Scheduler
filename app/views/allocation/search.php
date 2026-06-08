@@ -5,7 +5,7 @@
         <div class="fields">
             <div class="field"><label>Start Time</label><input type="datetime-local" name="start_time" required></div>
             <div class="field"><label>End Time</label><input type="datetime-local" name="end_time" required></div>
-            <div class="field"><label>Students</label><input type="number" name="student_count" value="30"></div>
+            <div class="field"><label>Students</label><input type="number" name="student_count" value="30" min="0" step="1"></div>
             <div class="field"><label>Delivery Mode</label>
                 <select name="delivery_mode"><option value="physical">Physical</option><option value="online">Online</option><option value="hybrid">Hybrid</option></select>
             </div>
