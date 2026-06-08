@@ -209,7 +209,7 @@ abstract class BaseController extends Controller
             'username' => $this->session->get_username(),
         ]);
 
-        return $this->error('Internal Server Error', 500);
+        return $this->error('Something went wrong while processing your request. Please try again.', 500);
     }
 
     protected function audit_success($details = [])

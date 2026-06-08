@@ -6,6 +6,8 @@ use Throwable;
 
 class ErrorHandler
 {
+    private const SAFE_SERVER_ERROR = 'Something went wrong while processing your request. Please try again.';
+
     public static function register()
     {
         set_error_handler(function ($severity, $message, $file, $line) {
@@ -23,7 +25,7 @@ class ErrorHandler
         });
 
         set_exception_handler(function (Throwable $exception) {
-            self::render(500, 'Internal Server Error', $exception);
+            self::render(500, self::SAFE_SERVER_ERROR, $exception);
         });
 
         register_shutdown_function(function () {

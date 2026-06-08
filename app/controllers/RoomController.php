@@ -15,6 +15,15 @@ class RoomController extends CrudController
     protected $model_class = Room::class;
     protected $view_path = 'rooms';
     protected $entity_name = 'room';
+    protected $validation_rules = [
+        'floor_id' => ['required', 'integer', 'min:1'],
+        'name' => ['required', 'max_length:100'],
+        'position_code' => ['max_length:50'],
+        'room_type' => ['in:physical,online,hybrid'],
+        'capacity' => ['integer', 'min:0'],
+        'room_size' => ['in:small,medium,large'],
+    ];
+    protected $field_labels = ['floor_id' => 'Floor'];
 
     public function __construct(
         $request = [],

@@ -4,7 +4,7 @@
     <form method="post" action="/resources" class="stack">
         <div class="fields">
             <div class="field"><label>Name</label><input type="text" name="name" required></div>
-            <div class="field"><label>Type</label><input type="text" name="type" placeholder="projector, camera, etc."></div>
+            <div class="field"><label>Description</label><input type="text" name="description"></div>
         </div>
         <button type="submit">Add</button>
     </form>
@@ -14,10 +14,10 @@
     <?php if (empty($resources)): ?><div class="empty">No resources defined.</div>
     <?php else: ?>
     <table>
-        <thead><tr><th>ID</th><th>Name</th><th>Type</th></tr></thead>
+        <thead><tr><th>ID</th><th>Name</th><th>Description</th></tr></thead>
         <tbody>
         <?php foreach ($resources as $r): $r = is_object($r) ? $r->to_array() : $r; ?>
-        <tr><td><?= e($r['id']) ?></td><td><?= e($r['name'] ?? '-') ?></td><td><?= e($r['type'] ?? '-') ?></td></tr>
+        <tr><td><?= e($r['id']) ?></td><td><?= e($r['name'] ?? '-') ?></td><td><?= e($r['description'] ?? '-') ?></td></tr>
         <?php endforeach; ?>
         </tbody>
     </table>

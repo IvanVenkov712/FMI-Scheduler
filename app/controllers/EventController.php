@@ -20,6 +20,16 @@ class EventController extends CrudController
     protected $view_path = 'events';
     protected $entity_name = 'event';
     protected $write_roles = ['admin', 'teacher', 'schedule_manager'];
+    protected $validation_rules = [
+        'requestor_id' => ['required', 'integer', 'min:1'],
+        'name' => ['required', 'max_length:150'],
+        'type' => ['in:lecture,exam,practice,consultation'],
+        'start_time' => ['required', 'date'],
+        'end_time' => ['required', 'date', 'after:start_time'],
+        'delivery_mode' => ['in:physical,online,hybrid'],
+        'student_count' => ['integer', 'min:0'],
+        'status' => ['in:pending,approved,rejected,cancelled'],
+    ];
 
     public function __construct(
         $request = [],

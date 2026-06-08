@@ -13,6 +13,13 @@ class MovementConstraintController extends CrudController
     protected $model_class = MovementConstraint::class;
     protected $view_path = 'routes';
     protected $entity_name = 'movement_constraint';
+    protected $validation_rules = [
+        'route_segment_id' => ['required', 'integer', 'min:1'],
+        'constraint_type' => ['required', 'max_length:50'],
+        'max_capacity' => ['integer', 'min:0'],
+        'start_time' => ['required', 'date'],
+        'end_time' => ['required', 'date', 'after:start_time'],
+    ];
 
     public function __construct(
         $request = [],

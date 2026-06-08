@@ -15,6 +15,12 @@ class FloorController extends CrudController
     protected $model_class = Floor::class;
     protected $view_path = 'floors';
     protected $entity_name = 'floor';
+    protected $validation_rules = [
+        'building_id' => ['required', 'integer', 'min:1'],
+        'level' => ['required', 'integer'],
+        'name' => ['required', 'max_length:100'],
+    ];
+    protected $field_labels = ['building_id' => 'Building'];
 
     public function __construct(
         $request = [],

@@ -13,6 +13,16 @@ class RouteController extends CrudController
     protected $model_class = RouteSegment::class;
     protected $view_path = 'routes';
     protected $entity_name = 'route_segment';
+    protected $validation_rules = [
+        'from_room_id' => ['required', 'integer', 'min:1'],
+        'to_room_id' => ['required', 'integer', 'min:1', 'different:from_room_id'],
+        'distance' => ['numeric', 'min:0'],
+        'corridor_capacity' => ['integer', 'min:0'],
+    ];
+    protected $field_labels = [
+        'from_room_id' => 'From room',
+        'to_room_id' => 'To room',
+    ];
 
     public function __construct(
         $request = [],

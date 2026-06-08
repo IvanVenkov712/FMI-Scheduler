@@ -88,7 +88,11 @@ class Kernel
                 'status' => http_response_code(),
             ]));
         } catch (Throwable $exception) {
-            ErrorHandler::render(500, 'Internal Server Error', $exception);
+            ErrorHandler::render(
+                500,
+                'Something went wrong while processing your request. Please try again.',
+                $exception
+            );
         }
     }
 
@@ -104,7 +108,7 @@ class Kernel
         }
 
         if (!Request::wants_json()) {
-            ErrorHandler::render(500, 'Internal Server Error');
+            ErrorHandler::render(500, 'Something went wrong while processing your request. Please try again.');
         }
 
         if (!headers_sent()) {
