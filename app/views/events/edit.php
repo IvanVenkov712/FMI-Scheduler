@@ -21,6 +21,14 @@ page_start('Edit Event', 'events');
             <option value="<?= $m ?>" <?= ($ev['delivery_mode'] ?? '') === $m ? 'selected' : '' ?>><?= ucfirst($m) ?></option>
             <?php endforeach; ?></select>
         </div>
+        <div class="field"><label>Preferred Room</label>
+            <select name="room_id">
+                <option value="">No preference</option>
+                <?php foreach ($rooms ?? [] as $room): $room = is_object($room) ? $room->to_array() : $room; ?>
+                <option value="<?= e($room['id'] ?? '') ?>" <?= (string) ($ev['room_id'] ?? '') === (string) ($room['id'] ?? '') ? 'selected' : '' ?>><?= e($room['name'] ?? '') ?><?= !empty($room['position_code']) ? ' (' . e($room['position_code']) . ')' : '' ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
         <div class="field"><label>Status</label><input type="text" name="status" value="<?= e($ev['status'] ?? 'pending') ?>"></div>
     </div>
     <button type="submit">Save</button>

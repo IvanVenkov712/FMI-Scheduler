@@ -1,6 +1,7 @@
 <?php
 namespace App\Controllers;
 
+use App\Repositories\RoomRepository;
 use App\Services\ExamSessionSetupService;
 
 class ExamSessionController extends BaseController
@@ -15,7 +16,10 @@ class ExamSessionController extends BaseController
 
     public function create()
     {
-        return $this->guarded_response($this->exam_roles(), fn () => $this->respond('events/create', ['type' => 'exam']));
+        return $this->guarded_response($this->exam_roles(), fn () => $this->respond('events/create', [
+            'type' => 'exam',
+            'rooms' => (new RoomRepository())->find_all(),
+        ]));
     }
 
     public function store()

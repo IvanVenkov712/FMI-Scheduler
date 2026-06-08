@@ -5,7 +5,7 @@
         <div class="field"><label>Name</label><input type="text" name="name" required></div>
         <div class="field"><label>Subject</label><input type="text" name="subject_name"></div>
         <div class="field"><label>Type</label>
-            <select name="type"><option value="lecture">Lecture</option><option value="exam">Exam</option><option value="practice">Practice</option><option value="consultation">Consultation</option></select>
+            <select name="type"><?php foreach (['lecture','exam','practice','consultation'] as $event_type): ?><option value="<?= $event_type ?>" <?= ($type ?? '') === $event_type ? 'selected' : '' ?>><?= ucfirst($event_type) ?></option><?php endforeach; ?></select>
         </div>
         <div class="field"><label>Students</label><input type="number" name="student_count" value="30"></div>
         <div class="field"><label>Start Time</label><input type="datetime-local" name="start_time" required></div>
@@ -13,7 +13,14 @@
         <div class="field"><label>Delivery Mode</label>
             <select name="delivery_mode"><option value="physical">Physical</option><option value="online">Online</option><option value="hybrid">Hybrid</option></select>
         </div>
-        <div class="field"><label>Preferred Room ID</label><input type="number" name="room_id"></div>
+        <div class="field"><label>Preferred Room</label>
+            <select name="room_id">
+                <option value="">No preference</option>
+                <?php foreach ($rooms ?? [] as $room): $room = is_object($room) ? $room->to_array() : $room; ?>
+                <option value="<?= e($room['id'] ?? '') ?>"><?= e($room['name'] ?? '') ?><?= !empty($room['position_code']) ? ' (' . e($room['position_code']) . ')' : '' ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
         <div class="field"><label>Online Platform</label><input type="text" name="online_access[platform]" placeholder="Zoom, Teams, Meet"></div>
         <div class="field"><label>Meeting Link</label><input type="url" name="online_access[meeting_link]"></div>
         <div class="field"><label>Access Key</label><input type="text" name="online_access[access_key]"></div>

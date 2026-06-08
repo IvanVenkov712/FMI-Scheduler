@@ -3,6 +3,7 @@ namespace App\Controllers;
 
 use App\Models\Event;
 use App\Repositories\EventRepository;
+use App\Repositories\RoomRepository;
 use App\Services\EventApprovalService;
 use App\Services\EventRequestService;
 use App\Services\OnlineAccessService;
@@ -57,6 +58,20 @@ class EventController extends CrudController
 
             return $this->respond('events/details', $this->details_data($id, $event));
         });
+    }
+
+    protected function create_view_data()
+    {
+        return ['rooms' => (new RoomRepository())->find_all()];
+    }
+
+    protected function prepare_payload($data)
+    {
+        if (array_key_exists('room_id', $data) && trim((string) $data['room_id']) === '') {
+            $data['room_id'] = null;
+        }
+
+        return $data;
     }
 
     public function submit_request()

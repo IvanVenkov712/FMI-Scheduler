@@ -33,7 +33,7 @@ abstract class CrudController extends BaseController
 
         return $this->respond($this->view_path . '/index', [
             $this->collection_key() => $this->repository->find_all(),
-        ]);
+        ] + $this->index_view_data());
     }
 
     public function show($id = null)
@@ -58,7 +58,7 @@ abstract class CrudController extends BaseController
             return $guard;
         }
 
-        return $this->respond($this->view_path . '/create', []);
+        return $this->respond($this->view_path . '/create', $this->create_view_data());
     }
 
     public function store()
@@ -96,7 +96,7 @@ abstract class CrudController extends BaseController
 
         return $this->respond($this->view_path . '/edit', [
             $this->entity_name => $model,
-        ]);
+        ] + $this->edit_view_data($model));
     }
 
     public function update($id = null)
@@ -155,6 +155,21 @@ abstract class CrudController extends BaseController
     protected function prepare_payload($data)
     {
         return $data;
+    }
+
+    protected function create_view_data()
+    {
+        return [];
+    }
+
+    protected function index_view_data()
+    {
+        return [];
+    }
+
+    protected function edit_view_data($model)
+    {
+        return $this->create_view_data();
     }
 
     protected function validate_payload($data)

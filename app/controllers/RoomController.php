@@ -2,6 +2,7 @@
 namespace App\Controllers;
 
 use App\Models\Room;
+use App\Repositories\FloorRepository;
 use App\Repositories\RoomRepository;
 use App\Services\RoomAvailabilityService;
 use App\Services\RoomResourceService;
@@ -59,6 +60,11 @@ class RoomController extends CrudController
                 ),
             ]);
         });
+    }
+
+    protected function create_view_data()
+    {
+        return ['floors' => (new FloorRepository())->find_all()];
     }
 
     public function resources($id = null)

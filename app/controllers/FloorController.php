@@ -2,6 +2,7 @@
 namespace App\Controllers;
 
 use App\Models\Floor;
+use App\Repositories\BuildingRepository;
 use App\Repositories\FloorRepository;
 use App\Services\ExportService;
 use App\Services\ImportService;
@@ -38,6 +39,11 @@ class FloorController extends CrudController
     public function rooms($id = null)
     {
         return $this->related($id, 'rooms', 'get_rooms');
+    }
+
+    protected function create_view_data()
+    {
+        return ['buildings' => (new BuildingRepository())->find_all()];
     }
 
     public function import_ascii_plan($id = null)

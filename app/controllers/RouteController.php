@@ -2,6 +2,7 @@
 namespace App\Controllers;
 
 use App\Models\RouteSegment;
+use App\Repositories\RoomRepository;
 use App\Repositories\RouteSegmentRepository;
 use App\Services\RoutePlanningService;
 
@@ -39,6 +40,11 @@ class RouteController extends CrudController
     public function map()
     {
         return $this->index();
+    }
+
+    protected function index_view_data()
+    {
+        return ['rooms' => (new RoomRepository())->find_all()];
     }
 
     public function find()

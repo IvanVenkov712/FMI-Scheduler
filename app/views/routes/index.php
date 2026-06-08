@@ -6,8 +6,22 @@
     <h2>Add Route Segment</h2>
     <form method="post" action="/routes" class="stack">
         <div class="fields">
-            <div class="field"><label>From Room ID</label><input type="number" name="from_room_id" required></div>
-            <div class="field"><label>To Room ID</label><input type="number" name="to_room_id" required></div>
+            <div class="field"><label>From Room</label>
+                <select name="from_room_id" required>
+                    <option value="">Select room</option>
+                    <?php foreach ($rooms ?? [] as $room): $room = is_object($room) ? $room->to_array() : $room; ?>
+                    <option value="<?= e($room['id'] ?? '') ?>"><?= e($room['name'] ?? '') ?><?= !empty($room['position_code']) ? ' (' . e($room['position_code']) . ')' : '' ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="field"><label>To Room</label>
+                <select name="to_room_id" required>
+                    <option value="">Select room</option>
+                    <?php foreach ($rooms ?? [] as $room): $room = is_object($room) ? $room->to_array() : $room; ?>
+                    <option value="<?= e($room['id'] ?? '') ?>"><?= e($room['name'] ?? '') ?><?= !empty($room['position_code']) ? ' (' . e($room['position_code']) . ')' : '' ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
             <div class="field"><label>Distance (m)</label><input type="number" name="distance" min="0" step="0.1"></div>
             <div class="field"><label>Corridor Capacity</label><input type="number" name="corridor_capacity" min="0"></div>
             <div class="field"><label>Stairs</label><select name="is_stairs"><option value="0">No</option><option value="1">Yes</option></select></div>
