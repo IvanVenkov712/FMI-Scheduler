@@ -107,6 +107,8 @@ form.stack { display: grid; gap: 14px; }
 .field.full { grid-column: 1 / -1; }
 .field label { font-weight: 700; font-size: 13px; }
 .field small { color: var(--muted); font-size: 12px; }
+.checkbox-field label { display: flex; align-items: center; gap: 8px; }
+.checkbox-field input { width: auto; }
 
 input[type="text"], input[type="email"], input[type="number"],
 input[type="password"], input[type="url"], input[type="file"],
@@ -172,6 +174,12 @@ details summary { cursor: pointer; color: var(--accent); font-weight: 700; }
     display: inline-block; padding: 5px 10px; border-radius: 99px;
     background: #eef4f0; border: 1px solid var(--line); font-size: 13px; font-weight: 600;
 }
+
+.route-summary { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.route-summary > span:not(.badge), .route-steps li > span:first-of-type { color: var(--muted); }
+.route-steps { display: grid; gap: 8px; padding-left: 24px; }
+.route-steps li { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+.route-steps li > * { margin-right: 8px; }
 
 @media (max-width: 900px) {
     .layout { grid-template-columns: 1fr; }

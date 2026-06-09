@@ -49,7 +49,16 @@ class RouteController extends CrudController
 
     public function find()
     {
-        return $this->route_response('find_route', 'Route not found.');
+        $data = $this->payload();
+        $data['start_time'] = trim((string) ($data['start_time'] ?? '')) ?: null;
+        $data['end_time'] = trim((string) ($data['end_time'] ?? '')) ?: null;
+        $accessible_only = filter_var($data['accessible_only'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        return $this->route_response(
+            $accessible_only ? 'find_accessible_route' : 'find_route',
+            $accessible_only ? 'Accessible route not found.' : 'Route not found.',
+            $data
+        );
     }
 
     public function accessible()
@@ -72,16 +81,28 @@ class RouteController extends CrudController
         });
     }
 
-    private function route_response($method, $not_found_message)
+    private function route_response($method, $not_found_message, $data = null)
     {
-        return $this->guarded_response(null, function () use ($method, $not_found_message) {
-            $data = $this->payload();
+        return $this->guarded_response(null, function () use ($method, $not_found_message, $data) {
+            $data = $data ?? $this->payload();
             $route = $this->route_planning_service->$method(
                 $data['from_room_id'] ?? null,
                 $data['to_room_id'] ?? null,
                 $data['start_time'] ?? null,
                 $data['end_time'] ?? null
             );
+
+            if (!$this->wants_json()) {
+                return $this->respond($this->view_path . '/index', [
+                    'route_segments' => $this->repository->find_all(),
+                    'route_result' => $route,
+                    'route_distance' => $route === null
+                        ? null
+                        : $this->route_planning_service->get_route_distance($route),
+                    'route_search' => $data,
+                    'route_search_error' => $route === null ? $not_found_message : null,
+                ] + $this->index_view_data());
+            }
 
             return $route === null
                 ? $this->error($not_found_message, 404)
