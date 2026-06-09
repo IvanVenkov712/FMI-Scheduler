@@ -3,3 +3,4 @@ vendor/*
 composer.phar
 storage/logs/*.log
 .VSCodeCounter/*
+.env

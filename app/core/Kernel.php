@@ -20,6 +20,7 @@ class Kernel
     {
         self::configure_error_reporting();
         Config::load($root . '/config/app.ini');
+        Config::load($root . '/.env');
         ErrorHandler::register();
 
         $session = new SessionHelper();
