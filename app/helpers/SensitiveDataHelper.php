@@ -6,11 +6,25 @@ class SensitiveDataHelper
     private const REMOVED_KEYS = [
         'access_key',
         'access_password',
+        'password',
+        'password_hash',
+        'password_confirmation',
+        'token',
+        'csrf_token',
+        '_token',
+        'secret',
     ];
 
     private const REDACTED_KEYS = [
         'access_key',
         'access_password',
+        'password',
+        'password_hash',
+        'password_confirmation',
+        'token',
+        'csrf_token',
+        '_token',
+        'secret',
     ];
 
     public static function strip($value)
@@ -22,7 +36,7 @@ class SensitiveDataHelper
         $sanitized = [];
 
         foreach ($value as $key => $item) {
-            if (is_string($key) && in_array($key, self::REMOVED_KEYS, true)) {
+            if (is_string($key) && self::matches($key, self::REMOVED_KEYS)) {
                 continue;
             }
 
@@ -41,7 +55,7 @@ class SensitiveDataHelper
         $sanitized = [];
 
         foreach ($value as $key => $item) {
-            if (is_string($key) && in_array($key, self::REDACTED_KEYS, true)) {
+            if (is_string($key) && self::matches($key, self::REDACTED_KEYS)) {
                 $sanitized[$key] = $mask;
                 continue;
             }
@@ -50,5 +64,18 @@ class SensitiveDataHelper
         }
 
         return $sanitized;
+    }
+
+    private static function matches($key, $keys)
+    {
+        $key = strtolower($key);
+
+        foreach ($keys as $candidate) {
+            if ($key === $candidate || str_contains($key, $candidate)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

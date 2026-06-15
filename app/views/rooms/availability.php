@@ -9,7 +9,7 @@ page_start('Room Availability', 'rooms');
         <div class="fields">
             <div class="field"><label>Start Time</label><input type="datetime-local" name="start_time" required></div>
             <div class="field"><label>End Time</label><input type="datetime-local" name="end_time" required></div>
-            <div class="field"><label>Students</label><input type="number" name="student_count" value="30"></div>
+            <div class="field"><label>Students</label><input type="number" name="student_count" value="30" min="0" step="1"></div>
         </div>
         <button type="submit">Check</button>
     </form>

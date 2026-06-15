@@ -10,5 +10,8 @@ class ResourceController extends CrudController
     protected $model_class = Resource::class;
     protected $view_path = 'resources';
     protected $entity_name = 'resource';
+    protected $validation_rules = [
+        'name' => ['required', 'max_length:100'],
+    ];
 
 }

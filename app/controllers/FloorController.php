@@ -2,6 +2,7 @@
 namespace App\Controllers;
 
 use App\Models\Floor;
+use App\Repositories\BuildingRepository;
 use App\Repositories\FloorRepository;
 use App\Services\ExportService;
 use App\Services\ImportService;
@@ -15,6 +16,12 @@ class FloorController extends CrudController
     protected $model_class = Floor::class;
     protected $view_path = 'floors';
     protected $entity_name = 'floor';
+    protected $validation_rules = [
+        'building_id' => ['required', 'integer', 'min:1'],
+        'level' => ['required', 'integer'],
+        'name' => ['required', 'max_length:100'],
+    ];
+    protected $field_labels = ['building_id' => 'Building'];
 
     public function __construct(
         $request = [],
@@ -32,6 +39,32 @@ class FloorController extends CrudController
     public function rooms($id = null)
     {
         return $this->related($id, 'rooms', 'get_rooms');
+    }
+
+    public function plan($id = null)
+    {
+        if ($guard = $this->guarded()) {
+            return $guard;
+        }
+
+        $floor = $this->find_model($id);
+        if ($floor === null) {
+            return $this->not_found('Floor not found.');
+        }
+
+        $building = (new BuildingRepository())->find_by_id($floor->building_id);
+        $rooms = (new \App\Repositories\RoomRepository())->find_by_floor($floor->id);
+
+        return $this->respond('floors/plan', [
+            'floor'    => $floor,
+            'building' => $building,
+            'rooms'    => $rooms,
+        ]);
+    }
+
+    protected function create_view_data()
+    {
+        return ['buildings' => (new BuildingRepository())->find_all()];
     }
 
     public function import_ascii_plan($id = null)

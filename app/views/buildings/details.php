@@ -6,6 +6,7 @@ page_start($b['name'] ?? 'Building Details', 'buildings');
 
 <div class="actions page-actions">
     <a href="/buildings/<?= e($b['id']) ?>/edit" class="btn">Edit</a>
+    <a href="/buildings/<?= e($b['id']) ?>/vertical" class="btn btn-muted">Vertical View</a>
     <a href="/buildings/<?= e($b['id']) ?>/floors" class="btn btn-muted">Floors</a>
     <a href="/buildings" class="btn btn-muted">Back</a>
 </div>

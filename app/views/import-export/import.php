@@ -23,7 +23,14 @@
     <h2>Import ASCII Floor Plan</h2>
     <form method="post" action="/import-export/import-ascii-plan" class="stack">
         <div class="fields">
-            <div class="field"><label>Floor ID</label><input type="number" name="floor_id" required></div>
+            <div class="field"><label>Floor</label>
+                <select name="floor_id" required>
+                    <option value="">Select floor</option>
+                    <?php foreach ($floors ?? [] as $floor): $floor = is_object($floor) ? $floor->to_array() : $floor; ?>
+                    <option value="<?= e($floor['id'] ?? '') ?>"><?= e($floor['name'] ?? '') ?> (level <?= e($floor['level'] ?? '') ?>)</option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
         </div>
         <div class="field full"><label>ASCII Plan</label><textarea name="ascii_plan" rows="12" class="ascii-input" required placeholder="Paste your ASCII floor plan here..."></textarea></div>
         <button type="submit">Import Plan</button>

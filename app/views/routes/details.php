@@ -8,10 +8,10 @@ page_start('Route Segment #' . ($r['id'] ?? ''), 'routes');
     <dl class="meta">
         <div><dt>From Room</dt><dd><?= e($r['from_room_id'] ?? '-') ?></dd></div>
         <div><dt>To Room</dt><dd><?= e($r['to_room_id'] ?? '-') ?></dd></div>
-        <div><dt>Distance</dt><dd><?= e($r['distance_meters'] ?? '-') ?> m</dd></div>
-        <div><dt>Walking</dt><dd><?= e($r['walking_minutes'] ?? '-') ?> min</dd></div>
-        <div><dt>Accessible</dt><dd><?= ($r['is_accessible'] ?? 0) ? 'Yes' : 'No' ?></dd></div>
-        <div><dt>Bidirectional</dt><dd><?= ($r['is_bidirectional'] ?? 0) ? 'Yes' : 'No' ?></dd></div>
+        <div><dt>Distance</dt><dd><?= e($r['distance'] ?? '-') ?> m</dd></div>
+        <div><dt>Corridor Capacity</dt><dd><?= e($r['corridor_capacity'] ?? '-') ?></dd></div>
+        <div><dt>Stairs</dt><dd><?= ($r['is_stairs'] ?? 0) ? 'Yes' : 'No' ?></dd></div>
+        <div><dt>Elevator</dt><dd><?= ($r['is_elevator'] ?? 0) ? 'Yes' : 'No' ?></dd></div>
     </dl>
 </div>
 <?php page_end(); ?>

@@ -20,6 +20,7 @@ return [
     'DELETE /buildings/{id}'        => ['BuildingController', 'destroy'],
     'POST /buildings/{id}/delete'   => ['BuildingController', 'destroy'],
     'GET  /buildings/{id}/floors'   => ['BuildingController', 'floors'],
+    'GET  /buildings/{id}/vertical' => ['BuildingController', 'vertical'],
 
     'GET  /floors'                  => ['FloorController', 'index'],
     'GET  /floors/create'           => ['FloorController', 'create'],
@@ -31,6 +32,7 @@ return [
     'DELETE /floors/{id}'           => ['FloorController', 'destroy'],
     'POST /floors/{id}/delete'      => ['FloorController', 'destroy'],
     'GET  /floors/{id}/rooms'       => ['FloorController', 'rooms'],
+    'GET  /floors/{id}/plan'        => ['FloorController', 'plan'],
     'POST /floors/{id}/import-ascii-plan' => ['FloorController', 'import_ascii_plan'],
     'GET  /floors/{id}/export-ascii-plan' => ['FloorController', 'export_ascii_plan'],
 
@@ -44,6 +46,7 @@ return [
     'DELETE /rooms/{id}'            => ['RoomController', 'destroy'],
     'POST /rooms/{id}/delete'       => ['RoomController', 'destroy'],
     'POST /rooms/{id}/availability' => ['RoomController', 'availability'],
+    'POST /rooms/{id}/position'     => ['RoomController', 'update_position'],
     'GET  /rooms/{id}/resources'    => ['RoomController', 'resources'],
     'GET  /rooms/{id}/events'       => ['RoomController', 'events'],
 
@@ -103,6 +106,7 @@ return [
     'GET  /users'                   => ['UserController', 'index'],
     'GET  /users/profile'           => ['UserController', 'profile'],
     'GET  /users/{id}'              => ['UserController', 'show'],
+    'GET  /audit-logs'              => ['AuditLogController', 'index'],
 
     'GET  /constraints'             => ['MovementConstraintController', 'index'],
     'POST /constraints'             => ['MovementConstraintController', 'store'],

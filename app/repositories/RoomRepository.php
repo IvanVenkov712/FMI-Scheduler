@@ -12,6 +12,13 @@ class RoomRepository extends Repository {
     protected $model_class = Room::class;
     protected $table = 'rooms';
 
+    public function find_by_floor($floor_id) {
+        return $this->rows(
+            "SELECT * FROM `rooms` WHERE floor_id = ? ORDER BY `position_code` ASC, `name` ASC",
+            [$floor_id]
+        );
+    }
+
     public function get_floor($id) {
         $room = $this->find_by_id($id);
 

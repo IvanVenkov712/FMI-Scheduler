@@ -2,10 +2,16 @@
 <div class="card">
 <form method="post" action="/floors" class="stack">
     <div class="fields">
-        <div class="field"><label>Building ID</label><input type="number" name="building_id" required></div>
-        <div class="field"><label>Name</label><input type="text" name="name" required></div>
-        <div class="field"><label>Floor Number</label><input type="number" name="floor_number" value="0"></div>
-        <div class="field"><label>Active</label><select name="is_active"><option value="1">Yes</option><option value="0">No</option></select></div>
+        <div class="field"><label>Building</label>
+            <select name="building_id" required>
+                <option value="">Select building</option>
+                <?php foreach ($buildings ?? [] as $building): $building = is_object($building) ? $building->to_array() : $building; ?>
+                <option value="<?= e($building['id'] ?? '') ?>"><?= e($building['name'] ?? '') ?><?= !empty($building['code']) ? ' (' . e($building['code']) . ')' : '' ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="field"><label>Name</label><input type="text" name="name" maxlength="100" required></div>
+        <div class="field"><label>Level</label><input type="number" name="level" value="0" step="1" required></div>
     </div>
     <div class="field full"><label>ASCII Plan</label><textarea name="ascii_plan" rows="10" class="ascii-input"></textarea></div>
     <button type="submit">Create Floor</button>

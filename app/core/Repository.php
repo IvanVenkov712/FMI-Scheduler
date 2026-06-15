@@ -79,7 +79,7 @@ class Repository
             }
             $statement->execute();
         } catch (Throwable $exception) {
-            throw new InsertException("Problem occured while inserting.");
+            throw new InsertException("Problem occurred while inserting.", 0, $exception);
         }
 
         return $this->database->connection()->lastInsertId();

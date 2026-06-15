@@ -3,6 +3,7 @@ namespace App\Controllers;
 
 use App\Models\Event;
 use App\Repositories\EventRepository;
+use App\Repositories\RoomRepository;
 use App\Services\EventApprovalService;
 use App\Services\EventRequestService;
 use App\Services\OnlineAccessService;
@@ -20,6 +21,16 @@ class EventController extends CrudController
     protected $view_path = 'events';
     protected $entity_name = 'event';
     protected $write_roles = ['admin', 'teacher', 'schedule_manager'];
+    protected $validation_rules = [
+        'requestor_id' => ['required', 'integer', 'min:1'],
+        'name' => ['required', 'max_length:150'],
+        'type' => ['in:lecture,exam,practice,consultation'],
+        'start_time' => ['required', 'date'],
+        'end_time' => ['required', 'date', 'after:start_time'],
+        'delivery_mode' => ['in:physical,online,hybrid'],
+        'student_count' => ['integer', 'min:0'],
+        'status' => ['in:pending,approved,rejected,cancelled'],
+    ];
 
     public function __construct(
         $request = [],
@@ -47,6 +58,20 @@ class EventController extends CrudController
 
             return $this->respond('events/details', $this->details_data($id, $event));
         });
+    }
+
+    protected function create_view_data()
+    {
+        return ['rooms' => (new RoomRepository())->find_all()];
+    }
+
+    protected function prepare_payload($data)
+    {
+        if (array_key_exists('room_id', $data) && trim((string) $data['room_id']) === '') {
+            $data['room_id'] = null;
+        }
+
+        return $data;
     }
 
     public function submit_request()

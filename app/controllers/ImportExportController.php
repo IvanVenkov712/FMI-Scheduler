@@ -1,6 +1,9 @@
 <?php
 namespace App\Controllers;
 
+use App\Repositories\BuildingRepository;
+use App\Repositories\FloorRepository;
+use App\Repositories\ScheduleRepository;
 use App\Services\ExportService;
 use App\Services\ImportService;
 
@@ -18,12 +21,17 @@ class ImportExportController extends BaseController
 
     public function import()
     {
-        return $this->guarded_response($this->import_roles(), fn () => $this->respond('import-export/import', []));
+        return $this->guarded_response($this->import_roles(), fn () => $this->respond('import-export/import', [
+            'floors' => (new FloorRepository())->find_all(),
+        ]));
     }
 
     public function export()
     {
-        return $this->guarded_response(null, fn () => $this->respond('import-export/export', []));
+        return $this->guarded_response(null, fn () => $this->respond('import-export/export', [
+            'buildings' => (new BuildingRepository())->find_all(),
+            'schedules' => (new ScheduleRepository())->find_all(),
+        ]));
     }
 
     public function import_csv()

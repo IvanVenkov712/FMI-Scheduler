@@ -20,6 +20,7 @@ class Kernel
     {
         self::configure_error_reporting();
         Config::load($root . '/config/app.ini');
+        Config::load($root . '/.env');
         ErrorHandler::register();
 
         $session = new SessionHelper();
@@ -62,6 +63,8 @@ class Kernel
         $request = Request::capture($params);
         $request['method'] = $method;
         $request['path'] = $uri;
+        $request['controller'] = $controller_name;
+        $request['action'] = $method_name;
 
         try {
             Logger::operation('Request started', Request::context([
@@ -86,7 +89,11 @@ class Kernel
                 'status' => http_response_code(),
             ]));
         } catch (Throwable $exception) {
-            ErrorHandler::render(500, 'Internal Server Error', $exception);
+            ErrorHandler::render(
+                500,
+                'Something went wrong while processing your request. Please try again.',
+                $exception
+            );
         }
     }
 
@@ -102,7 +109,7 @@ class Kernel
         }
 
         if (!Request::wants_json()) {
-            ErrorHandler::render(500, 'Internal Server Error');
+            ErrorHandler::render(500, 'Something went wrong while processing your request. Please try again.');
         }
 
         if (!headers_sent()) {

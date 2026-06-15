@@ -3,6 +3,7 @@ namespace App\Controllers;
 
 use App\Models\Event;
 use App\Repositories\EventRepository;
+use App\Repositories\RoomRepository;
 use App\Services\EventRequestService;
 use App\Services\UserEventAccessService;
 
@@ -33,7 +34,9 @@ class RequestController extends BaseController
 
     public function create()
     {
-        return $this->guarded_response($this->request_roles(), fn () => $this->respond('requests/create', []));
+        return $this->guarded_response($this->request_roles(), fn () => $this->respond('requests/create', [
+            'rooms' => (new RoomRepository())->find_all(),
+        ]));
     }
 
     public function store()

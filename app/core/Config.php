@@ -21,12 +21,12 @@ class Config
 
     public static function get(string $key, $default = null)
     {
-        if (array_key_exists($key, self::$values)) {
-            return self::$values[$key];
-        }
-
         $value = getenv($key);
 
-        return $value === false ? $default : $value;
+        if ($value !== false) {
+            return $value;
+        }
+
+        return array_key_exists($key, self::$values) ? self::$values[$key] : $default;
     }
 }
