@@ -31,9 +31,11 @@ class RoomRepository extends Repository {
 
     public function get_available_resources($id) {
         return $this->rows(
-            "SELECT * FROM `room_resources` r
-            WHERE r.room_id = ?
-            ORDER BY r.resource_id ASC",
+            "SELECT rr.*, r.name AS resource_name
+            FROM `room_resources` rr
+            LEFT JOIN `resources` r ON r.id = rr.resource_id
+            WHERE rr.room_id = ?
+            ORDER BY rr.resource_id ASC",
             [$id],
             RoomResource::class
         );

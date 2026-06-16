@@ -8,6 +8,7 @@ class ResourceRequirement extends Model
 {
     public $event_id = 0;
     public $resource_id = '';
+    public $resource_name = null;
     public $required_quantity = 1;
     public $notes = '';
 }

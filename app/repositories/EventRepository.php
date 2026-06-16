@@ -32,7 +32,15 @@ class EventRepository extends Repository {
     }
 
     public function get_resource_requirements($id) {
-        return $this->rows("SELECT * FROM `resource_requirements` WHERE event_id = ?", [$id], ResourceRequirement::class);
+        return $this->rows(
+            "SELECT rr.*, r.name AS resource_name
+            FROM `resource_requirements` rr
+            LEFT JOIN `resources` r ON r.id = rr.resource_id
+            WHERE rr.event_id = ?
+            ORDER BY r.name ASC, rr.resource_id ASC",
+            [$id],
+            ResourceRequirement::class
+        );
     }
 
     public function get_all_events($start_time, $end_time) {

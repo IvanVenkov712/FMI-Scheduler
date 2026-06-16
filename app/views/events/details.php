@@ -46,7 +46,7 @@ page_start($ev['name'] ?? 'Event Details', 'events');
         <?php if ($reqs): ?>
         <h3 class="section-subtitle">Resources</h3>
         <ul><?php foreach ($reqs as $rq): $rq = is_object($rq) ? $rq->to_array() : $rq; ?>
-            <li><?= e($rq['resource_id'] ?? $rq['name'] ?? '?') ?> &times; <?= e($rq['quantity'] ?? 1) ?></li>
+            <li><?= e($rq['resource_name'] ?? $rq['name'] ?? $rq['resource_id'] ?? '?') ?> &times; <?= e($rq['required_quantity'] ?? $rq['quantity'] ?? 1) ?></li>
         <?php endforeach; ?></ul>
         <?php endif; ?>
     </div>
