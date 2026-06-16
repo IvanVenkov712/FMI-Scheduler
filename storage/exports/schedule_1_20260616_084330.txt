@@ -1,0 +1,6 @@
+Schedule export
+Name: sch
+Period: 2026-06-08 - 2026-06-19
+Description: exmpl
+
+Events:

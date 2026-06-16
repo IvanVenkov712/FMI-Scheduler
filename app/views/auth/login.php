@@ -24,6 +24,7 @@
             <input type="password" id="password" name="password" required>
         </div>
         <button type="submit">Login</button>
+        <p class="auth-switch">Don't have an account? <a href="/register">Register</a></p>
     </form>
 </div>
 </body>

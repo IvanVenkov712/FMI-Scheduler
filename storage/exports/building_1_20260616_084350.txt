@@ -1,0 +1,11 @@
+Building export
+Name: FMI
+Code: 101
+Address: Lozenec
+Campus area: camp
+Floors: 3
+
+BUILDING 101 - FMI
+
+FLOOR 0 - F0
+asdasd
