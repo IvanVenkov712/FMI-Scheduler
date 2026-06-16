@@ -1,4 +1,4 @@
-USE `schedule_management_system`;
+USE `${DB_NAME}`;
 
 ALTER TABLE `rooms`
     ADD COLUMN `pos_x` INT NOT NULL DEFAULT 0,

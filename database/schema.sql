@@ -1,8 +1,8 @@
-CREATE DATABASE IF NOT EXISTS `schedule_management_system`
+CREATE DATABASE IF NOT EXISTS `${DB_NAME}`
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
-USE `schedule_management_system`;
+USE `${DB_NAME}`;
 
 SET NAMES utf8mb4;
 
