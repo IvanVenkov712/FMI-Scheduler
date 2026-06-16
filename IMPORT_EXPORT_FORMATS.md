@@ -245,7 +245,9 @@ CSV export файловете са удобни за преглед и част�
 
 XML export се генерира от `/import-export/export-xml`.
 
-Ако не е подадено име на файл, отговорът съдържа XML като текст. Ако е подаден `filename`, XML се записва в `storage/exports`.
+При browser заявка XML се записва в `storage/exports` и се сваля като файл. Ако е подаден `filename`, той се използва като име на файла; иначе се използва `export_{YYYYMMDD_HHMMSS}.xml`.
+
+При JSON/API заявка без `filename` отговорът съдържа XML като текст. При JSON/API заявка с `filename` отговорът съдържа `path` към генерирания файл.
 
 ### XML структура
 

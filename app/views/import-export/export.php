@@ -43,21 +43,29 @@
         </script>
     </div>
 </div>
-<div class="card">
-    <h2>Export CSV</h2>
-    <form method="get" action="/import-export/export-csv" class="stack">
-        <div class="field"><label>Type</label>
-            <select name="type" required>
-                <option value="">Select type</option>
-                <option value="buildings">Buildings</option>
-                <option value="floors">Floors</option>
-                <option value="rooms">Rooms</option>
-                <option value="resources">Resources</option>
-                <option value="events">Events</option>
-                <option value="schedules">Schedules</option>
-            </select>
-        </div>
-        <button type="submit">Export CSV</button>
-    </form>
+<div class="grid-2">
+    <div class="card">
+        <h2>Export CSV</h2>
+        <form method="get" action="/import-export/export-csv" class="stack">
+            <div class="field"><label>Type</label>
+                <select name="type" required>
+                    <option value="">Select type</option>
+                    <option value="buildings">Buildings</option>
+                    <option value="floors">Floors</option>
+                    <option value="rooms">Rooms</option>
+                    <option value="resources">Resources</option>
+                    <option value="events">Events</option>
+                    <option value="schedules">Schedules</option>
+                </select>
+            </div>
+            <button type="submit">Export CSV</button>
+        </form>
+    </div>
+    <div class="card">
+        <h2>Export XML</h2>
+        <form method="get" action="/import-export/export-xml" class="stack">
+            <button type="submit">Export XML</button>
+        </form>
+    </div>
 </div>
 <?php page_end(); ?>

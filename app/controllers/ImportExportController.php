@@ -83,9 +83,15 @@ class ImportExportController extends BaseController
     {
         return $this->guarded_response(null, function () {
             $data = $this->payload();
-            return isset($data['filename'])
-                ? $this->export_file_result($this->export_service->export_to_xml_file($data['filename']), 'XML export failed.')
-                : $this->json(['xml' => $this->export_service->export_xml()]);
+
+            if ($this->wants_json() && !isset($data['filename'])) {
+                return $this->json(['xml' => $this->export_service->export_xml()]);
+            }
+
+            return $this->export_file_result(
+                $this->export_service->export_to_xml_file($data['filename'] ?? null),
+                'XML export failed.'
+            );
         });
     }
 
