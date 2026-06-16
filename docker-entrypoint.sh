@@ -1,54 +1,30 @@
-#!/bin/sh
-set -eu
+#!/bin/bash
 
-if [ "${RUN_DB_INIT:-1}" = "1" ]; then
-    DB_HOST="${DB_HOST:-127.0.0.1}"
-    DB_PORT="${DB_PORT:-3306}"
-    DB_NAME="${DB_NAME:-schedule_management_system}"
-    DB_USER_NAME="${DB_USER_NAME:-${DB_USER:-root}}"
-    DB_USER_PASSWORD="${DB_USER_PASSWORD:-${DB_PASS:-}}"
+import_db() {
+    # Import schema if the users table doesn't exist yet
+    echo "Checking database..."
+    mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER_NAME" -p"$DB_USER_PASSWORD" "$DB_NAME" -e "DESCRIBE users;" 2>/dev/null
 
-    case "$DB_NAME" in
-        ""|*[!A-Za-z0-9_]*)
-            echo "Invalid DB_NAME '$DB_NAME'. Use only letters, digits, and underscores." >&2
-            exit 1
-            ;;
-    esac
+    if [ $? -ne 0 ]; then
+        echo "Importing schema..."
+        mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER_NAME" -p"$DB_USER_PASSWORD" "$DB_NAME"  < /database/schema.sql
+        echo "Importing seed data..."
+        mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER_NAME" -p"$DB_USER_PASSWORD" "$DB_NAME" < /database/seed.sql
+        echo "Database ready."
+    else
+        echo "Database already initialized, skipping."
+    fi
+}
 
-    echo "Waiting for MySQL at ${DB_HOST}:${DB_PORT}..."
-    attempts=0
-    until MYSQL_PWD="$DB_USER_PASSWORD" mysqladmin ping \
-        --host="$DB_HOST" \
-        --port="$DB_PORT" \
-        --user="$DB_USER_NAME" \
-        --silent; do
-        attempts=$((attempts + 1))
-        if [ "$attempts" -ge "${DB_INIT_MAX_ATTEMPTS:-60}" ]; then
-            echo "MySQL did not become ready in time." >&2
-            exit 1
-        fi
-        sleep 2
-    done
+# Run DB import in background so Apache starts immediately
+import_db &
 
-    echo "Creating/updating database schema for '$DB_NAME'..."
-    sed "s/\${DB_NAME}/$DB_NAME/g" database/schema.sql | MYSQL_PWD="$DB_USER_PASSWORD" mysql \
-        --host="$DB_HOST" \
-        --port="$DB_PORT" \
-        --user="$DB_USER_NAME"
-
-    for seed_file in \
-        database/adminInsert.sql \
-        database/teacherInsert.sql \
-        database/scheduleManagerInsert.sql; do
-        if [ -f "$seed_file" ]; then
-            echo "Applying $seed_file..."
-            MYSQL_PWD="$DB_USER_PASSWORD" mysql \
-                --host="$DB_HOST" \
-                --port="$DB_PORT" \
-                --user="$DB_USER_NAME" \
-                "$DB_NAME" < "$seed_file"
-        fi
-    done
-fi
-
-exec "$@"
+# Start Apache
+exec apache2-foregroundAPP_NAME="Table Annotator"
+APP_ENV=local
+APP_URL=http://localhost:8080
+DB_HOST=db
+DB_PORT=3306
+DB_NAME=table_annotator
+DB_USER_NAME=app
+DB_USER_PASSWORD=app_password
