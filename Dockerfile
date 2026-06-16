@@ -24,14 +24,14 @@ ENV DB_HOST=${DB_HOST} \
     DB_USER_NAME=${DB_USER_NAME} \
     DB_USER_PASSWORD=${DB_USER_PASSWORD}
 
-RUN echo "APP_NAME=\"${APP_NAME}\"" > /var/www/html/.env && \
-    echo "APP_ENV=${APP_ENV}" >> /var/www/html/.env && \
-    echo "APP_URL=${APP_URL}" >> /var/www/html/.env && \
-    echo "DB_HOST=${DB_HOST}" >> /var/www/html/.env && \
-    echo "DB_PORT=${DB_PORT}" >> /var/www/html/.env && \
-    echo "DB_DATABASE=${DB_NAME}" >> /var/www/html/.env && \
-    echo "DB_USERNAME=${DB_USER_NAME}" >> /var/www/html/.env && \
-    echo "DB_PASSWORD=${DB_USER_PASSWORD}" >> /var/www/html/.env && \
+RUN echo "APP_NAME=\"${APP_NAME}\"" > /.env && \
+    echo "APP_ENV=${APP_ENV}" >> /.env && \
+    echo "APP_URL=${APP_URL}" >> /.env && \
+    echo "DB_HOST=${DB_HOST}" >> /.env && \
+    echo "DB_PORT=${DB_PORT}" >> /.env && \
+    echo "DB_DATABASE=${DB_NAME}" >> /.env && \
+    echo "DB_USERNAME=${DB_USER_NAME}" >> /.env && \
+    echo "DB_PASSWORD=${DB_USER_PASSWORD}" >> /.env && \
 
 # Copy and permission the entrypoint script
 COPY docker/entrypoint.sh /entrypoint.sh
