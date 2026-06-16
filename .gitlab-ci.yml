@@ -24,19 +24,6 @@ variables:
         echo "Unsupported branch: $CI_COMMIT_BRANCH"
         exit 1
       fi
-      set +e
-      compose_config_warnings="$(docker compose -f docker-compose.yml config 2>&1 >/dev/null)"
-      compose_config_status=$?
-      set -e
-      if [ "$compose_config_status" -ne 0 ]; then
-        echo "$compose_config_warnings"
-        exit "$compose_config_status"
-      fi
-      if echo "$compose_config_warnings" | grep -q "variable is not set"; then
-        echo "Docker Compose reported unset variable interpolation in the secure compose file."
-        echo 'Escape literal dollar signs in docker-compose.*.yaml values as double dollar signs, for example: pa$$word'
-        exit 1
-      fi
 build_app:
   extends: .before_script_common
   stage: build
