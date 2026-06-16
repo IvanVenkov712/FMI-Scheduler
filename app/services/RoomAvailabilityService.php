@@ -69,8 +69,9 @@ class RoomAvailabilityService extends BaseService
     public function find_eligible_rooms($start_time, $end_time, $student_count, $resource_requirements = [])
     {
         $resource_requirements = ResourceRequirementsHelper::normalize_requirements($resource_requirements);
+        $has_time_filter = (string) $start_time !== '' || (string) $end_time !== '';
 
-        if (!TimeHelper::is_valid_interval($start_time, $end_time) || !is_numeric($student_count)) {
+        if (($has_time_filter && !TimeHelper::is_valid_interval($start_time, $end_time)) || !is_numeric($student_count)) {
             return [];
         }
 
@@ -82,7 +83,7 @@ class RoomAvailabilityService extends BaseService
         $eligible_rooms = [];
         foreach ($this->room_repository->find_all() as $room) {
             if (!$this->is_eligible_room($room, $student_count, $resource_requirements)
-                || count($this->find_conflicting_events($room->id, $start_time, $end_time)) > 0) {
+                || ($has_time_filter && count($this->find_conflicting_events($room->id, $start_time, $end_time)) > 0)) {
                 continue;
             }
 
