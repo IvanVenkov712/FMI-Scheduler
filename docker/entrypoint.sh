@@ -1,9 +1,58 @@
 #!/usr/bin/env bash
 set -e
 
+load_env_file() {
+    local file="${1:-/var/www/html/.env}"
+
+    if [ ! -f "$file" ]; then
+        return
+    fi
+
+    while IFS= read -r line || [ -n "$line" ]; do
+        line="${line%$'\r'}"
+
+        if [[ "$line" =~ ^[[:space:]]*$ ]] || [[ "$line" =~ ^[[:space:]]*# ]]; then
+            continue
+        fi
+
+        if [[ "$line" =~ ^[[:space:]]*(export[[:space:]]+)?([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*=(.*)$ ]]; then
+            local key="${BASH_REMATCH[2]}"
+            local value="${BASH_REMATCH[3]}"
+
+            value="${value#"${value%%[![:space:]]*}"}"
+            value="${value%"${value##*[![:space:]]}"}"
+
+            if [ "${#value}" -ge 2 ]; then
+                if [[ "${value:0:1}" == "\"" && "${value: -1}" == "\"" ]] || [[ "${value:0:1}" == "'" && "${value: -1}" == "'" ]]; then
+                    value="${value:1:${#value}-2}"
+                fi
+            fi
+
+            if [ -z "${!key:-}" ]; then
+                export "$key=$value"
+            fi
+        fi
+    done < "$file"
+}
+
+missing_db_vars() {
+    local missing=()
+
+    for name in DB_HOST DB_NAME DB_USER_NAME; do
+        if [ -z "${!name:-}" ]; then
+            missing+=("$name")
+        fi
+    done
+
+    echo "${missing[*]}"
+}
+
 import_db() {
-    if [ -z "${DB_HOST:-}" ] || [ -z "${DB_NAME:-}" ] || [ -z "${DB_USER_NAME:-}" ]; then
-        echo "Database environment is incomplete, skipping import."
+    local missing
+    missing="$(missing_db_vars)"
+
+    if [ -n "$missing" ]; then
+        echo "Database environment is incomplete (missing: ${missing}), skipping import."
         return
     fi
 
@@ -34,5 +83,6 @@ import_db() {
     echo "Database ready."
 }
 
+load_env_file
 import_db
 exec "$@"
