@@ -1,0 +1,227 @@
+След прочита на `project_requirements.txt` и `project_specification.txt`, за този проект най-смисленият набор е от `application services`, които стоят между controller-ите и `repository` слоя. Изискванията ясно сочат няколко домейна: сгради и етажи, зали и ресурси, маршрути и придвижване, графици и събития, заявки за изпити, автоматично разпределение, визуализация, import/export и потребители.
+
+Предлагам следния набор от `services`:
+
+1. `AuthService`
+Отговаря за удостоверяване, проверка на парола, намиране на потребител по identity и role-based access checks. Работи естествено с `UserRepository`.
+
+2. `UserService`
+Управлява потребители и роли: създаване, редакция, смяна на роля, профил, списък със заявки/събития на даден потребител. Това е отделно от `AuthService`, за да не се смесва authentication с user management.
+
+3. `BuildingService`
+CRUD за сгради, извличане на пълен building tree, вертикални изгледи, агрегиране на етажите към дадена сграда. Добър match е с текущия `BuildingRepository::get_floors()`.
+
+4. `FloorService`
+CRUD за етажи, floor plan metadata, капацитет на етаж, зали в етажа, комуникационни точки. Ако още нямате `FloorRepository`, тук си заслужава да има.
+
+5. `RoomService`
+CRUD за зали, тип на зала (`physical`, `online`, `hybrid`), капацитет, статус, местоположение в етаж, проверка дали зала е свободна, достъпни ресурси, update на ресурси в зала. Това директно стъпва върху наличния `RoomRepository`.
+
+6. `ResourceService`
+Централизира ресурсите като каталог и валидира изисквания към тях: проектори, камера, таблет, маркери, листа, интернет и т.н. Добре е да държи логика за:
+- дефиниране на ресурс
+- наличност по зала
+- минимални изисквания за събитие
+- конфликт при недостатъчно количество
+
+7. `ScheduleService`
+Управлява графици по ден/седмица/кампания, филтри по сграда/етаж/зала/преподавател/предмет и календарен изглед. Това е по-скоро orchestration service над `EventService`, не просто CRUD.
+
+8. `EventService`
+Управлява конкретните събития: изпит, лекция, упражнение, консултация, online/hybrid event, статус на събитието, свързване със зала, валидиране на time overlap. Тук стои основната логика за създаване/редакция/отмяна на събитие.
+
+9. `ExamRequestService` или `RequestService`
+Отделна услуга за подаване и обработка на заявки за изпити/занятия. Функционалности:
+- създаване на заявка
+- предпочитана сграда/зала
+- брой студенти
+- тип провеждане
+- изисквани ресурси
+- редакция преди потвърждение
+- конвертиране на одобрена заявка в `Event`
+
+10. `AvailabilityService`
+Много полезен отделен service, вместо тази логика да се разлива навсякъде. Той проверява:
+- свободна ли е зала в интервал
+- достатъчен ли е капацитетът
+- налични ли са ресурсите
+- спазени ли са ограниченията
+- кои зали са кандидати за дадено събитие
+
+11. `AllocationService`
+Това е един от най-важните service-и според спецификацията. Отговаря за:
+- автоматично разпределение на зали
+- избор на най-подходяща зала
+- ranking/scoring на алтернативи
+- минимизиране на конфликти
+- обяснение защо е избрана дадена зала
+- batch allocation за цяла изпитна кампания
+
+12. `RouteService`
+Управлява маршрутите и сегментите между зали/етажи/сгради. При вас това пасва на `RouteSegmentRepository`. Функционалности:
+- създаване на сегмент
+- време за придвижване
+- тип придвижване: пеша/кола/градски транспорт
+- извличане на съседни възли
+- намиране на маршрут между две точки
+
+13. `MovementConstraintService`
+Отделя правилата за трафик и ограничения:
+- еднопосочни коридори
+- ограничен капацитет на етаж/зона
+- буфери между събития
+- временни ограничения
+- пандемични/аварийни правила
+- проверка за конфликт при едновременно движение на групи
+
+14. `TrafficOptimizationService`
+По-аналитичен service над `RouteService` и `MovementConstraintService`. Използва се за:
+- препоръки за движение
+- откриване на potential bottlenecks
+- оценка дали две последователни събития водят до струпване
+- подпомагане на `AllocationService` при избор на зала
+
+15. `VisualizationService`
+Не за UI рисуването само по себе си, а за подготовка на данните за визуализация:
+- план на етаж
+- highlight на зала
+- route overlay
+- occupancy coloring
+- mapping между събитие и местоположение
+- vertical building view data
+
+16. `PlanEditorService`
+Този service е нужен за drag-and-drop/ASCII плановете. Функции:
+- местене и resize на зали
+- свързване на зали с коридори/входове/стълбища
+- валидация на топологията
+- запис на floor/building plan
+- подготовка на план за export/import
+
+17. `ImportService`
+Импорт от `CSV`, `XML`, ASCII план и текстови файлове. Добре е да има отделни parser/helper класове, а service-ът да оркестрира:
+- parsing
+- validation
+- preview
+- mapping
+- persist
+
+18. `ExportService`
+Експорт на:
+- графици
+- планове
+- зали и ресурси
+- ASCII представяне
+- текстови отчети
+- евентуално audit/export history
+
+19. `ValidationService`
+Общ service за бизнес валидации, когато не искате да ги повтаряте по controller-и:
+- time interval validation
+- capacity validation
+- role/action validation
+- entity consistency
+- allowed event-room pairing
+
+20. `AuditLogService`
+Според спецификацията и структурата има смисъл да пазите audit следи:
+- кой е създал/променил график
+- кой е одобрил заявка
+- кой е сменил ресурс/ограничение
+- import/export история
+
+Ако искаш най-практичен стартов вариант за сегашния етап, бих започнал с този минимален пакет:
+
+- `AuthService`
+- `UserService`
+- `BuildingService`
+- `FloorService`
+- `RoomService`
+- `ResourceService`
+- `EventService`
+- `ScheduleService`
+- `ExamRequestService`
+- `AvailabilityService`
+- `AllocationService`
+- `RouteService`
+- `ImportService`
+- `ExportService`
+
+Това е добър баланс между изискванията и текущите `repositories`. Всичко останало (`MovementConstraintService`, `TrafficOptimizationService`, `VisualizationService`, `AuditLogService`) може да дойде веднага след това като втори слой.
+
+Ако искаш, в следващата стъпка мога да ти предложа и конкретна структура на `app/services/` с методи за всеки service, например `RoomService::findAvailableRooms(...)`, `AllocationService::assignBestRoom(...)`, `RouteService::findShortestPath(...)` и т.н.
+
+# Втори опит
+След прегледа на проекта ми се вижда, че в момента имате само 2 реални application services с бизнес стойност: [RegisterService.php](C:/Users/ivanv/FMI/WebProject/app/services/RegisterService.php) и [LoginService.php](C:/Users/ivanv/FMI/WebProject/app/services/LoginService.php). Останалата по-интересна домейн логика е разпиляна основно в repositories, най-вече [RoomRepository.php](C:/Users/ivanv/FMI/WebProject/app/repositories/RoomRepository.php), [EventRepository.php](C:/Users/ivanv/FMI/WebProject/app/repositories/EventRepository.php) и [ScheduleRepository.php](C:/Users/ivanv/FMI/WebProject/app/repositories/ScheduleRepository.php).
+
+Ако целта е service слой с значими, атомарни операции, а не общи CRUD-и, това са най-смислените кандидати:
+
+1. `AuthenticationService`
+Примери: `registerUser(...)`, `loginWithIdentity(...)`, `validateCredentials(...)`, `ensureActiveUser(...)`.
+Това е естествено продължение на сегашните `RegisterService` и `LoginService`.
+
+2. `RoomAvailabilityService`
+Примери: `isRoomBookable(roomId, interval, studentCount, resourceRequirements)`, `findConflictingEvents(...)`, `findEligibleRooms(...)`.
+Стъпва директно върху `RoomRepository::is_room_available()` и `has_available_resources()`.
+
+3. `EventRequestService`
+Примери: `submitEventRequest(...)`, `editPendingRequest(...)`, `attachResourceRequirements(...)`, `attachOnlineAccess(...)`.
+Тук атомарната операция е “подаване/редакция на заявка за събитие”, не просто `insert event`.
+
+4. `EventApprovalService`
+Примери: `approveEventRequest(eventId, approverId)`, `rejectEventRequest(...)`, `rescheduleApprovedEvent(...)`.
+Това е силен бизнес action, защото комбинира статус, зала, конфликт на време и изисквания за ресурси.
+
+5. `RoomAllocationService`
+Примери: `assignBestRoom(eventId)`, `reassignRoom(eventId, preferredRoomId = null)`, `rankCandidateRooms(...)`.
+Това е един от най-ценните service-и за вашия домейн.
+
+6. `SchedulePublishingService`
+Примери: `publishEventToSchedule(scheduleId, eventId)`, `removeEventFromSchedule(...)`, `publishBatch(events, scheduleId)`.
+Стъпва върху `ScheduleRepository::add_event_in_schedule()`, но прави това като бизнес операция.
+
+7. `RoomResourceService`
+Примери: `syncRoomResource(roomId, resourceId, quantity)`, `ensureRoomMeetsRequirements(roomId, requirements)`, `removeUnavailableResource(...)`.
+Тук вече имате добра основа в `RoomRepository::update_resource()`.
+
+8. `OnlineAccessService`
+Примери: `provisionOnlineAccess(eventId, platform, link, key)`, `rotateAccessKey(eventId)`, `validateHybridEventSetup(eventId)`.
+Има смисъл, защото в схемата имате отделна таблица `online_access`.
+
+9. `RoutePlanningService`
+Примери: `findRoute(fromRoomId, toRoomId)`, `findAccessibleRoute(...)`, `getAdjacentRooms(roomId)`.
+Стъпва върху `RouteSegmentRepository` и е смислен домейн service, а не CRUD за сегменти.
+
+10. `MovementConstraintService`
+Примери: `isRouteSegmentUsable(segmentId, interval)`, `validateMovementPlan(route, interval)`, `detectCapacityViolation(...)`.
+Това е добър service, защото `movement_constraints` са отделен домейн слой с правила.
+
+11. `ExamSessionSetupService`
+Примери: `createExamSession(...)`, `prepareHybridExam(...)`, `validateExamCapacityAndResources(...)`.
+Това е по-конкретен use-case service, много по-полезен от общ `EventService`.
+
+12. `UserEventAccessService`
+Примери: `canUserManageEvent(userId, eventId)`, `canUserApproveEvent(...)`, `listManageableEvents(userId)`.
+Използва `UserRepository::get_role()` и връзката потребител-събития.
+
+Ако трябва да ги подредя по стойност за текущия проект, бих започнал с:
+- `AuthenticationService`
+- `RoomAvailabilityService`
+- `EventRequestService`
+- `EventApprovalService`
+- `RoomAllocationService`
+- `SchedulePublishingService`
+- `RoutePlanningService`
+
+Най-важното архитектурно наблюдение е, че при вас “атомарната операция” почти винаги е нещо като:
+- заяви събитие
+- провери дали може да се проведе
+- намери подходяща зала
+- одобри събитието
+- публикувай го в график
+- осигури онлайн достъп
+- провери маршрут/ограничения
+
+Това са добрите services. `UserService`, `RoomService`, `EventService` като чисти CRUD контейнери биха били твърде общи и слаби.
+
+Ако искаш, следващата стъпка мога да ти дам и конкретна структура за `app/services/` с имена на методи за всеки от тези service-и, съобразени с текущите repositories.

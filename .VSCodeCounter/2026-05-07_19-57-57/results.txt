@@ -1,0 +1,111 @@
+Date : 2026-05-07 19:57:57
+Directory : c:\Users\ivanv\FMI\WebProject
+Total : 74 files,  5066 codes, 7 comments, 1164 blanks, all 6237 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| PHP      |         71 |      4,694 |          7 |      1,103 |      5,804 |
+| MS SQL   |          1 |        187 |          0 |         16 |        203 |
+| Markdown |          2 |        185 |          0 |         45 |        230 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++---------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                            | files      | code       | comment    | blank      | total      |
++---------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                               |         74 |      5,066 |          7 |      1,164 |      6,237 |
+| . (Files)                                                                       |          2 |        185 |          0 |         45 |        230 |
+| app                                                                             |         71 |      4,694 |          7 |      1,103 |      5,804 |
+| app\controllers                                                                 |         17 |      1,153 |          0 |        274 |      1,427 |
+| app\core                                                                        |          5 |        304 |          0 |         71 |        375 |
+| app\exceptions                                                                  |          1 |          8 |          0 |          1 |          9 |
+| app\helpers                                                                     |          7 |        352 |          0 |         90 |        442 |
+| app\logger                                                                      |          1 |          5 |          0 |          2 |          7 |
+| app\models                                                                      |         13 |        162 |          0 |         39 |        201 |
+| app\repositories                                                                |         10 |        566 |          4 |        114 |        684 |
+| app\services                                                                    |         17 |      2,144 |          3 |        512 |      2,659 |
+| database                                                                        |          1 |        187 |          0 |         16 |        203 |
++---------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++---------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                                                        | language | code       | comment    | blank      | total      |
++---------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| c:\Users\ivanv\FMI\WebProject\README.md                                         | Markdown |          1 |          0 |          1 |          2 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\AllocationController.php          | PHP      |         69 |          0 |         18 |         87 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\AuthController.php                | PHP      |         69 |          0 |         20 |         89 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\BaseController.php                | PHP      |        100 |          0 |         25 |        125 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\BuildingController.php            | PHP      |         30 |          0 |          6 |         36 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\CrudController.php                | PHP      |        110 |          0 |         27 |        137 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\DashboardController.php           | PHP      |         28 |          0 |          5 |         33 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\EventController.php               | PHP      |        106 |          0 |         25 |        131 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\ExamSessionController.php         | PHP      |         71 |          0 |         15 |         86 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\FloorController.php               | PHP      |         56 |          0 |         12 |         68 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\ImportExportController.php        | PHP      |        102 |          0 |         31 |        133 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\MovementConstraintController.php  | PHP      |         47 |          0 |         10 |         57 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\RequestController.php             | PHP      |         82 |          0 |         20 |        102 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\ResourceController.php            | PHP      |         19 |          0 |          4 |         23 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\RoomController.php                | PHP      |         71 |          0 |         13 |         84 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\RouteController.php               | PHP      |         73 |          0 |         14 |         87 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\ScheduleController.php            | PHP      |         55 |          0 |         13 |         68 |
+| c:\Users\ivanv\FMI\WebProject\app\controllers\UserController.php                | PHP      |         65 |          0 |         16 |         81 |
+| c:\Users\ivanv\FMI\WebProject\app\core\Controller.php                           | PHP      |         66 |          0 |         18 |         84 |
+| c:\Users\ivanv\FMI\WebProject\app\core\Database.php                             | PHP      |         31 |          0 |          6 |         37 |
+| c:\Users\ivanv\FMI\WebProject\app\core\Model.php                                | PHP      |         21 |          0 |          4 |         25 |
+| c:\Users\ivanv\FMI\WebProject\app\core\Repository.php                           | PHP      |        131 |          0 |         28 |        159 |
+| c:\Users\ivanv\FMI\WebProject\app\core\View.php                                 | PHP      |         55 |          0 |         15 |         70 |
+| c:\Users\ivanv\FMI\WebProject\app\exceptions\InsertException.php                | PHP      |          8 |          0 |          1 |          9 |
+| c:\Users\ivanv\FMI\WebProject\app\helpers\EventDeliveryModeHelper.php           | PHP      |         43 |          0 |         12 |         55 |
+| c:\Users\ivanv\FMI\WebProject\app\helpers\OnlineAccessHelper.php                | PHP      |         54 |          0 |         14 |         68 |
+| c:\Users\ivanv\FMI\WebProject\app\helpers\ResourceRequirementsHelper.php        | PHP      |         42 |          0 |         10 |         52 |
+| c:\Users\ivanv\FMI\WebProject\app\helpers\SensitiveDataHelper.php               | PHP      |         42 |          0 |         12 |         54 |
+| c:\Users\ivanv\FMI\WebProject\app\helpers\SessionHelper.php                     | PHP      |        145 |          0 |         39 |        184 |
+| c:\Users\ivanv\FMI\WebProject\app\helpers\StringHelper.php                      | PHP      |          8 |          0 |          0 |          8 |
+| c:\Users\ivanv\FMI\WebProject\app\helpers\TimeHelper.php                        | PHP      |         18 |          0 |          3 |         21 |
+| c:\Users\ivanv\FMI\WebProject\app\logger\Logger.php                             | PHP      |          5 |          0 |          2 |          7 |
+| c:\Users\ivanv\FMI\WebProject\app\models\Building.php                           | PHP      |         13 |          0 |          3 |         16 |
+| c:\Users\ivanv\FMI\WebProject\app\models\Event.php                              | PHP      |         26 |          0 |          5 |         31 |
+| c:\Users\ivanv\FMI\WebProject\app\models\Floor.php                              | PHP      |         12 |          0 |          3 |         15 |
+| c:\Users\ivanv\FMI\WebProject\app\models\MovementConstraint.php                 | PHP      |         13 |          0 |          3 |         16 |
+| c:\Users\ivanv\FMI\WebProject\app\models\OnlineAccess.php                       | PHP      |         11 |          0 |          4 |         15 |
+| c:\Users\ivanv\FMI\WebProject\app\models\Resource.php                           | PHP      |          8 |          0 |          2 |         10 |
+| c:\Users\ivanv\FMI\WebProject\app\models\ResourceRequirement.php                | PHP      |         10 |          0 |          4 |         14 |
+| c:\Users\ivanv\FMI\WebProject\app\models\Room.php                               | PHP      |         14 |          0 |          4 |         18 |
+| c:\Users\ivanv\FMI\WebProject\app\models\RoomResource.php                       | PHP      |          8 |          0 |          2 |         10 |
+| c:\Users\ivanv\FMI\WebProject\app\models\RouteSegment.php                       | PHP      |         14 |          0 |          4 |         18 |
+| c:\Users\ivanv\FMI\WebProject\app\models\Schedule.php                           | PHP      |         11 |          0 |          1 |         12 |
+| c:\Users\ivanv\FMI\WebProject\app\models\ScheduleEvent.php                      | PHP      |          8 |          0 |          1 |          9 |
+| c:\Users\ivanv\FMI\WebProject\app\models\User.php                               | PHP      |         14 |          0 |          3 |         17 |
+| c:\Users\ivanv\FMI\WebProject\app\repositories\BuildingRepository.php           | PHP      |         24 |          0 |          5 |         29 |
+| c:\Users\ivanv\FMI\WebProject\app\repositories\EventRepository.php              | PHP      |        143 |          0 |         24 |        167 |
+| c:\Users\ivanv\FMI\WebProject\app\repositories\FloorRepository.php              | PHP      |         35 |          0 |          7 |         42 |
+| c:\Users\ivanv\FMI\WebProject\app\repositories\MovementConstraintRepository.php | PHP      |         29 |          0 |          5 |         34 |
+| c:\Users\ivanv\FMI\WebProject\app\repositories\OnlineAccessRepository.php       | PHP      |          9 |          0 |          2 |         11 |
+| c:\Users\ivanv\FMI\WebProject\app\repositories\ResourceRepository.php           | PHP      |          9 |          0 |          1 |         10 |
+| c:\Users\ivanv\FMI\WebProject\app\repositories\RoomRepository.php               | PHP      |        137 |          4 |         27 |        168 |
+| c:\Users\ivanv\FMI\WebProject\app\repositories\RouteSegmentRepository.php       | PHP      |         36 |          0 |         11 |         47 |
+| c:\Users\ivanv\FMI\WebProject\app\repositories\ScheduleRepository.php           | PHP      |         61 |          0 |         10 |         71 |
+| c:\Users\ivanv\FMI\WebProject\app\repositories\UserRepository.php               | PHP      |         83 |          0 |         22 |        105 |
+| c:\Users\ivanv\FMI\WebProject\app\services\AuthorizationService.php             | PHP      |         81 |          0 |         25 |        106 |
+| c:\Users\ivanv\FMI\WebProject\app\services\EventApprovalService.php             | PHP      |         79 |          0 |         22 |        101 |
+| c:\Users\ivanv\FMI\WebProject\app\services\EventRequestService.php              | PHP      |        166 |          0 |         41 |        207 |
+| c:\Users\ivanv\FMI\WebProject\app\services\ExamSessionSetupService.php          | PHP      |        246 |          0 |         49 |        295 |
+| c:\Users\ivanv\FMI\WebProject\app\services\ExportService.php                    | PHP      |        251 |          0 |         48 |        299 |
+| c:\Users\ivanv\FMI\WebProject\app\services\ImportService.php                    | PHP      |        337 |          0 |         65 |        402 |
+| c:\Users\ivanv\FMI\WebProject\app\services\LoginService.php                     | PHP      |         33 |          0 |          8 |         41 |
+| c:\Users\ivanv\FMI\WebProject\app\services\MovementConstraintService.php        | PHP      |        137 |          0 |         34 |        171 |
+| c:\Users\ivanv\FMI\WebProject\app\services\OnlineAccessService.php              | PHP      |         84 |          0 |         23 |        107 |
+| c:\Users\ivanv\FMI\WebProject\app\services\RegisterService.php                  | PHP      |         51 |          3 |         15 |         69 |
+| c:\Users\ivanv\FMI\WebProject\app\services\RoomAllocationService.php            | PHP      |        124 |          0 |         33 |        157 |
+| c:\Users\ivanv\FMI\WebProject\app\services\RoomAvailabilityService.php          | PHP      |         97 |          0 |         30 |        127 |
+| c:\Users\ivanv\FMI\WebProject\app\services\RoomResourceService.php              | PHP      |         72 |          0 |         19 |         91 |
+| c:\Users\ivanv\FMI\WebProject\app\services\RoutePlanningService.php             | PHP      |        167 |          0 |         40 |        207 |
+| c:\Users\ivanv\FMI\WebProject\app\services\RouteSegmentService.php              | PHP      |         34 |          0 |          9 |         43 |
+| c:\Users\ivanv\FMI\WebProject\app\services\SchedulePublishingService.php        | PHP      |         93 |          0 |         26 |        119 |
+| c:\Users\ivanv\FMI\WebProject\app\services\UserEventAccessService.php           | PHP      |         92 |          0 |         25 |        117 |
+| c:\Users\ivanv\FMI\WebProject\database\schema.sql                               | MS SQL   |        187 |          0 |         16 |        203 |
+| c:\Users\ivanv\FMI\WebProject\services.md                                       | Markdown |        184 |          0 |         44 |        228 |
+| Total                                                                           |          |      5,066 |          7 |      1,164 |      6,237 |
++---------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
