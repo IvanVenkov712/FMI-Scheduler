@@ -1,6 +1,13 @@
 <?php
 namespace App\Services;
 
+use App\Models\Building;
+use App\Models\Event;
+use App\Models\Floor;
+use App\Models\Resource;
+use App\Models\Room;
+use App\Models\Schedule;
+
 class ExportService extends DataTransferService
 {
     public function export_floor_ascii_plan($floor_id)
@@ -141,6 +148,23 @@ class ExportService extends DataTransferService
         return $this->export_xml($filename ?? 'export_' . date('Ymd_His') . '.xml');
     }
 
+    public function export_csv($type, $filename = null)
+    {
+        $export_type = $this->csv_export_type($type);
+        if ($export_type === null) {
+            return null;
+        }
+
+        $models = $export_type['repository']->find_all();
+        $fields = array_keys(get_class_vars($export_type['model']));
+        $content = $this->models_to_csv($models, $fields);
+
+        return $this->write_export_file(
+            $filename ?? $this->dated_filename($export_type['name'], 'all', 'csv'),
+            $content
+        );
+    }
+
     public function export_text_file($content, $filename = null)
     {
         return $this->write_export_file(
@@ -204,6 +228,51 @@ class ExportService extends DataTransferService
     private function models_to_arrays($models)
     {
         return array_map(fn ($model) => $model->to_array(), $models);
+    }
+
+    private function models_to_csv($models, $fields)
+    {
+        $handle = fopen('php://temp', 'r+');
+        fputcsv($handle, $fields);
+
+        foreach ($models as $model) {
+            $data = $model->to_array();
+            fputcsv($handle, array_map(fn ($field) => $this->csv_value($data[$field] ?? null), $fields));
+        }
+
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        return $csv === false ? '' : $csv;
+    }
+
+    private function csv_value($value)
+    {
+        if (is_bool($value)) {
+            return $value ? '1' : '0';
+        }
+
+        return $value ?? '';
+    }
+
+    private function csv_export_type($type)
+    {
+        $type = rtrim(strtolower(trim((string) $type)), 's');
+
+        return $this->csv_export_types()[$type] ?? null;
+    }
+
+    private function csv_export_types()
+    {
+        return [
+            'building' => ['name' => 'buildings', 'repository' => $this->building_repository, 'model' => Building::class],
+            'floor' => ['name' => 'floors', 'repository' => $this->floor_repository, 'model' => Floor::class],
+            'room' => ['name' => 'rooms', 'repository' => $this->room_repository, 'model' => Room::class],
+            'resource' => ['name' => 'resources', 'repository' => $this->resource_repository, 'model' => Resource::class],
+            'event' => ['name' => 'events', 'repository' => $this->event_repository, 'model' => Event::class],
+            'schedule' => ['name' => 'schedules', 'repository' => $this->schedule_repository, 'model' => Schedule::class],
+        ];
     }
 
     private function array_to_xml($root_name, $data)

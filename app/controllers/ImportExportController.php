@@ -89,6 +89,18 @@ class ImportExportController extends BaseController
         });
     }
 
+    public function export_csv()
+    {
+        return $this->guarded_response(null, function () {
+            $data = $this->payload();
+            return $this->found_result(
+                $this->export_service->export_csv($data['type'] ?? '', $data['filename'] ?? null),
+                'path',
+                'Unsupported CSV export type.'
+            );
+        });
+    }
+
     private function import_response($callback)
     {
         return $this->guarded_response($this->import_roles(), fn () => $this->json_result($callback($this->payload())));

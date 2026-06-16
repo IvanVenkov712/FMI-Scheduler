@@ -101,6 +101,7 @@ return [
     'GET  /import-export/export-floor/{id}' => ['ImportExportController', 'export_floor'],
     'GET  /import-export/export-building/{id}' => ['ImportExportController', 'export_building'],
     'GET  /import-export/export-schedule/{id}' => ['ImportExportController', 'export_schedule'],
+    'GET  /import-export/export-csv' => ['ImportExportController', 'export_csv'],
     'GET  /import-export/export-xml' => ['ImportExportController', 'export_xml'],
 
     'GET  /users'                   => ['UserController', 'index'],
