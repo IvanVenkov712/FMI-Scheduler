@@ -18,13 +18,3 @@ import_db() {
 
 # Run DB import in background so Apache starts immediately
 import_db &
-
-# Start Apache
-exec apache2-foregroundAPP_NAME="Table Annotator"
-APP_ENV=local
-APP_URL=http://localhost:8080
-DB_HOST=db
-DB_PORT=3306
-DB_NAME=table_annotator
-DB_USER_NAME=app
-DB_USER_PASSWORD=app_password
