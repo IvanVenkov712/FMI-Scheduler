@@ -33,6 +33,11 @@ class Repository
         );
     }
 
+    public function find_filtered($filters = [])
+    {
+        return $this->find_all();
+    }
+
     public function exists($id) {
         $statement = $this->database->connection()->prepare(
             "SELECT 1 FROM `{$this->table}` WHERE id = ? LIMIT 1"
@@ -180,5 +185,45 @@ class Repository
         $statement->execute($params);
 
         return $statement;
+    }
+
+    protected function add_like_condition(&$conditions, &$params, $column, $value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return;
+        }
+
+        $conditions[] = "{$column} LIKE ?";
+        $params[] = '%' . $value . '%';
+    }
+
+    protected function add_any_like_condition(&$conditions, &$params, $columns, $value)
+    {
+        $value = trim((string) $value);
+        if ($value === '' || empty($columns)) {
+            return;
+        }
+
+        $conditions[] = '(' . implode(' OR ', array_map(fn ($column) => "{$column} LIKE ?", $columns)) . ')';
+        foreach ($columns as $_) {
+            $params[] = '%' . $value . '%';
+        }
+    }
+
+    protected function add_exact_condition(&$conditions, &$params, $column, $value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return;
+        }
+
+        $conditions[] = "{$column} = ?";
+        $params[] = $value;
+    }
+
+    protected function where_clause($conditions)
+    {
+        return empty($conditions) ? '' : ' WHERE ' . implode(' AND ', $conditions);
     }
 }

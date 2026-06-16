@@ -8,6 +8,36 @@ class UserRepository extends Repository {
     protected $model_class = User::class;
     protected $table = 'users';
 
+    public function find_filtered($filters = []) {
+        $conditions = [];
+        $params = [];
+
+        $this->add_any_like_condition($conditions, $params, [
+            '`username`',
+            '`email`',
+            '`first_name`',
+            '`last_name`',
+            '`role`',
+        ], $filters['q'] ?? '');
+
+        $role = trim((string) ($filters['role'] ?? ''));
+        if (in_array($role, ['admin', 'schedule_manager', 'teacher', 'student'], true)) {
+            $conditions[] = '`role` = ?';
+            $params[] = $role;
+        }
+
+        $status = trim((string) ($filters['status'] ?? ''));
+        if (in_array($status, ['active', 'inactive'], true)) {
+            $conditions[] = '`is_active` = ?';
+            $params[] = $status === 'active' ? 1 : 0;
+        }
+
+        return $this->rows(
+            "SELECT * FROM `{$this->table}`" . $this->where_clause($conditions) . " ORDER BY `username` ASC",
+            $params
+        );
+    }
+
     public function find_by_username($username) {
         return $this->row("SELECT * FROM `{$this->table}` WHERE username = ? LIMIT 1", [$username]);
     }

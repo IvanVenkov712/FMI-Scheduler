@@ -2,7 +2,9 @@
 namespace App\Controllers;
 
 use App\Models\Event;
+use App\Repositories\BuildingRepository;
 use App\Repositories\EventRepository;
+use App\Repositories\FloorRepository;
 use App\Repositories\RoomRepository;
 use App\Services\EventApprovalService;
 use App\Services\EventRequestService;
@@ -21,6 +23,18 @@ class EventController extends CrudController
     protected $view_path = 'events';
     protected $entity_name = 'event';
     protected $write_roles = ['admin', 'teacher', 'schedule_manager'];
+    protected $index_filter_keys = [
+        'q',
+        'name',
+        'building_id',
+        'floor_id',
+        'room_id',
+        'type',
+        'delivery_mode',
+        'status',
+        'date_from',
+        'date_to',
+    ];
     protected $validation_rules = [
         'requestor_id' => ['required', 'integer', 'min:1'],
         'name' => ['required', 'max_length:150'],
@@ -63,6 +77,15 @@ class EventController extends CrudController
     protected function create_view_data()
     {
         return ['rooms' => (new RoomRepository())->find_all()];
+    }
+
+    protected function index_view_data()
+    {
+        return [
+            'buildings' => (new BuildingRepository())->find_all(),
+            'floors' => (new FloorRepository())->find_all(),
+            'rooms' => (new RoomRepository())->find_all(),
+        ];
     }
 
     protected function prepare_payload($data)

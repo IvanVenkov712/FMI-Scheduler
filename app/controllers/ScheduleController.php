@@ -13,6 +13,7 @@ class ScheduleController extends CrudController
     protected $model_class = Schedule::class;
     protected $view_path = 'schedules';
     protected $entity_name = 'schedule';
+    protected $index_filter_keys = ['q', 'name', 'date_from', 'date_to'];
     protected $validation_rules = [
         'name' => ['required', 'max_length:150'],
         'start_date' => ['required', 'date'],

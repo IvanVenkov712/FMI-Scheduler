@@ -16,6 +16,7 @@ class FloorController extends CrudController
     protected $model_class = Floor::class;
     protected $view_path = 'floors';
     protected $entity_name = 'floor';
+    protected $index_filter_keys = ['q', 'name', 'building_id', 'level'];
     protected $validation_rules = [
         'building_id' => ['required', 'integer', 'min:1'],
         'level' => ['required', 'integer'],
@@ -63,6 +64,11 @@ class FloorController extends CrudController
     }
 
     protected function create_view_data()
+    {
+        return ['buildings' => (new BuildingRepository())->find_all()];
+    }
+
+    protected function index_view_data()
     {
         return ['buildings' => (new BuildingRepository())->find_all()];
     }

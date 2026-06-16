@@ -10,6 +10,19 @@
     </form>
 </div>
 <div class="card">
+    <h2>Filters</h2>
+    <form method="get" action="/resources" class="stack">
+        <div class="fields">
+            <div class="field"><label>Search</label><input type="text" name="q" value="<?= e($filters['q'] ?? '') ?>" placeholder="Name or description"></div>
+            <div class="field"><label>Name</label><input type="text" name="name" value="<?= e($filters['name'] ?? '') ?>"></div>
+        </div>
+        <div class="actions">
+            <button type="submit">Filter</button>
+            <a href="/resources" class="btn btn-muted">Clear</a>
+        </div>
+    </form>
+</div>
+<div class="card">
     <h2>All Resources</h2>
     <?php if (empty($resources)): ?><div class="empty">No resources defined.</div>
     <?php else: ?>

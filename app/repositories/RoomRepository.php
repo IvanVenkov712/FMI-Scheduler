@@ -12,6 +12,69 @@ class RoomRepository extends Repository {
     protected $model_class = Room::class;
     protected $table = 'rooms';
 
+    public function find_filtered($filters = []) {
+        $conditions = [];
+        $params = [];
+
+        $this->add_any_like_condition($conditions, $params, [
+            'r.`name`',
+            'r.`position_code`',
+            'r.`room_type`',
+            'r.`room_size`',
+            'f.`name`',
+            'CAST(f.`level` AS CHAR)',
+            'b.`name`',
+            'b.`code`',
+        ], $filters['q'] ?? '');
+        $this->add_like_condition($conditions, $params, 'r.`name`', $filters['name'] ?? '');
+        $this->add_like_condition($conditions, $params, 'r.`position_code`', $filters['position_code'] ?? '');
+
+        $building_id = trim((string) ($filters['building_id'] ?? ''));
+        if ($building_id !== '' && ctype_digit($building_id)) {
+            $conditions[] = 'b.`id` = ?';
+            $params[] = (int) $building_id;
+        }
+
+        $floor_id = trim((string) ($filters['floor_id'] ?? ''));
+        if ($floor_id !== '' && ctype_digit($floor_id)) {
+            $conditions[] = 'r.`floor_id` = ?';
+            $params[] = (int) $floor_id;
+        }
+
+        $room_type = trim((string) ($filters['room_type'] ?? ''));
+        if (in_array($room_type, ['physical', 'online', 'hybrid'], true)) {
+            $conditions[] = 'r.`room_type` = ?';
+            $params[] = $room_type;
+        }
+
+        $room_size = trim((string) ($filters['room_size'] ?? ''));
+        if (in_array($room_size, ['small', 'medium', 'large'], true)) {
+            $conditions[] = 'r.`room_size` = ?';
+            $params[] = $room_size;
+        }
+
+        $status = trim((string) ($filters['status'] ?? ''));
+        if (in_array($status, ['active', 'inactive'], true)) {
+            $conditions[] = 'r.`is_active` = ?';
+            $params[] = $status === 'active' ? 1 : 0;
+        }
+
+        $capacity_min = trim((string) ($filters['capacity_min'] ?? ''));
+        if ($capacity_min !== '' && ctype_digit($capacity_min)) {
+            $conditions[] = 'r.`capacity` >= ?';
+            $params[] = (int) $capacity_min;
+        }
+
+        return $this->rows(
+            "SELECT r.* FROM `{$this->table}` r
+            LEFT JOIN `floors` f ON f.id = r.floor_id
+            LEFT JOIN `buildings` b ON b.id = f.building_id"
+            . $this->where_clause($conditions)
+            . " ORDER BY b.`name` ASC, f.`level` ASC, r.`position_code` ASC, r.`name` ASC",
+            $params
+        );
+    }
+
     public function find_by_floor($floor_id) {
         return $this->rows(
             "SELECT * FROM `rooms` WHERE floor_id = ? ORDER BY `position_code` ASC, `name` ASC",

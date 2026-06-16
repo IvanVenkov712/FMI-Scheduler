@@ -3,6 +3,10 @@ use App\Core\View;
 
 function e($v) { return htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8'); }
 
+function selected_attr($value, $current) {
+    return (string) $value === (string) $current ? ' selected' : '';
+}
+
 function page_start($title, $active = 'dashboard') {
     $user = $GLOBALS['current_user'] ?? null;
     $flash = $GLOBALS['flash'] ?? [];

@@ -11,6 +11,7 @@ class UserController extends CrudController
     protected $view_path = 'users';
     protected $entity_name = 'user';
     protected $write_roles = ['admin'];
+    protected $index_filter_keys = ['q', 'role', 'status'];
     private const MANAGEABLE_ROLES = ['admin', 'schedule_manager', 'teacher', 'student'];
 
     public function profile()

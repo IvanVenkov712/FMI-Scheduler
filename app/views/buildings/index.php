@@ -5,6 +5,28 @@
 </div>
 
 <div class="card">
+    <h2>Filters</h2>
+    <form method="get" action="/buildings" class="stack">
+        <div class="fields">
+            <div class="field"><label>Search</label><input type="text" name="q" value="<?= e($filters['q'] ?? '') ?>" placeholder="Name, code, address"></div>
+            <div class="field"><label>Name</label><input type="text" name="name" value="<?= e($filters['name'] ?? '') ?>"></div>
+            <div class="field"><label>Code</label><input type="text" name="code" value="<?= e($filters['code'] ?? '') ?>"></div>
+            <div class="field"><label>Status</label>
+                <select name="status">
+                    <option value="">Any status</option>
+                    <option value="active"<?= selected_attr('active', $filters['status'] ?? '') ?>>Active</option>
+                    <option value="inactive"<?= selected_attr('inactive', $filters['status'] ?? '') ?>>Inactive</option>
+                </select>
+            </div>
+        </div>
+        <div class="actions">
+            <button type="submit">Filter</button>
+            <a href="/buildings" class="btn btn-muted">Clear</a>
+        </div>
+    </form>
+</div>
+
+<div class="card">
     <?php if (empty($buildings)): ?>
         <div class="empty">No buildings found.</div>
     <?php else: ?>

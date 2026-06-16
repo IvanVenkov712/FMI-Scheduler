@@ -2,6 +2,7 @@
 namespace App\Controllers;
 
 use App\Models\Room;
+use App\Repositories\BuildingRepository;
 use App\Repositories\FloorRepository;
 use App\Repositories\RoomRepository;
 use App\Services\RoomAvailabilityService;
@@ -16,6 +17,17 @@ class RoomController extends CrudController
     protected $model_class = Room::class;
     protected $view_path = 'rooms';
     protected $entity_name = 'room';
+    protected $index_filter_keys = [
+        'q',
+        'name',
+        'position_code',
+        'building_id',
+        'floor_id',
+        'room_type',
+        'room_size',
+        'capacity_min',
+        'status',
+    ];
     protected $validation_rules = [
         'floor_id' => ['required', 'integer', 'min:1'],
         'name' => ['required', 'max_length:100'],
@@ -65,6 +77,14 @@ class RoomController extends CrudController
     protected function create_view_data()
     {
         return ['floors' => (new FloorRepository())->find_all()];
+    }
+
+    protected function index_view_data()
+    {
+        return [
+            'buildings' => (new BuildingRepository())->find_all(),
+            'floors' => (new FloorRepository())->find_all(),
+        ];
     }
 
     public function resources($id = null)

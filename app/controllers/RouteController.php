@@ -2,6 +2,8 @@
 namespace App\Controllers;
 
 use App\Models\RouteSegment;
+use App\Repositories\BuildingRepository;
+use App\Repositories\FloorRepository;
 use App\Repositories\RoomRepository;
 use App\Repositories\RouteSegmentRepository;
 use App\Services\RoutePlanningService;
@@ -14,6 +16,16 @@ class RouteController extends CrudController
     protected $model_class = RouteSegment::class;
     protected $view_path = 'routes';
     protected $entity_name = 'route_segment';
+    protected $index_filter_keys = [
+        'q',
+        'building_id',
+        'floor_id',
+        'segment_room_id',
+        'segment_from_room_id',
+        'segment_to_room_id',
+        'access',
+        'status',
+    ];
     protected $validation_rules = [
         'from_room_id' => ['required', 'integer', 'min:1'],
         'to_room_id' => ['required', 'integer', 'min:1', 'different:from_room_id'],
@@ -44,7 +56,11 @@ class RouteController extends CrudController
 
     protected function index_view_data()
     {
-        return ['rooms' => (new RoomRepository())->find_all()];
+        return [
+            'buildings' => (new BuildingRepository())->find_all(),
+            'floors' => (new FloorRepository())->find_all(),
+            'rooms' => (new RoomRepository())->find_all(),
+        ];
     }
 
     public function find()
@@ -95,6 +111,7 @@ class RouteController extends CrudController
             if (!$this->wants_json()) {
                 return $this->respond($this->view_path . '/index', [
                     'route_segments' => $this->repository->find_all(),
+                    'filters' => $this->index_filters(),
                     'route_result' => $route,
                     'route_distance' => $route === null
                         ? null

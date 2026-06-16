@@ -17,6 +17,7 @@ abstract class CrudController extends BaseController
     protected $write_roles = ['admin', 'schedule_manager'];
     protected $validation_rules = [];
     protected $field_labels = [];
+    protected $index_filter_keys = [];
 
     public function __construct($request = [], $view = null, $session = null, $repository = null)
     {
@@ -31,8 +32,11 @@ abstract class CrudController extends BaseController
             return $guard;
         }
 
+        $filters = $this->index_filters();
+
         return $this->respond($this->view_path . '/index', [
-            $this->collection_key() => $this->repository->find_all(),
+            $this->collection_key() => $this->index_collection($filters),
+            'filters' => $filters,
         ] + $this->index_view_data());
     }
 
@@ -165,6 +169,23 @@ abstract class CrudController extends BaseController
     protected function index_view_data()
     {
         return [];
+    }
+
+    protected function index_collection($filters)
+    {
+        return $this->repository->find_filtered($filters);
+    }
+
+    protected function index_filters()
+    {
+        $filters = [];
+
+        foreach ($this->index_filter_keys as $key) {
+            $value = $this->input($key, '');
+            $filters[$key] = is_array($value) ? '' : trim((string) $value);
+        }
+
+        return $filters;
     }
 
     protected function edit_view_data($model)

@@ -10,6 +10,7 @@ class BuildingController extends CrudController
     protected $model_class = Building::class;
     protected $view_path = 'buildings';
     protected $entity_name = 'building';
+    protected $index_filter_keys = ['q', 'name', 'code', 'status'];
     protected $validation_rules = [
         'name' => ['required', 'max_length:150'],
         'code' => ['required', 'max_length:50'],

@@ -11,6 +11,90 @@ class EventRepository extends Repository {
     protected $model_class = Event::class;
     protected $table = 'events';
 
+    public function find_filtered($filters = []) {
+        $conditions = [];
+        $params = [];
+
+        $this->add_any_like_condition($conditions, $params, [
+            'e.`name`',
+            'e.`subject_name`',
+            'e.`type`',
+            'e.`delivery_mode`',
+            'e.`status`',
+            'r.`name`',
+            'r.`position_code`',
+            'f.`name`',
+            'CAST(f.`level` AS CHAR)',
+            'b.`name`',
+            'b.`code`',
+        ], $filters['q'] ?? '');
+
+        $name = trim((string) ($filters['name'] ?? ''));
+        if ($name !== '') {
+            $conditions[] = '(e.`name` LIKE ? OR e.`subject_name` LIKE ?)';
+            $params[] = '%' . $name . '%';
+            $params[] = '%' . $name . '%';
+        }
+
+        $building_id = trim((string) ($filters['building_id'] ?? ''));
+        if ($building_id !== '' && ctype_digit($building_id)) {
+            $conditions[] = 'b.`id` = ?';
+            $params[] = (int) $building_id;
+        }
+
+        $floor_id = trim((string) ($filters['floor_id'] ?? ''));
+        if ($floor_id !== '' && ctype_digit($floor_id)) {
+            $conditions[] = 'f.`id` = ?';
+            $params[] = (int) $floor_id;
+        }
+
+        $room_id = trim((string) ($filters['room_id'] ?? ''));
+        if ($room_id !== '' && ctype_digit($room_id)) {
+            $conditions[] = 'e.`room_id` = ?';
+            $params[] = (int) $room_id;
+        }
+
+        $type = trim((string) ($filters['type'] ?? ''));
+        if (in_array($type, ['lecture', 'exam', 'practice', 'consultation'], true)) {
+            $conditions[] = 'e.`type` = ?';
+            $params[] = $type;
+        }
+
+        $delivery_mode = trim((string) ($filters['delivery_mode'] ?? ''));
+        if (in_array($delivery_mode, ['physical', 'online', 'hybrid'], true)) {
+            $conditions[] = 'e.`delivery_mode` = ?';
+            $params[] = $delivery_mode;
+        }
+
+        $status = trim((string) ($filters['status'] ?? ''));
+        if (in_array($status, ['pending', 'approved', 'rejected', 'cancelled'], true)) {
+            $conditions[] = 'e.`status` = ?';
+            $params[] = $status;
+        }
+
+        $date_from = trim((string) ($filters['date_from'] ?? ''));
+        if ($this->is_date_filter($date_from)) {
+            $conditions[] = 'e.`start_time` >= ?';
+            $params[] = $date_from . ' 00:00:00';
+        }
+
+        $date_to = trim((string) ($filters['date_to'] ?? ''));
+        if ($this->is_date_filter($date_to)) {
+            $conditions[] = 'e.`start_time` <= ?';
+            $params[] = $date_to . ' 23:59:59';
+        }
+
+        return $this->rows(
+            "SELECT e.* FROM `{$this->table}` e
+            LEFT JOIN `rooms` r ON r.id = e.room_id
+            LEFT JOIN `floors` f ON f.id = r.floor_id
+            LEFT JOIN `buildings` b ON b.id = f.building_id"
+            . $this->where_clause($conditions)
+            . " ORDER BY e.`start_time` DESC, e.`id` DESC",
+            $params
+        );
+    }
+
     public function get_requestor($id) {
         return $this->row(
             "SELECT u.* FROM `users` u
@@ -136,5 +220,12 @@ class EventRepository extends Repository {
         $this->update($event_id, $event);
 
         return $online_access_id;
+    }
+
+    private function is_date_filter($value)
+    {
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+
+        return $date !== false && $date->format('Y-m-d') === $value;
     }
 }

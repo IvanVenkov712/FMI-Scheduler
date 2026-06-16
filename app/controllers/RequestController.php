@@ -2,7 +2,9 @@
 namespace App\Controllers;
 
 use App\Models\Event;
+use App\Repositories\BuildingRepository;
 use App\Repositories\EventRepository;
+use App\Repositories\FloorRepository;
 use App\Repositories\RoomRepository;
 use App\Services\EventRequestService;
 use App\Services\UserEventAccessService;
@@ -25,9 +27,26 @@ class RequestController extends BaseController
     public function index()
     {
         return $this->guarded_response(null, function () {
+            $filters = $this->request_filters();
+            $events = $this->access->list_manageable_events($this->request_user_id());
+            $approvable_events = $this->access->list_approvable_events($this->request_user_id());
+
+            if ($this->has_active_filters($filters)) {
+                $matching_ids = array_flip(array_map(
+                    fn ($event) => (int) $event->id,
+                    $this->event_repository->find_filtered($filters)
+                ));
+                $events = $this->only_matching_events($events, $matching_ids);
+                $approvable_events = $this->only_matching_events($approvable_events, $matching_ids);
+            }
+
             return $this->respond('requests/index', [
-                'events' => $this->access->list_manageable_events($this->request_user_id()),
-                'approvable_events' => $this->access->list_approvable_events($this->request_user_id()),
+                'events' => $events,
+                'approvable_events' => $approvable_events,
+                'filters' => $filters,
+                'buildings' => (new BuildingRepository())->find_all(),
+                'floors' => (new FloorRepository())->find_all(),
+                'rooms' => (new RoomRepository())->find_all(),
             ]);
         });
     }
@@ -101,5 +120,53 @@ class RequestController extends BaseController
     private function request_roles()
     {
         return ['admin', 'teacher', 'schedule_manager'];
+    }
+
+    private function request_filters()
+    {
+        $filters = [];
+        foreach ([
+            'q',
+            'name',
+            'building_id',
+            'floor_id',
+            'room_id',
+            'delivery_mode',
+            'status',
+            'date_from',
+            'date_to',
+        ] as $key) {
+            $value = $this->input($key, '');
+            $filters[$key] = is_array($value) ? '' : trim((string) $value);
+        }
+
+        $filters['date_from'] = $this->date_filter($filters['date_from']);
+        $filters['date_to'] = $this->date_filter($filters['date_to']);
+
+        return $filters;
+    }
+
+    private function has_active_filters($filters)
+    {
+        foreach ($filters as $value) {
+            if (trim((string) $value) !== '') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function only_matching_events($events, $matching_ids)
+    {
+        return array_values(array_filter($events, fn ($event) => isset($matching_ids[(int) $event->id])));
+    }
+
+    private function date_filter($value)
+    {
+        $value = trim((string) $value);
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+
+        return $date !== false && $date->format('Y-m-d') === $value ? $value : '';
     }
 }
