@@ -12,6 +12,8 @@
   - `{type}_all_{YYYYMMDD_HHMMSS}.csv`
   - `export_{YYYYMMDD_HHMMSS}.xml`
 - При запис новите редове се нормализират до `\n`.
+- При browser заявка export endpoint-ите връщат файла за сваляне с `Content-Disposition: attachment`.
+- При JSON/API заявка файловите export endpoint-и връщат JSON с `path` към генерирания файл.
 - Import на CSV и XML винаги създава нови записи. Не се прави update по `id`.
 - Полето `id` се игнорира при CSV/XML import, дори ако присъства.
 - Непознати полета в CSV/XML се игнорират.

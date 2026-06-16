@@ -84,7 +84,7 @@ class ImportExportController extends BaseController
         return $this->guarded_response(null, function () {
             $data = $this->payload();
             return isset($data['filename'])
-                ? $this->success(['path' => $this->export_service->export_to_xml_file($data['filename'])])
+                ? $this->export_file_result($this->export_service->export_to_xml_file($data['filename']), 'XML export failed.')
                 : $this->json(['xml' => $this->export_service->export_xml()]);
         });
     }
@@ -93,11 +93,9 @@ class ImportExportController extends BaseController
     {
         return $this->guarded_response(null, function () {
             $data = $this->payload();
-            return $this->found_result(
-                $this->export_service->export_csv($data['type'] ?? '', $data['filename'] ?? null),
-                'path',
-                'Unsupported CSV export type.'
-            );
+            $path = $this->export_service->export_csv($data['type'] ?? '', $data['filename'] ?? null);
+
+            return $this->export_file_result($path, 'Unsupported CSV export type.');
         });
     }
 
@@ -108,7 +106,45 @@ class ImportExportController extends BaseController
 
     private function export_file_response($callback, $not_found_message)
     {
-        return $this->guarded_response(null, fn () => $this->found_result($callback(), 'path', $not_found_message));
+        return $this->guarded_response(null, fn () => $this->export_file_result($callback(), $not_found_message));
+    }
+
+    private function export_file_result($path, $not_found_message)
+    {
+        if ($path === null || !is_readable($path)) {
+            return $this->not_found($not_found_message);
+        }
+
+        if ($this->wants_json()) {
+            return $this->success(['path' => $path]);
+        }
+
+        return $this->download_file($path);
+    }
+
+    private function download_file($path)
+    {
+        $filename = basename($path);
+        $content_type = $this->download_content_type($path);
+
+        if (!headers_sent()) {
+            header('Content-Type: ' . $content_type);
+            header('Content-Disposition: attachment; filename="' . addslashes($filename) . '"');
+            header('Content-Length: ' . filesize($path));
+            header('Cache-Control: no-store, no-cache, must-revalidate');
+            header('Pragma: no-cache');
+        }
+
+        return file_get_contents($path);
+    }
+
+    private function download_content_type($path)
+    {
+        return match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {
+            'csv' => 'text/csv; charset=utf-8',
+            'xml' => 'application/xml; charset=utf-8',
+            default => 'text/plain; charset=utf-8',
+        };
     }
 
     private function import_roles()

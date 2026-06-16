@@ -1,0 +1,7 @@
+Schedule export
+Name: jh
+Period: 2026-06-02 - 2026-06-25
+Description: j
+
+Events:
+- djkcdb (k skj jh szszsaz akpm {OaNB{widusb'[ G})), 2026-06-08 23:04:00 - 2026-06-09 23:04:00, mode: physical, room: 325, students: 30, status: approved
