@@ -28,12 +28,7 @@ import_db() {
         sleep 2
     done
 
-    if mysql -h "$DB_HOST" -P "$port" -u "$DB_USER_NAME" "${password_args[@]}" "$DB_NAME" -e "DESCRIBE users;" >/dev/null 2>&1; then
-        echo "Database already initialized, skipping import."
-        return
-    fi
-
-    echo "Importing database schema and seed data..."
+    echo "Ensuring database schema and seed data..."
     mysql -h "$DB_HOST" -P "$port" -u "$DB_USER_NAME" "${password_args[@]}" "$DB_NAME" < /var/www/html/database/schema.sql
     mysql -h "$DB_HOST" -P "$port" -u "$DB_USER_NAME" "${password_args[@]}" "$DB_NAME" < /var/www/html/database/seed.sql
     echo "Database ready."
