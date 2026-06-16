@@ -78,6 +78,13 @@ CREATE TABLE IF NOT EXISTS `rooms` (
     `capacity` INT NOT NULL DEFAULT 0,
     `room_size` VARCHAR(50) NOT NULL DEFAULT 'small',
     `is_active` BOOLEAN NOT NULL DEFAULT 1,
+    `pos_x` INT NOT NULL DEFAULT 0,
+    `pos_y` INT NOT NULL DEFAULT 0,
+    `width` INT NOT NULL DEFAULT 120,
+    `height` INT NOT NULL DEFAULT 80,
+    `is_entrance` BOOLEAN NOT NULL DEFAULT 0,
+    `is_exit` BOOLEAN NOT NULL DEFAULT 0,
+    `orientation` VARCHAR(8) NOT NULL DEFAULT '',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_rooms_floor_position_code` (`floor_id`, `position_code`),
     CONSTRAINT `fk_rooms_floor`
