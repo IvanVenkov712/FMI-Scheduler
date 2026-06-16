@@ -1,5 +1,16 @@
 # WebProject
 
+## Local Docker setup
+
+Run the app and a local MySQL database with:
+
+```sh
+docker compose up --build
+```
+
+The application is available at `http://localhost:8080`.
+The database is exposed on `127.0.0.1:3307` for direct local PHP runs or manual inspection.
+
 ## Environment configuration
 
 Copy `.env.example` to `.env` and set the values for your local environment.

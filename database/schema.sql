@@ -1,9 +1,3 @@
-CREATE DATABASE IF NOT EXISTS `${DB_NAME}`
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
-
-USE `${DB_NAME}`;
-
 SET NAMES utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `users` (

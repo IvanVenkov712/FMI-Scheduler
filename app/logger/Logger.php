@@ -69,7 +69,7 @@ class Logger
             date('Y-m-d H:i:s'),
             strtoupper($level),
             $message,
-            empty($context) ? '' : ' ' . self::encode_context(self::sanitize($context)),
+            empty($context) ? '' : ' ' . self::encode_context($context),
             PHP_EOL
         );
 

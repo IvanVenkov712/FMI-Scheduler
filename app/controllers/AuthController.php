@@ -12,8 +12,8 @@ class AuthController extends BaseController
     public function __construct($request = [], $view = null, $session = null, $login_service = null, $register_service = null)
     {
         parent::__construct($request, $view, $session);
-        $this->login_service = $login_service ?? new LoginService();
-        $this->register_service = $register_service ?? new RegisterService();
+        $this->login_service = $login_service;
+        $this->register_service = $register_service;
     }
 
     public function login_form()
@@ -29,7 +29,7 @@ class AuthController extends BaseController
             return $this->error('Invalid login data.', 422, $errors);
         }
 
-        $user = $this->login_service->login($data['identity'], $data['password']);
+        $user = $this->login_service()->login($data['identity'], $data['password']);
         if ($user === null) {
             return $this->error('Invalid credentials or inactive user.', 401);
         }
@@ -57,7 +57,7 @@ class AuthController extends BaseController
             return $this->error('Invalid registration data.', 422, $errors);
         }
 
-        $user = $this->register_service->register($data);
+        $user = $this->register_service()->register($data);
         if ($user === null) {
             return $this->error('Registration failed.', 422);
         }
@@ -86,5 +86,15 @@ class AuthController extends BaseController
         }
 
         return $this->success(['user' => $this->session->get_user()]);
+    }
+
+    private function login_service()
+    {
+        return $this->login_service ??= new LoginService();
+    }
+
+    private function register_service()
+    {
+        return $this->register_service ??= new RegisterService();
     }
 }
