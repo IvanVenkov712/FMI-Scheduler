@@ -561,8 +561,8 @@ details summary {
 
 .plan-grid {
     display: grid;
-    grid-template-columns: repeat(20, 48px);
-    grid-template-rows: repeat(12, 48px);
+    grid-template-columns: repeat(12, 48px);
+    grid-template-rows: repeat(5, 48px);
     gap: 2px;
     background: var(--line);
     border: 2px solid var(--line);

@@ -4,8 +4,8 @@ $f = is_object($floor ?? null) ? $floor->to_array() : ($floor ?? []);
 $b = is_object($building ?? null) ? $building->to_array() : ($building ?? []);
 $can_edit = in_array($current_user_role ?? '', ['admin', 'schedule_manager']);
 
-$GRID_COLS = 20;
-$GRID_ROWS = 12;
+$GRID_COLS = 12;
+$GRID_ROWS = 5;
 
 // Separate placed vs. unplaced rooms
 $placed   = [];
