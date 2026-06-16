@@ -1,5 +1,6 @@
 <?php require_once __DIR__ . '/../shared/ui.php'; page_start('Rooms', 'rooms'); ?>
 <?php
+$can_delete_rooms = current_user_has_role('admin');
 $building_options = [];
 foreach ($buildings ?? [] as $building) {
     $building = is_object($building) ? $building->to_array() : $building;
@@ -101,6 +102,9 @@ $floor_label = static function ($floor_id) use ($floor_options, $building_label)
     <td class="actions">
         <a href="/rooms/<?= e($r['id']) ?>" class="btn btn-muted btn-sm">View</a>
         <a href="/rooms/<?= e($r['id']) ?>/edit" class="btn btn-muted btn-sm">Edit</a>
+        <?php if ($can_delete_rooms): ?>
+        <form method="post" action="/rooms/<?= e($r['id']) ?>/delete" data-confirm="Delete this room?"><button class="btn btn-danger btn-sm">Del</button></form>
+        <?php endif; ?>
     </td>
 </tr>
 <?php endforeach; ?>

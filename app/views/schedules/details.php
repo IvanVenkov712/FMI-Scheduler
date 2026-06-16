@@ -3,7 +3,7 @@ require_once __DIR__ . '/../shared/ui.php';
 $s = is_object($schedule ?? null) ? $schedule->to_array() : ($schedule ?? []);
 $evs = $events ?? [];
 $available_events = $publishable_events ?? [];
-$can_manage = in_array($GLOBALS['current_user_role'] ?? '', ['admin', 'schedule_manager'], true);
+$can_manage = current_user_has_role(['admin', 'schedule_manager']);
 page_start($s['name'] ?? 'Schedule', 'schedules');
 ?>
 <div class="actions page-actions">

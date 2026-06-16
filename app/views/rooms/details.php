@@ -1,10 +1,14 @@
 <?php
 require_once __DIR__ . '/../shared/ui.php';
 $r = is_object($room ?? null) ? $room->to_array() : ($room ?? []);
+$can_delete_room = current_user_has_role('admin');
 page_start($r['name'] ?? 'Room Details', 'rooms');
 ?>
 <div class="actions page-actions">
     <a href="/rooms/<?= e($r['id']) ?>/edit" class="btn">Edit</a>
+    <?php if ($can_delete_room): ?>
+    <form method="post" action="/rooms/<?= e($r['id']) ?>/delete" data-confirm="Delete this room?" class="inline-form"><button class="btn btn-danger">Delete</button></form>
+    <?php endif; ?>
     <a href="/rooms" class="btn btn-muted">Back</a>
 </div>
 <div class="card">

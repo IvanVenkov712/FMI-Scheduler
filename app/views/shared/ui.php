@@ -7,6 +7,23 @@ function selected_attr($value, $current) {
     return (string) $value === (string) $current ? ' selected' : '';
 }
 
+function current_user_has_role($roles) {
+    $roles = is_array($roles) ? $roles : [$roles];
+    $current_role = strtolower(trim((string) ($GLOBALS['current_user_role'] ?? '')));
+
+    if ($current_role === '') {
+        return false;
+    }
+
+    foreach ($roles as $role) {
+        if ($current_role === strtolower(trim((string) $role))) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function page_start($title, $active = 'dashboard') {
     $user = $GLOBALS['current_user'] ?? null;
     $flash = $GLOBALS['flash'] ?? [];
@@ -26,7 +43,7 @@ function page_start($title, $active = 'dashboard') {
         'import-export/export'     => 'Export',
         'users'      => 'Users',
     ];
-    if ($role === 'admin') {
+    if (current_user_has_role('admin')) {
         $nav['audit-logs'] = 'Audit Log';
     }
 ?>

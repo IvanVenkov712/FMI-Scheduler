@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/../shared/ui.php'; page_start('Buildings', 'buildings'); ?>
+<?php $can_delete_buildings = current_user_has_role(['admin', 'schedule_manager']); ?>
 
 <div class="actions page-actions">
     <a href="/buildings/create" class="btn">New Building</a>
@@ -46,7 +47,9 @@
                 <a href="/buildings/<?= e($b['id']) ?>" class="btn btn-muted btn-sm">View</a>
                 <a href="/buildings/<?= e($b['id']) ?>/vertical" class="btn btn-muted btn-sm">Diagram</a>
                 <a href="/buildings/<?= e($b['id']) ?>/edit" class="btn btn-muted btn-sm">Edit</a>
+                <?php if ($can_delete_buildings): ?>
                 <form method="post" action="/buildings/<?= e($b['id']) ?>/delete" data-confirm="Delete this building?"><button class="btn btn-danger btn-sm">Del</button></form>
+                <?php endif; ?>
             </td>
         </tr>
         <?php endforeach; ?>
