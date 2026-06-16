@@ -17,8 +17,9 @@ function page_start($title, $active = 'dashboard') {
         'requests'   => 'Requests',
         'resources'  => 'Resources',
         'routes'     => 'Routes',
-        'allocation' => 'Allocation',
-        'import'     => 'Import/Export',
+        'allocation/search' => 'Allocation',
+        'import-export/import'     => 'Import',
+        'import-export/export'     => 'Export',
         'users'      => 'Users',
     ];
     if ($role === 'admin') {
@@ -39,7 +40,7 @@ function page_start($title, $active = 'dashboard') {
     <div class="brand">FMI Schedule</div>
     <nav>
     <?php foreach ($nav as $key => $label): ?>
-        <a href="/<?= $key === 'dashboard' ? '' : ($key === 'import' ? 'import-export/import' : ($key === 'allocation' ? 'allocation/search' : $key)) ?>" class="<?= $active === $key ? 'active' : '' ?>"><?= $label ?></a>
+        <a href="/<?=$key?>" class="<?= $active === $key ? 'active' : '' ?>"> <?= $label ?> </a>
     <?php endforeach; ?>
     </nav>
     <?php if ($user): ?>
