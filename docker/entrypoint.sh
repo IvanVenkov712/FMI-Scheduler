@@ -63,14 +63,29 @@ import_db() {
         password_args=("-p${DB_USER_PASSWORD}")
     fi
 
-    echo "Waiting for database at ${DB_HOST}:${port}..."
+    local mysql_args=("-h" "$DB_HOST" "-P" "$port" "-u" "$DB_USER_NAME")
+
+    if [ -n "${DB_USER_PASSWORD:-}" ]; then
+        mysql_args+=("${password_args[@]}")
+    fi
+
+    echo "Waiting for database login at ${DB_HOST}:${port}..."
     for attempt in $(seq 1 30); do
-        if mysqladmin ping -h "$DB_HOST" -P "$port" -u "$DB_USER_NAME" "${password_args[@]}" --silent; then
+        local check_output
+
+        if check_output="$(mysql "${mysql_args[@]}" "$DB_NAME" -e "SELECT 1" 2>&1 >/dev/null)"; then
             break
+        fi
+
+        if [[ "$check_output" == *"Access denied"* ]]; then
+            echo "Database login failed for ${DB_USER_NAME} at ${DB_HOST}:${port}; skipping import."
+            echo "Check the password value and that MySQL allows this user from the container host."
+            return
         fi
 
         if [ "$attempt" -eq 30 ]; then
             echo "Database is not reachable, starting application without import."
+            echo "$check_output"
             return
         fi
 
@@ -78,8 +93,16 @@ import_db() {
     done
 
     echo "Ensuring database schema and seed data..."
-    mysql -h "$DB_HOST" -P "$port" -u "$DB_USER_NAME" "${password_args[@]}" "$DB_NAME" < /var/www/html/database/schema.sql
-    mysql -h "$DB_HOST" -P "$port" -u "$DB_USER_NAME" "${password_args[@]}" "$DB_NAME" < /var/www/html/database/seed.sql
+    if ! mysql "${mysql_args[@]}" "$DB_NAME" < /var/www/html/database/schema.sql; then
+        echo "Schema import failed, starting application without import."
+        return
+    fi
+
+    if ! mysql "${mysql_args[@]}" "$DB_NAME" < /var/www/html/database/seed.sql; then
+        echo "Seed import failed, starting application without import."
+        return
+    fi
+
     echo "Database ready."
 }
 

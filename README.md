@@ -29,3 +29,7 @@ Configuration priority, from highest to lowest:
 
 If a value in `.env` contains `$`, wrap that value in single quotes so Docker
 Compose does not treat part of it as another environment variable.
+
+If the same value is written directly in a `docker-compose.yml` `environment:`
+section, escape each literal `$` as `$$`. YAML quotes do not prevent Compose
+interpolation there.
