@@ -6,7 +6,7 @@ stages:
   - deploy
 variables:
   DOCKER_DRIVER: overlay2
-  CI_CONFIG_HASH: 581bebbd19e65e5d4a5baeac031b5c22e7819c91144ad0900e0ece61e4432965
+  CI_CONFIG_HASH: f9bcc2bb76fc6bf836c56bcba944ab00784eb5f0ad428d0dd3dae04916ab5f76
 .before_script_common:
   variables: {}
   before_script:
@@ -24,7 +24,7 @@ variables:
         echo "Unsupported branch: $CI_COMMIT_BRANCH"
         exit 1
       fi
-build_FmiScheduler:
+build_app:
   extends: .before_script_common
   stage: build
   rules:
@@ -34,13 +34,13 @@ build_FmiScheduler:
   tags:
     - HSS
   script:
-    - docker compose -f docker-compose.yml build FmiScheduler --no-cache
-    - docker tag w26-fmischeduler-yw72ij-FmiScheduler w26-fmischeduler-yw72ij-FmiScheduler:$CI_COMMIT_BRANCH
-    - docker save w26-fmischeduler-yw72ij-FmiScheduler:$CI_COMMIT_BRANCH -o w26-fmischeduler-yw72ij-FmiScheduler.tar
+    - docker compose -f docker-compose.yml build app --no-cache
+    - docker tag w26-fmischeduler-yw72ij-app w26-fmischeduler-yw72ij-app:$CI_COMMIT_BRANCH
+    - docker save w26-fmischeduler-yw72ij-app:$CI_COMMIT_BRANCH -o w26-fmischeduler-yw72ij-app.tar
   artifacts:
     paths:
-      - w26-fmischeduler-yw72ij-FmiScheduler.tar
-deploy_FmiScheduler:
+      - w26-fmischeduler-yw72ij-app.tar
+deploy_app:
   extends: .before_script_common
   stage: deploy
   rules:
@@ -50,9 +50,9 @@ deploy_FmiScheduler:
   tags:
     - HSS
   needs:
-    - build_FmiScheduler
+    - build_app
   script:
-    - docker-compose rm -s -f FmiScheduler || true
-    - docker rmi w26-fmischeduler-yw72ij-FmiScheduler:$CI_COMMIT_BRANCH || true
-    - docker load -i w26-fmischeduler-yw72ij-FmiScheduler.tar
-    - docker-compose up -d FmiScheduler
+    - docker-compose rm -s -f app || true
+    - docker rmi w26-fmischeduler-yw72ij-app:$CI_COMMIT_BRANCH || true
+    - docker load -i w26-fmischeduler-yw72ij-app.tar
+    - docker-compose up -d app
