@@ -107,7 +107,23 @@ class ImportExportController extends BaseController
 
     private function import_response($callback)
     {
-        return $this->guarded_response($this->import_roles(), fn () => $this->json_result($callback($this->payload())));
+        return $this->guarded_response($this->import_roles(), fn () => $this->import_result_response($callback($this->payload())));
+    }
+
+    private function import_result_response($result)
+    {
+        if ($this->wants_json()) {
+            return $this->json_result($result);
+        }
+
+        if (!empty($result['success'])) {
+            $this->audit_success($result['data'] ?? ['success' => true]);
+            $this->session->flash('success', $this->import_success_message($result));
+        } else {
+            $this->session->flash('error', $this->import_error_message($result));
+        }
+
+        return $this->redirect_back('/import-export/import');
     }
 
     private function export_file_response($callback, $not_found_message)
@@ -156,6 +172,34 @@ class ImportExportController extends BaseController
     private function import_roles()
     {
         return ['admin', 'schedule_manager'];
+    }
+
+    private function import_success_message($result)
+    {
+        $parts = [];
+
+        if (isset($result['imported'])) {
+            $parts[] = (int) $result['imported'] . ' imported';
+        }
+
+        if (isset($result['updated'])) {
+            $parts[] = (int) $result['updated'] . ' updated';
+        }
+
+        return empty($parts)
+            ? 'Import completed successfully.'
+            : 'Import completed: ' . implode(', ', $parts) . '.';
+    }
+
+    private function import_error_message($result)
+    {
+        $errors = $result['errors'] ?? [];
+
+        if (!is_array($errors) || empty($errors)) {
+            return 'Import failed.';
+        }
+
+        return 'Import failed: ' . implode(' ', array_map('strval', $errors));
     }
 
     private function uploaded_file_path($field)
