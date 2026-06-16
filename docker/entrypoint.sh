@@ -1,20 +1,43 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -e
 
 import_db() {
-    # Import schema if the users table doesn't exist yet
-    echo "Checking database..."
-    mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER_NAME" -p"$DB_USER_PASSWORD" "$DB_NAME" -e "DESCRIBE users;" 2>/dev/null
-
-    if [ $? -ne 0 ]; then
-        echo "Importing schema..."
-        mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER_NAME" -p"$DB_USER_PASSWORD" "$DB_NAME"  < /database/schema.sql
-        echo "Importing seed data..."
-        mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER_NAME" -p"$DB_USER_PASSWORD" "$DB_NAME" < /database/seed.sql
-        echo "Database ready."
-    else
-        echo "Database already initialized, skipping."
+    if [ -z "${DB_HOST:-}" ] || [ -z "${DB_NAME:-}" ] || [ -z "${DB_USER_NAME:-}" ]; then
+        echo "Database environment is incomplete, skipping import."
+        return
     fi
+
+    local port="${DB_PORT:-3306}"
+    local password_args=()
+
+    if [ -n "${DB_USER_PASSWORD:-}" ]; then
+        password_args=("-p${DB_USER_PASSWORD}")
+    fi
+
+    echo "Waiting for database at ${DB_HOST}:${port}..."
+    for attempt in $(seq 1 30); do
+        if mysqladmin ping -h "$DB_HOST" -P "$port" -u "$DB_USER_NAME" "${password_args[@]}" --silent; then
+            break
+        fi
+
+        if [ "$attempt" -eq 30 ]; then
+            echo "Database is not reachable, starting application without import."
+            return
+        fi
+
+        sleep 2
+    done
+
+    if mysql -h "$DB_HOST" -P "$port" -u "$DB_USER_NAME" "${password_args[@]}" "$DB_NAME" -e "DESCRIBE users;" >/dev/null 2>&1; then
+        echo "Database already initialized, skipping import."
+        return
+    fi
+
+    echo "Importing database schema and seed data..."
+    mysql -h "$DB_HOST" -P "$port" -u "$DB_USER_NAME" "${password_args[@]}" "$DB_NAME" < /var/www/html/database/schema.sql
+    mysql -h "$DB_HOST" -P "$port" -u "$DB_USER_NAME" "${password_args[@]}" "$DB_NAME" < /var/www/html/database/seed.sql
+    echo "Database ready."
 }
 
-# Run DB import in background so Apache starts immediately
-import_db &
+import_db
+exec "$@"
