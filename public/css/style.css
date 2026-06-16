@@ -437,6 +437,18 @@ button:hover,
     display: inline;
 }
 
+.user-manage-form {
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) minmax(120px, 150px) auto auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.user-manage-form select {
+    padding: 6px 9px;
+    font-size: 13px;
+}
+
 dl.meta {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -990,6 +1002,7 @@ details summary {
     .fields,
     .grid-2,
     .grid-3,
+    .user-manage-form,
     dl.meta {
         grid-template-columns: 1fr;
     }

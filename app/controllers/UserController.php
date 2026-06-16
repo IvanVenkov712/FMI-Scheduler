@@ -11,6 +11,7 @@ class UserController extends CrudController
     protected $view_path = 'users';
     protected $entity_name = 'user';
     protected $write_roles = ['admin'];
+    private const MANAGEABLE_ROLES = ['admin', 'schedule_manager', 'teacher', 'student'];
 
     public function profile()
     {
@@ -38,6 +39,38 @@ class UserController extends CrudController
         $id = $id !== null && is_numeric($id) ? (int) $id : $this->request_user_id();
 
         return $this->success(['events' => $this->repository->get_requested_events($id)]);
+    }
+
+    public function update_role_status($id = null)
+    {
+        if ($guard = $this->guarded($this->write_roles)) {
+            return $guard;
+        }
+
+        $id = $this->resolve_id($id);
+        if ($id === $this->request_user_id()) {
+            return $this->error('You cannot change your own role or status from this screen.', 422);
+        }
+
+        $user = $this->repository->find_by_id($id);
+        if ($user === null) {
+            return $this->not_found('User not found.');
+        }
+
+        $data = $this->payload();
+        $role = strtolower(trim((string) ($data['role'] ?? '')));
+        if (!in_array($role, self::MANAGEABLE_ROLES, true)) {
+            return $this->error('Selected role is invalid.', 422);
+        }
+
+        $status = (string) ($data['is_active'] ?? '0');
+        $is_active = in_array($status, ['1', 'true', 'on'], true);
+
+        $this->repository->update_role_status($id, $role, $is_active);
+
+        return $this->success([
+            'user' => $this->repository->find_by_id($id),
+        ]);
     }
 
     protected function prepare_payload($data)

@@ -56,4 +56,14 @@ class UserRepository extends Repository {
     public function get_role($id) {
         return $this->value("SELECT `role` FROM `{$this->table}` WHERE id = ? LIMIT 1", [$id]);
     }
+
+    public function update_role_status($id, $role, $is_active)
+    {
+        $statement = $this->run(
+            "UPDATE `{$this->table}` SET `role` = ?, `is_active` = ? WHERE id = ?",
+            [$role, $is_active ? 1 : 0, $id]
+        );
+
+        return $statement->rowCount() > 0;
+    }
 }
