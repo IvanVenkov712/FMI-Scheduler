@@ -101,12 +101,12 @@ page_start(($b['name'] ?? 'Floor') . ' — Floor Plan', 'floors');
 </div>
 <?php endif; ?>
 
-<div class="vert-legend" style="margin-top:12px">
+<!--div class="vert-legend" style="margin-top:12px">
     <span class="plan-room room-physical" style="pointer-events:none">Physical</span>
     <span class="plan-room room-online"   style="pointer-events:none">Online</span>
     <span class="plan-room room-hybrid"   style="pointer-events:none">Hybrid</span>
     <span class="plan-room room-physical room-inactive" style="pointer-events:none">Inactive</span>
-</div>
+</div-->
 
 <?php endif; ?>
 
