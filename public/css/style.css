@@ -136,6 +136,11 @@ a:hover {
     margin-top: 8px;
 }
 
+.user-box .btn-profile {
+    margin-top: 10px;
+    text-align: center;
+}
+
 .user-box .btn-logout {
     width: 100%;
     padding: 8px 10px;

@@ -14,7 +14,8 @@
     <form method="post" action="/register" class="stack">
         <div class="field"><label>Username</label><input type="text" name="username" required></div>
         <div class="field"><label>Email</label><input type="email" name="email" required></div>
-        <div class="field"><label>Password</label><input type="password" name="password" required></div>
+        <div class="field"><label>Password</label><input type="password" name="password" autocomplete="new-password" required></div>
+        <div class="field"><label>Repeat Password</label><input type="password" name="password_confirmation" autocomplete="new-password" required></div>
         <button type="submit">Register</button>
         <p class="auth-switch">Already have an account? <a href="/login">Login</a></p>
     </form>

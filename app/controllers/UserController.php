@@ -31,6 +31,65 @@ class UserController extends CrudController
         ]);
     }
 
+    public function update_profile()
+    {
+        if ($guard = $this->guarded()) {
+            return $guard;
+        }
+
+        $user = $this->repository->find_by_id($this->request_user_id());
+        if ($user === null) {
+            return $this->not_found('User not found.');
+        }
+
+        $data = $this->payload();
+        $email = strtolower(trim((string) ($data['email'] ?? '')));
+        $current_password = (string) ($data['current_password'] ?? '');
+        $new_password = (string) ($data['new_password'] ?? '');
+        $new_password_confirmation = (string) ($data['new_password_confirmation'] ?? '');
+        $password_change_requested = $new_password !== '' || $new_password_confirmation !== '';
+
+        $errors = [];
+        if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            $errors['email'] = 'Enter a valid email address.';
+        }
+
+        $existing_email_user = $email === '' ? null : $this->repository->find_by_email($email);
+        if ($existing_email_user !== null && (int) $existing_email_user->id !== (int) $user->id) {
+            $errors['email'] = 'This email is already used by another account.';
+        }
+
+        if ($current_password === '' || !password_verify($current_password, $user->password_hash)) {
+            $errors['current_password'] = 'Enter your current password.';
+        }
+
+        if ($password_change_requested) {
+            if (strlen($new_password) < 8) {
+                $errors['new_password'] = 'New password must be at least 8 characters.';
+            }
+
+            if ($new_password !== $new_password_confirmation) {
+                $errors['new_password_confirmation'] = 'Password confirmation does not match.';
+            }
+        }
+
+        if (!empty($errors)) {
+            return $this->error('Please correct the highlighted information.', 422, $errors);
+        }
+
+        $password_hash = $password_change_requested
+            ? password_hash($new_password, PASSWORD_DEFAULT)
+            : null;
+
+        $this->repository->update_profile_credentials($user->id, $email, $password_hash);
+        $updated_user = $this->repository->find_by_id($user->id);
+        if ($updated_user !== null) {
+            $this->session->login($updated_user);
+        }
+
+        return $this->success(['user' => $updated_user]);
+    }
+
     public function events($id = null)
     {
         if ($guard = $this->guarded()) {

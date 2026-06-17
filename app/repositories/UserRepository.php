@@ -96,4 +96,23 @@ class UserRepository extends Repository {
 
         return $statement->rowCount() > 0;
     }
+
+    public function update_profile_credentials($id, $email, $password_hash = null)
+    {
+        $assignments = ['`email` = ?'];
+        $params = [$email];
+
+        if ($password_hash !== null) {
+            $assignments[] = '`password_hash` = ?';
+            $params[] = $password_hash;
+        }
+
+        $params[] = $id;
+        $statement = $this->run(
+            "UPDATE `{$this->table}` SET " . implode(', ', $assignments) . " WHERE id = ?",
+            $params
+        );
+
+        return $statement->rowCount() > 0;
+    }
 }

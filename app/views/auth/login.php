@@ -1,4 +1,7 @@
-<?php $error = $flash['error'] ?? ''; ?>
+<?php
+$error = $flash['error'] ?? '';
+$success = $flash['success'] ?? '';
+?>
 <!DOCTYPE html>
 <html lang="bg">
 <head>
@@ -12,6 +15,7 @@
     <h1>FMI Schedule</h1>
     <p>Sign in to manage buildings, rooms, schedules, and routes.</p>
 
+    <?php if ($success): ?><div class="alert ok"><?= e($success) ?></div><?php endif; ?>
     <?php if ($error): ?><div class="alert err"><?= e($error) ?></div><?php endif; ?>
 
     <form method="post" action="/login" class="stack">

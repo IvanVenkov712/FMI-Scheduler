@@ -68,6 +68,7 @@ function page_start($title, $active = 'dashboard') {
     <div class="user-box">
         <strong><?= e($user['username'] ?? $user['email'] ?? 'User') ?></strong>
         <span><?= e($role) ?></span>
+        <a href="/users/profile" class="btn btn-muted btn-block btn-profile">Profile</a>
         <form method="post" action="/logout">
             <button type="submit" class="btn-logout">Logout</button>
         </form>

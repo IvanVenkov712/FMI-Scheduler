@@ -52,14 +52,37 @@ class AuthController extends BaseController
     public function register()
     {
         $data = $this->payload();
-        $errors = $this->require_fields($data, ['username', 'email', 'password']);
+        $errors = $this->require_fields($data, ['username', 'email', 'password', 'password_confirmation']);
+        if ($errors === [] && (string) $data['password'] !== (string) $data['password_confirmation']) {
+            if (!$this->wants_json()) {
+                return $this->error('Passwords do not match.', 422);
+            }
+
+            $errors['password_confirmation'] = 'Password confirmation does not match.';
+        }
+
         if ($errors !== []) {
+            if (!$this->wants_json()) {
+                return $this->error('Please fill in all required fields.', 422);
+            }
+
             return $this->error('Invalid registration data.', 422, $errors);
         }
 
-        $user = $this->register_service()->register($data);
+        $register_service = $this->register_service();
+        $user = $register_service->register($data);
         if ($user === null) {
-            return $this->error('Registration failed.', 422);
+            return $this->error(
+                $register_service->error_message(),
+                422,
+                $this->wants_json() ? $register_service->errors() : []
+            );
+        }
+
+        if (!$this->wants_json()) {
+            $this->audit_success(['registered_user_id' => $user->id ?? null]);
+            $this->session->flash('success', 'Registration successful');
+            return $this->redirect('/login');
         }
 
         $this->session->login($user);

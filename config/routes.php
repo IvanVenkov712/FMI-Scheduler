@@ -106,6 +106,7 @@ return [
 
     'GET  /users'                   => ['UserController', 'index'],
     'GET  /users/profile'           => ['UserController', 'profile'],
+    'POST /users/profile'           => ['UserController', 'update_profile'],
     'POST /users/{id}/role-status'  => ['UserController', 'update_role_status'],
     'GET  /users/{id}'              => ['UserController', 'show'],
     'GET  /audit-logs'              => ['AuditLogController', 'index'],
