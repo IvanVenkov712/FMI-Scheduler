@@ -248,6 +248,10 @@ abstract class CrudController extends BaseController
             'operation' => $operation,
         ]);
 
+        if ($exception instanceof InsertException && $exception->getPrevious() === null && $exception->getMessage() !== '') {
+            return $this->error($exception->getMessage(), 422);
+        }
+
         $database_exception = $this->database_exception($exception);
         $driver_code = $database_exception instanceof PDOException
             ? ($database_exception->errorInfo[1] ?? null)

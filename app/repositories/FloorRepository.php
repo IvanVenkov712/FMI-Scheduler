@@ -1,13 +1,37 @@
 <?php
 namespace App\Repositories;
+use App\Exceptions\InsertException;
 use App\Core\Repository;
 use App\Models\Floor;
 use App\Models\Building;
 use App\Models\Room;
+use Throwable;
 
 class FloorRepository extends Repository {
     protected $model_class = Floor::class;
     protected $table = 'floors';
+
+    public function insert($model)
+    {
+        $started_transaction = $this->begin_transaction();
+
+        try {
+            $this->assert_building_floor_limit($model->building_id ?? null);
+            $id = parent::insert($model);
+
+            if ($started_transaction) {
+                $this->commit();
+            }
+
+            return $id;
+        } catch (Throwable $exception) {
+            if ($started_transaction) {
+                $this->roll_back();
+            }
+
+            throw $exception;
+        }
+    }
 
     public function find_filtered($filters = []) {
         $conditions = [];
@@ -58,5 +82,34 @@ class FloorRepository extends Repository {
             [$id],
             Room::class
         );
+    }
+
+    private function assert_building_floor_limit($building_id)
+    {
+        if (!is_numeric($building_id) || (int) $building_id < 1) {
+            return;
+        }
+
+        $building_id = (int) $building_id;
+        $floor_limit = $this->value(
+            "SELECT `floor_count` FROM `buildings` WHERE `id` = ? LIMIT 1 FOR UPDATE",
+            [$building_id]
+        );
+
+        if ($floor_limit === null) {
+            return;
+        }
+
+        $current_count = (int) $this->value(
+            "SELECT COUNT(*) FROM `floors` WHERE `building_id` = ?",
+            [$building_id]
+        );
+        $floor_limit = (int) $floor_limit;
+
+        if ($current_count >= $floor_limit) {
+            throw new InsertException(
+                "This building already has the maximum allowed number of floors ({$floor_limit})."
+            );
+        }
     }
 }
