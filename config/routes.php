@@ -85,6 +85,7 @@ return [
 
     'GET  /routes'                  => ['RouteController', 'index'],
     'GET  /routes/map'              => ['RouteController', 'map'],
+    'GET  /routes/export'           => ['RouteController', 'export'],
     'POST /routes'                  => ['RouteController', 'store'],
     'GET  /routes/{id}'             => ['RouteController', 'show'],
     'POST /routes/find'             => ['RouteController', 'find'],

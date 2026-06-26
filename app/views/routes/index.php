@@ -44,6 +44,19 @@ $room_label = static function ($room_id) use ($room_options) {
 };
 $search = $route_search ?? [];
 $filters = $filters ?? [];
+$route_export_params = [
+    'from_room_id' => $search['from_room_id'] ?? '',
+    'to_room_id' => $search['to_room_id'] ?? '',
+    'start_time' => $search['start_time'] ?? '',
+    'end_time' => $search['end_time'] ?? '',
+];
+if (!empty($search['accessible_only'])) {
+    $route_export_params['accessible_only'] = '1';
+}
+$route_export_url = '/routes/export?' . http_build_query(array_filter(
+    $route_export_params,
+    static fn ($value) => trim((string) $value) !== ''
+));
 ?>
 <div class="actions page-actions">
     <a href="#find-route" class="btn">Find Route</a>
@@ -85,12 +98,18 @@ $filters = $filters ?? [];
         <div class="alert err"><?= e($route_search_error) ?></div>
     <?php elseif (empty($route_result)): ?>
         <div class="alert ok">You are already at the destination. Total distance: 0m.</div>
+        <div class="actions">
+            <a href="<?= e($route_export_url) ?>" class="btn" target="_blank" rel="noopener">Export Static Page</a>
+        </div>
     <?php else: ?>
         <div class="route-summary">
             <strong><?= e($room_label($search['from_room_id'] ?? '')) ?></strong>
             <span>to</span>
             <strong><?= e($room_label($search['to_room_id'] ?? '')) ?></strong>
             <span class="badge ok"><?= e($route_distance ?? 0) ?>m total</span>
+        </div>
+        <div class="actions">
+            <a href="<?= e($route_export_url) ?>" class="btn" target="_blank" rel="noopener">Export Static Page</a>
         </div>
         <ol class="route-steps">
         <?php foreach ($route_result as $segment): $segment = is_object($segment) ? $segment->to_array() : $segment; ?>

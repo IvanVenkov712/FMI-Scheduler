@@ -77,6 +77,36 @@ class RouteController extends CrudController
         );
     }
 
+    public function export()
+    {
+        return $this->guarded_response(null, function () {
+            $data = $this->payload();
+            $data['start_time'] = trim((string) ($data['start_time'] ?? '')) ?: null;
+            $data['end_time'] = trim((string) ($data['end_time'] ?? '')) ?: null;
+            $accessible_only = filter_var($data['accessible_only'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $route = $this->route_planning_service->{$accessible_only ? 'find_accessible_route' : 'find_route'}(
+                $data['from_room_id'] ?? null,
+                $data['to_room_id'] ?? null,
+                $data['start_time'],
+                $data['end_time']
+            );
+
+            if ($route === null) {
+                return $this->not_found($accessible_only ? 'Accessible route not found.' : 'Route not found.');
+            }
+
+            $data['accessible_only'] = $accessible_only;
+
+            return $this->respond($this->view_path . '/export', [
+                'route_result' => $route,
+                'route_distance' => $this->route_planning_service->get_route_distance($route),
+                'route_search' => $data,
+                'rooms' => (new RoomRepository())->find_all(),
+                'generated_at' => date('Y-m-d H:i:s'),
+            ]);
+        });
+    }
+
     public function accessible()
     {
         return $this->route_response('find_accessible_route', 'Accessible route not found.');
