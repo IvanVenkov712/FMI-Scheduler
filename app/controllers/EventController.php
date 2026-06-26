@@ -74,6 +74,21 @@ class EventController extends CrudController
         });
     }
 
+    public function export($id = null)
+    {
+        return $this->guarded_response(null, function () use ($id) {
+            $id = $this->resolve_id($id);
+            $event = $this->repository->find_by_id($id);
+            if ($event === null) {
+                return $this->not_found('Event not found.');
+            }
+
+            return $this->respond('events/export', $this->details_data($id, $event) + [
+                'generated_at' => date('Y-m-d H:i:s'),
+            ]);
+        });
+    }
+
     protected function create_view_data()
     {
         return ['rooms' => (new RoomRepository())->find_all()];

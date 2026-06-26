@@ -7,6 +7,7 @@ $reqs = $resource_requirements ?? [];
 page_start($ev['name'] ?? 'Event Details', 'events');
 ?>
 <div class="actions page-actions">
+    <a href="/events/<?= e($ev['id'] ?? '') ?>/export" class="btn" target="_blank" rel="noopener">Export Static Page</a>
     <a href="/events/<?= e($ev['id']) ?>/edit" class="btn">Edit</a>
     <?php if (($ev['status'] ?? '') === 'pending'): ?>
     <form method="post" action="/events/<?= e($ev['id']) ?>/approve" class="inline-form"><button class="btn btn-success">Approve</button></form>

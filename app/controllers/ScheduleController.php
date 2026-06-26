@@ -2,6 +2,7 @@
 namespace App\Controllers;
 
 use App\Models\Schedule;
+use App\Repositories\RoomRepository;
 use App\Repositories\ScheduleRepository;
 use App\Services\SchedulePublishingService;
 
@@ -51,6 +52,24 @@ class ScheduleController extends CrudController
     public function calendar($id = null)
     {
         return $this->show($id);
+    }
+
+    public function export($id = null)
+    {
+        return $this->guarded_response(null, function () use ($id) {
+            $id = $this->resolve_id($id);
+            $schedule = $this->repository->find_by_id($id);
+            if ($schedule === null) {
+                return $this->not_found('Schedule not found.');
+            }
+
+            return $this->respond('schedules/export', [
+                'schedule' => $schedule,
+                'events' => $this->repository->get_events($id),
+                'rooms' => (new RoomRepository())->find_all(),
+                'generated_at' => date('Y-m-d H:i:s'),
+            ]);
+        });
     }
 
     public function publish_event($id = null)

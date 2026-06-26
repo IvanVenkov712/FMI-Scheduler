@@ -7,6 +7,7 @@ $can_manage = current_user_has_role(['admin', 'schedule_manager']);
 page_start($s['name'] ?? 'Schedule', 'schedules');
 ?>
 <div class="actions page-actions">
+    <a href="/schedules/<?= e($s['id'] ?? '') ?>/export" class="btn" target="_blank" rel="noopener">Export Static Page</a>
     <a href="/schedules" class="btn btn-muted">Back</a>
 </div>
 <div class="grid-2">
