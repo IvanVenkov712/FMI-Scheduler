@@ -1,4 +1,4 @@
-# FMI Schedule (WebProject)
+# FMI Schedule
 
 FMI Schedule is a university scheduling and campus planning application built for an FMI web programming project. It manages buildings, floors, rooms, teaching events, and exam requests in one place, helping users find suitable rooms and routes between them.
 
@@ -97,7 +97,6 @@ See [architecture and data relationships](docs/ARCHITECTURE.md), the [component 
 | [Transfer formats](IMPORT_EXPORT_FORMATS.md) | CSV columns, XML structure, ASCII tokens, and transfer limitations |
 | [Known issues](docs/KNOWN_ISSUES.md) | Verified defects, deployment blockers, and differences from the specification |
 | [Development](CONTRIBUTING.md) | Working on the code, validation, and maintaining documentation |
-| [GitHub metadata](docs/GITHUB_METADATA.md) | Ready-to-use repository description and topics |
 
 [project_requirements.txt](project_requirements.txt) and [project_specification.txt](project_specification.txt) preserve the original Bulgarian assignment and proposed requirements. They include planned behavior that is not fully implemented. The documentation above describes the current source.
 
