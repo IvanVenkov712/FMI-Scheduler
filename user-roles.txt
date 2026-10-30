@@ -1,0 +1,11 @@
+Current roles
+=============
+
+Implemented role values: student, teacher, schedule_manager, admin.
+Registration creates an active student.
+There is no implemented technical_staff role.
+
+See docs/USER_GUIDE.md for the full current permission matrix and workflows.
+See docs/KNOWN_ISSUES.md for authorization gaps and session role/status caching.
+The original specification describes intended access rules; it is not a complete
+description of the guards currently enforced by every endpoint.

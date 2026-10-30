@@ -2,6 +2,7 @@
 namespace App\Core;
 use \RuntimeException;
 
+/** Renders buffered PHP templates with optional layouts and shared UI data. */
 class View
 {
     private $viewsPath;

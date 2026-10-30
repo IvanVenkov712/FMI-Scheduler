@@ -4,6 +4,7 @@ namespace App\Core;
 use App\Logger\Logger;
 use Throwable;
 
+/** Logs runtime failures and renders safe browser or JSON error responses. */
 class ErrorHandler
 {
     private const SAFE_SERVER_ERROR = 'Something went wrong while processing your request. Please try again.';

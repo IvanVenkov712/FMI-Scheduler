@@ -5,6 +5,10 @@ use \InvalidArgumentException;
 use \App\Exceptions\InsertException;
 use \Throwable;
 
+/**
+ * Prepared CRUD and hydration for models with a single id field.
+ * Composite-key associations are managed by domain-specific repository methods.
+ */
 class Repository
 {
     protected $database;

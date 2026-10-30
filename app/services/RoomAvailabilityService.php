@@ -40,6 +40,10 @@ class RoomAvailabilityService extends BaseService
         return count($this->find_conflicting_events($room_id, $start_time, $end_time)) === 0;
     }
 
+    /**
+     * Returns approved bookings that strictly overlap the interval.
+     * Pending requests do not reserve rooms; adjacent intervals do not overlap.
+     */
     public function find_conflicting_events($room_id, $start_time, $end_time)
     {
         if (!TimeHelper::is_valid_interval($start_time, $end_time)) {

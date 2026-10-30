@@ -3,6 +3,7 @@ namespace App\Services;
 
 use Throwable;
 
+/** Common dependency, normalization and repository-local transaction helpers. */
 abstract class BaseService
 {
     protected function dependency($value, $class, ...$args)
@@ -10,6 +11,11 @@ abstract class BaseService
         return $value ?? new $class(...$args);
     }
 
+    /**
+     * Runs work on the repository's connection; other connections are not enlisted.
+     * ServiceAbort rolls back and returns its result; other exceptions propagate.
+     * This wrapper does not provide nested transaction ownership.
+     */
     protected function transaction($repository, $callback)
     {
         $repository->begin_transaction();

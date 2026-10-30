@@ -24,11 +24,21 @@ class RoutePlanningService extends BaseService
         $this->route_segment_service = $this->dependency($route_segment_service, RouteSegmentService::class, $this->route_segment_repository);
     }
 
+    /**
+     * Returns directed segments on the shortest available path.
+     * Ordinary search ignores timed constraints; accessible search can apply them.
+     *
+     * @return array|null Empty for identical endpoints, null when no path exists.
+     */
     public function find_route($fromRoomId, $toRoomId, $start_time, $end_time)
     {
         return $this->find_shortest_route($fromRoomId, $toRoomId, false, $start_time, $end_time);
     }
 
+    /**
+     * Excludes stairs and applies segment constraints when both times are supplied.
+     * This does not reserve group capacity or model all accessibility conditions.
+     */
     public function find_accessible_route($fromRoomId, $toRoomId, $start_time, $end_time)
     {
         if (($start_time === null) !== ($end_time === null)) {
@@ -91,6 +101,7 @@ class RoutePlanningService extends BaseService
             return [];
         }
 
+        // Dijkstra search with a linear-scan queue and nonnegative edge weights.
         $distances = [$from_room_id => 0.0];
         $previous_segments = [];
         $visited = [];

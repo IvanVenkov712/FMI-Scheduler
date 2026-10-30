@@ -8,6 +8,10 @@ use App\Models\Resource;
 use App\Models\Room;
 use App\Models\Schedule;
 
+/**
+ * Exports model fields as CSV/XML and human-readable plans/reports as text.
+ * Transfers omit relationship tables and are not a database backup format.
+ */
 class ExportService extends DataTransferService
 {
     public function export_floor_ascii_plan($floor_id)

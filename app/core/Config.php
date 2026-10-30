@@ -1,6 +1,10 @@
 <?php
 namespace App\Core;
 
+/**
+ * INI-backed configuration with process-environment precedence.
+ * Later loads override earlier files; even an empty getenv() value wins.
+ */
 class Config
 {
     private static $values = [];

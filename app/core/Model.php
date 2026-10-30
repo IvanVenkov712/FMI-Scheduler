@@ -1,6 +1,7 @@
 <?php
 namespace App\Core;
 
+/** Mutable record hydrated from declared properties; public fields drive serialization. */
 abstract class Model
 {
     public function __construct($data = [])

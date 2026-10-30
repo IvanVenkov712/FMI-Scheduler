@@ -3,6 +3,7 @@ namespace App\Core;
 
 use App\Helpers\SessionHelper;
 
+/** Reads HTTP metadata, form method overrides, JSON negotiation and log context. */
 class Request
 {
     public static function capture($params = [])

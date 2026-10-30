@@ -1,415 +1,194 @@
-# Формати на import/export файловете
+# Import and export formats
 
-Този документ описва файловите формати, които текущата система реално чете и генерира чрез `ImportService` и `ExportService`.
+This reference describes [ImportService](app/services/ImportService.php), [ExportService](app/services/ExportService.php), and the registered controller actions. Use UTF-8 text and the separators shown below. Imports are intended for trusted administrators/schedule managers.
 
-## Общи правила
+## Endpoints and access
 
-- Текстовите export файлове се записват в `storage/exports`.
-- Имената на автоматично генерираните export файлове са:
-  - `floor_{id}_{YYYYMMDD_HHMMSS}.txt`
-  - `building_{id}_{YYYYMMDD_HHMMSS}.txt`
-  - `schedule_{id}_{YYYYMMDD_HHMMSS}.txt`
-  - `{type}_all_{YYYYMMDD_HHMMSS}.csv`
-  - `export_{YYYYMMDD_HHMMSS}.xml`
-- При запис новите редове се нормализират до `\n`.
-- При browser заявка export endpoint-ите връщат файла за сваляне с `Content-Disposition: attachment`.
-- При JSON/API заявка файловите export endpoint-и връщат JSON с `path` към генерирания файл.
-- Import на CSV и XML винаги създава нови записи. Не се прави update по `id`.
-- Полето `id` се игнорира при CSV/XML import, дори ако присъства.
-- Непознати полета в CSV/XML се игнорират.
-- Булевото поле `is_active` се счита за `false`, ако стойността е една от: `0`, `false`, `no`, `inactive`. Всички други стойности се третират като `true`.
+| Method/path | Input or output |
+| --- | --- |
+| `POST /import-export/import-csv` | Multipart upload field `file` plus `type`; alternatively `file_path` on the server. |
+| `POST /import-export/import-xml` | Multipart `file`, inline `xml`, or server `file_path`. Nonempty inline XML takes precedence. |
+| `POST /import-export/import-ascii-plan` | `floor_id`, `ascii_plan` or server `file_path`, optional `sync_rooms` (default true). |
+| `POST /floors/{id}/import-ascii-plan` | `ascii_plan` and optional `sync_rooms` for that floor. |
+| `GET /floors/{id}/export-ascii-plan` | JSON object containing `ascii_plan`. |
+| `GET /import-export/export-csv?type=rooms` | One model type as CSV; optional `filename`. |
+| `GET /import-export/export-xml` | Six supported collections as XML; optional `filename`. |
+| `GET /import-export/export-floor/{id}` | Human-readable floor text file. |
+| `GET /import-export/export-building/{id}` | Human-readable building text file. |
+| `GET /import-export/export-schedule/{id}` | Human-readable schedule text file. |
 
-## CSV import
+Imports require admin/schedule manager. Exports require any authenticated session. Browser file exports download the file; JSON clients usually receive `{"success":true,"data":{"path":"..."}}`. Paths refer to the **server filesystem**, not a downloadable client URL. XML requested as JSON without `filename` returns `{"xml":"..."}`.
 
-CSV import се подава към `/import-export/import-csv` с:
+Generated files go to `storage/exports`. CSV defaults to `{type}_all_{YYYYMMDD_HHMMSS}.csv`; XML to `export_{YYYYMMDD_HHMMSS}.xml`; text entity exports to `{type}_{id}_{YYYYMMDD_HHMMSS}.txt`. A supplied filename is reduced to its basename. Files with the same name are overwritten.
 
-- `type` - типът данни
-- `file` - `.csv` файл
+Example upload using a retained login cookie:
 
-CSV файлът използва стандартния PHP `fgetcsv` формат:
+```sh
+curl -b cookies.txt -H "Accept: application/json" -F "type=buildings" -F "file=@buildings.csv" http://localhost:8080/import-export/import-csv
+```
 
-- разделител: запетая `,`
-- enclosure: двойни кавички `"`
-- първият ред е header
-- имената на колоните се нормализират само с `trim` и `lowercase`
-- стойности със запетаи трябва да са в двойни кавички
+## CSV
 
-Поддържаните стойности за `type` са както singular, така и plural форми:
+Supported `type` values are `building/buildings`, `floor/floors`, `room/rooms`, `resource/resources`, `event/events`, and `schedule/schedules`.
 
-- `building` / `buildings`
-- `floor` / `floors`
-- `room` / `rooms`
-- `resource` / `resources`
-- `event` / `events`
-- `schedule` / `schedules`
+### Parsing and conversion
 
-В UI към момента са показани `rooms`, `events`, `schedules` и `resources`, но service слоят поддържа и `buildings` и `floors`.
+CSV uses PHP `fgetcsv`/`fputcsv` defaults: comma delimiter and double-quote enclosure. The first row is a header; names are trimmed and lowercased. Use UTF-8 without a byte-order mark: the parser does not remove a BOM from the first header. Quote fields containing commas, quotes, or newlines.
 
-### CSV полета по тип
+Only declared model fields are accepted. Unknown columns and input `id` are ignored. Imports **insert**, rather than updating matching records. Missing columns retain model defaults; supplied empty strings may be cast to null or fail database constraints. There is no complete application-level schema validation.
 
-#### buildings
+Integer conversion applies to `building_id, floor_id, room_id, requestor_id, online_access_id, capacity, floor_count, student_count, level`; an empty value becomes null. For `is_active`, `0, false, no, inactive` (case-insensitive) become false and other supplied strings become true. Referenced IDs must already exist in the destination database.
+
+Each row is attempted independently. For example:
+
+```json
+{
+  "success": false,
+  "imported": 2,
+  "errors": ["Line 4: Problem occurred while inserting."]
+}
+```
+
+A failed response may still have inserted records. Duplicate unique keys and invalid foreign keys appear as row errors; a file-wide rollback is not performed.
+
+### Buildings
 
 ```csv
 name,code,address,campus_area,floor_count,is_active
-FMI,101,Lozenec,camp,3,1
+FMI,FMI,5 James Bourchier Blvd,Lozenets,3,1
 ```
 
-Полета:
+`code` must be unique. `floor_count` is an insertion limit for floors; set it before importing floors.
 
-- `name` - задължително на ниво база
-- `code` - задължително и уникално на ниво база
-- `address`
-- `campus_area`
-- `floor_count` - цяло число
-- `is_active` - булева стойност
+Export columns:
 
-#### floors
+```csv
+id,name,code,address,campus_area,floor_count,is_active
+```
+
+### Floors
 
 ```csv
 building_id,level,name,ascii_plan,notes
-1,0,F0,"[A101:Room A|30|physical|medium|1]","Ground floor"
+1,0,Ground floor,[A101:Room A|30|physical|medium|1],Main entrance level
 ```
 
-Полета:
+The building must exist. Building+level must be unique, and `FloorRepository` enforces the building's floor limit. Importing the `ascii_plan` field through CSV/XML only stores text; it does not run room synchronization.
 
-- `building_id` - цяло число, трябва да сочи към съществуваща сграда
-- `level` - цяло число
-- `name`
-- `ascii_plan`
-- `notes`
+Export columns:
 
-Ограничение в базата: комбинацията `building_id + level` трябва да е уникална.
+```csv
+id,building_id,level,name,ascii_plan,notes
+```
 
-#### rooms
+### Rooms
 
 ```csv
 floor_id,name,position_code,room_type,capacity,room_size,is_active
 1,Room A,A101,physical,30,medium,1
 ```
 
-Полета:
+The floor must exist. Floor+position code must be unique. Typical room types are `physical, online, hybrid`; sizes are `small, medium, large`, but imports do not apply all the CRUD form rules.
 
-- `floor_id` - цяло число, трябва да сочи към съществуващ етаж
-- `name`
-- `position_code`
-- `room_type` - например `physical`, `online`, `hybrid`
-- `capacity` - цяло число
-- `room_size` - например `small`, `medium`, `large`
-- `is_active` - булева стойност
+Export columns:
 
-Ограничение в базата: комбинацията `floor_id + position_code` трябва да е уникална.
+```csv
+id,floor_id,name,position_code,room_type,capacity,room_size,is_active
+```
 
-#### resources
+The current model omits geometry/entrance/orientation columns present in the schema. Grid coordinate codes such as `"2,1"` need CSV quoting.
+
+### Resources
 
 ```csv
 name,description
 Projector,Main classroom projector
 ```
 
-Полета:
+Resource names must be unique. Room-resource quantities are not included.
 
-- `name` - задължително и уникално на ниво база
-- `description`
-
-#### events
-
-```csv
-requestor_id,room_id,online_access_id,name,type,start_time,end_time,delivery_mode,subject_name,student_count,status
-1,2,,Exam 1,exam,2026-06-20 09:00:00,2026-06-20 11:00:00,physical,Databases,45,pending
-```
-
-Полета:
-
-- `requestor_id` - цяло число, трябва да сочи към съществуващ потребител
-- `room_id` - цяло число или празно
-- `online_access_id` - цяло число или празно
-- `name`
-- `type` - например `lecture`, `exam`
-- `start_time` - `YYYY-MM-DD HH:MM:SS`
-- `end_time` - `YYYY-MM-DD HH:MM:SS`
-- `delivery_mode` - например `physical`, `online`, `hybrid`
-- `subject_name`
-- `student_count` - цяло число
-- `status` - например `pending`, `approved`, `rejected`
-
-#### schedules
-
-```csv
-name,description,start_date,end_date
-Summer exams,June session,2026-06-01,2026-06-30
-```
-
-Полета:
-
-- `name`
-- `description`
-- `start_date` - `YYYY-MM-DD`
-- `end_date` - `YYYY-MM-DD`
-
-## CSV export
-
-CSV export се генерира от `/import-export/export-csv` с query параметър:
-
-- `type` - типът данни за export
-
-Поддържаните стойности са същите като при CSV import:
-
-- `building` / `buildings`
-- `floor` / `floors`
-- `room` / `rooms`
-- `resource` / `resources`
-- `event` / `events`
-- `schedule` / `schedules`
-
-Пример:
-
-```text
-/import-export/export-csv?type=rooms
-```
-
-По подразбиране файлът се записва в `storage/exports` с име:
-
-```text
-{type}_all_{YYYYMMDD_HHMMSS}.csv
-```
-
-Например:
-
-```text
-rooms_all_20260616_203000.csv
-```
-
-Ако е подаден параметър `filename`, той се използва като име на файла:
-
-```text
-/import-export/export-csv?type=rooms&filename=my_rooms.csv
-```
-
-### CSV export формат
-
-CSV export използва стандартния PHP `fputcsv` формат:
-
-- разделител: запетая `,`
-- enclosure: двойни кавички `"`
-- първият ред винаги е header
-- ако няма записи от избрания тип, файлът съдържа само header ред
-- булевите стойности се записват като `1` или `0`
-
-Колоните са имената на публичните полета в съответния model и включват `id`. Това е разлика спрямо CSV import, където `id` се игнорира.
-
-### CSV export колони по тип
-
-#### buildings
-
-```csv
-id,name,code,address,campus_area,floor_count,is_active
-```
-
-#### floors
-
-```csv
-id,building_id,level,name,ascii_plan,notes
-```
-
-#### rooms
-
-```csv
-id,floor_id,name,position_code,room_type,capacity,room_size,is_active
-```
-
-#### resources
+Export columns:
 
 ```csv
 id,name,description
 ```
 
-#### events
+### Events
+
+```csv
+requestor_id,room_id,online_access_id,name,type,start_time,end_time,delivery_mode,subject_name,student_count,status
+1,2,,Database exam,exam,2026-11-16 09:00:00,2026-11-16 11:00:00,physical,Databases,30,pending
+```
+
+Requestor and nonempty room/online-access references must already exist. Use `YYYY-MM-DD HH:MM:SS` intervals. Typical types are `lecture, exam, practice, consultation`; modes are `physical, online, hybrid`; statuses used by the app include `pending, approved, rejected, cancelled`.
+
+Import bypasses request/approval workflows: it does not attach resource requirements or validate room conflicts/online setup as those services do. Do not assume an imported approved event is a valid booking.
+
+Export columns:
 
 ```csv
 id,requestor_id,room_id,online_access_id,name,type,start_time,end_time,delivery_mode,subject_name,student_count,status
 ```
 
-#### schedules
+### Schedules
+
+```csv
+name,description,start_date,end_date
+Autumn exams,Example exam period,2026-11-01,2026-11-30
+```
+
+Use `YYYY-MM-DD` dates. Schedule-event membership is not included.
+
+Export columns:
 
 ```csv
 id,name,description,start_date,end_date
 ```
 
-### CSV export ограничения
+Exports always include a header, even for an empty table. Boolean model values are written as 1/0, null as an empty field.
 
-CSV export включва само един избран тип данни на файл. Не се export-ват свързващи таблици като `schedule_events`, `room_resources` и `resource_requirements`.
+## XML
 
-CSV export файловете са удобни за преглед и частичен import, но не са пълен backup/restore формат, защото при повторен CSV import `id` се игнорира и се създават нови записи.
+XML export root is `schedule_management_export`. Import accepts any root name with these direct child collections, processed in this order:
 
-## XML import/export
+1. `buildings/building`
+2. `floors/floor`
+3. `rooms/room`
+4. `resources/resource`
+5. `events/event`
+6. `schedules/schedule`
 
-XML export се генерира от `/import-export/export-xml`.
-
-При browser заявка XML се записва в `storage/exports` и се сваля като файл. Ако е подаден `filename`, той се използва като име на файла; иначе се използва `export_{YYYYMMDD_HHMMSS}.xml`.
-
-При JSON/API заявка без `filename` отговорът съдържа XML като текст. При JSON/API заявка с `filename` отговорът съдържа `path` към генерирания файл.
-
-### XML структура
-
-Export root е:
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<schedule_management_export>
-    ...
-</schedule_management_export>
-```
-
-Import не изисква конкретно име на root елемента, но очаква следните колекции като директни child елементи:
-
-- `buildings`
-- `floors`
-- `rooms`
-- `resources`
-- `events`
-- `schedules`
-
-Редът на import е фиксиран:
-
-1. `buildings`
-2. `floors`
-3. `rooms`
-4. `resources`
-5. `events`
-6. `schedules`
-
-Това позволява зависимостите `building_id`, `floor_id` и `room_id` да сочат към вече вмъкнати записи, ако ID-тата в базата съвпадат с очакваните стойности. Понеже `id` се игнорира при import, XML export не е пълноценен backup/restore формат за връзките между таблиците.
-
-### XML пример
+Node fields use the same model names and conversions as CSV. Example of inserting a building:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <schedule_management_export>
     <buildings>
         <building>
-            <id>1</id>
             <name>FMI</name>
-            <code>101</code>
-            <address>Lozenec</address>
-            <campus_area>camp</campus_area>
+            <code>FMI</code>
+            <address>5 James Bourchier Blvd</address>
+            <campus_area>Lozenets</campus_area>
             <floor_count>3</floor_count>
             <is_active>1</is_active>
         </building>
     </buildings>
-    <floors>
-        <floor>
-            <id>1</id>
-            <building_id>1</building_id>
-            <level>0</level>
-            <name>F0</name>
-            <ascii_plan>[A101:Room A|30|physical|medium|1]</ascii_plan>
-            <notes>Ground floor</notes>
-        </floor>
-    </floors>
-    <rooms>
-        <room>
-            <id>1</id>
-            <floor_id>1</floor_id>
-            <name>Room A</name>
-            <position_code>A101</position_code>
-            <room_type>physical</room_type>
-            <capacity>30</capacity>
-            <room_size>medium</room_size>
-            <is_active>1</is_active>
-        </room>
-    </rooms>
-    <resources>
-        <resource>
-            <id>1</id>
-            <name>Projector</name>
-            <description>Main classroom projector</description>
-        </resource>
-    </resources>
-    <events>
-        <event>
-            <id>1</id>
-            <requestor_id>1</requestor_id>
-            <room_id>1</room_id>
-            <online_access_id></online_access_id>
-            <name>Exam 1</name>
-            <type>exam</type>
-            <start_time>2026-06-20 09:00:00</start_time>
-            <end_time>2026-06-20 11:00:00</end_time>
-            <delivery_mode>physical</delivery_mode>
-            <subject_name>Databases</subject_name>
-            <student_count>45</student_count>
-            <status>pending</status>
-        </event>
-    </events>
-    <schedules>
-        <schedule>
-            <id>1</id>
-            <name>Summer exams</name>
-            <description>June session</description>
-            <start_date>2026-06-01</start_date>
-            <end_date>2026-06-30</end_date>
-        </schedule>
-    </schedules>
 </schedule_management_export>
 ```
 
-### XML export ограничения
+Exports include IDs; import ignores them. Foreign keys are **not remapped** to newly inserted records. Collection order alone does not make a multi-entity export safe to restore into another database. Inspect destination IDs or import entities in separate reviewed steps.
 
-XML export включва само:
+XML import adds a `by_type` count map and reports per-record errors. Well-formed XML is required; no XSD is provided and malformed XML can generate PHP warnings. The parser is PHP SimpleXML; XML export is generated by the service's serializer.
 
-- `buildings`
-- `floors`
-- `rooms`
-- `resources`
-- `events`
-- `schedules`
+## ASCII floor plans
 
-Не се export-ват:
-
-- `users`
-- `room_resources`
-- `online_access`
-- `resource_requirements`
-- `route_segments`
-- `movement_constraints`
-- `schedule_events`
-- `audit_logs`
-
-## ASCII floor plan import/export
-
-ASCII планът е свободен текст, в който стаите се разпознават чрез tokens в квадратни скоби.
-
-### Token формат
+ASCII plans are free text containing room tokens:
 
 ```text
 [position_code:name|capacity|room_type|room_size|is_active]
 ```
 
-Полета:
-
-- `position_code` - код на позицията в етажа
-- `name` - име на залата
-- `capacity` - цяло число
-- `room_type` - например `physical`, `online`, `hybrid`
-- `room_size` - например `small`, `medium`, `large`
-- `is_active` - незадължително; `0`, `false`, `no`, `inactive` означават неактивна стая
-
-Минималният валиден token е:
-
-```text
-[A101]
-```
-
-Той се интерпретира като:
-
-- `position_code`: `A101`
-- `name`: `A101`
-- `capacity`: `0`
-- `room_type`: `physical`
-- `room_size`: `small`
-- `is_active`: `true`
-
-Пълен пример:
+Example:
 
 ```text
 [A101:Room A|30|physical|medium|1]--[A102:Room B|20|physical|small|inactive]
@@ -417,125 +196,38 @@ ASCII планът е свободен текст, в който стаите с
 [LAB1:Computer Lab|25|physical|large|yes]
 ```
 
-При import:
+The shortest token `[A101]` defaults to name A101, capacity 0, type physical, size small, active true. A room token with a blank identity is ignored. `0, false, no, inactive` mark a token inactive; capacity becomes zero if nonnumeric. There is no escaping syntax for token delimiters `]`, `|`, or the identity separator `:`.
 
-- Целият ASCII план се записва в `floors.ascii_plan`.
-- Всички tokens от вида `[ ... ]` се парсват като стаи.
-- Ако `sync_rooms` е включено, системата:
-  - създава нова стая, ако няма стая със същия `position_code` на този етаж
-  - обновява `name`, `room_type`, `capacity`, `room_size`, `is_active`, ако такава стая вече съществува
-- Визуални символи извън tokens, например `--`, `|`, интервали и нови редове, се пазят само като част от `ascii_plan`.
+On ASCII import:
 
-### ASCII export на етаж
+- The normalized text is stored in `floors.ascii_plan`.
+- With `sync_rooms=true`, each token creates a room or updates an existing one with the same floor+position code.
+- Existing rooms omitted from the plan are not deleted.
+- Symbols outside tokens are preserved as text; `--` and `|` do not create route segments.
+- With synchronization disabled, only the floor's stored text changes.
+- The operation is not wrapped in a file-wide transaction.
 
-Ако етажът има непразно поле `ascii_plan`, export-ът връща точно него с нормализирани нови редове.
+Use a JSON boolean for `sync_rooms` on the general import endpoint. That action forwards the value directly; the string `"false"` is truthy in PHP. The floor-specific endpoint explicitly parses a form boolean.
 
-Ако `ascii_plan` е празен, системата генерира план от наличните стаи:
+ASCII export returns the stored nonempty plan with normalized newlines. If it is empty, the exporter builds room tokens from position code, name, capacity, and type, up to four rooms per line joined with `--`. This fallback omits size/active state and is not a lossless round trip.
 
-```text
-[A101:Room A|30|physical]--[A102:Room B|20|physical]
-[A103:Room C|40|physical]
-```
+The graphical grid uses coordinate position codes and is independent of the stored ASCII text. Dragging rooms does not rewrite the ASCII plan.
 
-При автоматично генерирания план:
+## Human-readable text and print views
 
-- има до 4 стаи на ред
-- tokens са разделени с `--`
-- включват се само `position_code`, `name`, `capacity`, `room_type`
-- не се включват `room_size` и `is_active`
+Floor text exports contain the building/floor identity, ASCII plan, and room summaries including capacity, size, and active state. Building text exports contain building metadata followed by floor ASCII sections. Schedule text exports contain name/period/description and event summaries (time, delivery mode, room, count, status).
 
-## Text export на етаж
+Separate `/events/{id}/export`, `/schedules/{id}/export`, and `/routes/export` pages render printable HTML. Browser print/PDF is separate from the plain text transfer files.
 
-Text export на етаж се записва като `.txt` файл.
+## Limitations
 
-Формат:
+CSV/XML cover only buildings, floors, rooms, resources, events, and schedules. They omit:
 
-```text
-Floor export
-Building: {building_name} ({building_code})
-Floor: {floor_name} / level {level}
+- `users` and `audit_logs`
+- `online_access`
+- `room_resources` and `resource_requirements`
+- `schedule_events`
+- `route_segments` and `movement_constraints`
+- Schema fields missing from the public models, including room geometry
 
-ASCII plan:
-{ascii_plan}
-
-Rooms:
-- {room_name} [{position_code}], type: {room_type}, capacity: {capacity}, size: {room_size}, active: {yes|no}
-```
-
-Пример:
-
-```text
-Floor export
-Building: FMI (101)
-Floor: F0 / level 0
-
-ASCII plan:
-[A101:Room A|30|physical|medium|1]
-
-Rooms:
-- Room A [A101], type: physical, capacity: 30, size: medium, active: yes
-```
-
-## Text export на сграда
-
-Text export на сграда се записва като `.txt` файл.
-
-Формат:
-
-```text
-Building export
-Name: {building_name}
-Code: {building_code}
-Address: {address}
-Campus area: {campus_area}
-Floors: {floor_count}
-
-BUILDING {building_code} - {building_name}
-
-FLOOR {level} - {floor_name}
-{floor_ascii_plan}
-```
-
-Пример:
-
-```text
-Building export
-Name: FMI
-Code: 101
-Address: Lozenec
-Campus area: camp
-Floors: 3
-
-BUILDING 101 - FMI
-
-FLOOR 0 - F0
-[A101:Room A|30|physical|medium|1]
-```
-
-## Text export на график
-
-Text export на график се записва като `.txt` файл.
-
-Формат:
-
-```text
-Schedule export
-Name: {schedule_name}
-Period: {start_date} - {end_date}
-Description: {description}
-
-Events:
-- {event_name} ({subject_name}), {start_time} - {end_time}, mode: {delivery_mode}, room: {room_name|N/A}, students: {student_count}, status: {status}
-```
-
-Пример:
-
-```text
-Schedule export
-Name: Summer exams
-Period: 2026-06-01 - 2026-06-30
-Description: June session
-
-Events:
-- Exam 1 (Databases), 2026-06-20 09:00:00 - 2026-06-20 11:00:00, mode: physical, room: Room A, students: 45, status: pending
-```
+References to omitted records can still appear in exported event rows. Transfers do not preserve IDs, do not reconstruct relationships, and may partly succeed. Use a complete MySQL dump for backup/restore; see [deployment](docs/DEPLOYMENT.md#backups-and-restore).

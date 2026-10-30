@@ -1,6 +1,7 @@
 <?php
 namespace App\Core;
 
+/** Matches the first method/path definition and extracts named path parameters. */
 class Router
 {
     private $routes;

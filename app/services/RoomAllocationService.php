@@ -51,6 +51,12 @@ class RoomAllocationService extends BaseService
         return $this->assign_best_room($event_id);
     }
 
+    /**
+     * Ranks eligible rooms by spare capacity, then capacity and room ID.
+     * Only this event is considered; this is not a timetable-wide optimizer.
+     *
+     * @return array<int, array{room: object, score: int, capacity_surplus: int}>
+     */
     public function rank_candidate_rooms($event_id)
     {
         $event = $this->event_repository->find_by_id($event_id);

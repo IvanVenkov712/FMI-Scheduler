@@ -1,6 +1,7 @@
 <?php
 namespace App\Core;
 
+/** Maps App namespaces to app/ files, tolerating directory case differences. */
 class Autoloader
 {
     public static function register($app_path)

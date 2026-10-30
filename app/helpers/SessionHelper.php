@@ -1,6 +1,10 @@
 <?php
 namespace App\Helpers;
 
+/**
+ * Manages session identity snapshots, ID regeneration, and flash messages.
+ * Stored roles are not automatically refreshed after account changes.
+ */
 class SessionHelper
 {
     public const USER_ID_KEY = 'user_id';

@@ -5,6 +5,10 @@ use App\Helpers\EventDeliveryModeHelper;
 use App\Helpers\OnlineAccessHelper;
 use App\Repositories\EventRepository;
 
+/**
+ * Changes request status after booking/meeting checks.
+ * Callers must authorize the actor; availability checks do not lock the room.
+ */
 class EventApprovalService extends BaseService
 {
     private $event_repository;

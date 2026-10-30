@@ -1,252 +1,47 @@
-│
-├── app/
-│   ├── controllers/
-│   │   ├── AuthController.php
-│   │   ├── DashboardController.php
-│   │   ├── BuildingController.php
-│   │   ├── FloorController.php
-│   │   ├── RoomController.php
-│   │   ├── ScheduleController.php
-│   │   ├── EventController.php
-│   │   ├── RequestController.php
-│   │   ├── ResourceController.php
-│   │   ├── RouteController.php
-│   │   ├── AllocationController.php
-│   │   ├── ImportExportController.php
-│   │   └── UserController.php
-│   │
-│   ├── models/
-│   │   ├── User.php
-│   │   ├── Role.php
-│   │   ├── Building.php
-│   │   ├── Floor.php
-│   │   ├── Room.php
-│   │   ├── RoomType.php
-│   │   ├── Resource.php
-│   │   ├── RoomResource.php
-│   │   ├── Event.php
-│   │   ├── Schedule.php
-│   │   ├── ExamRequest.php
-│   │   ├── Route.php
-│   │   ├── MovementConstraint.php
-│   │   ├── OnlineSession.php
-│   │   └── AuditLog.php
-│   │
-│   ├── services/
-│   │   ├── AuthService.php
-│   │   ├── BuildingService.php
-│   │   ├── FloorService.php
-│   │   ├── RoomService.php
-│   │   ├── ScheduleService.php
-│   │   ├── EventService.php
-│   │   ├── RequestService.php
-│   │   ├── ResourceService.php
-│   │   ├── RouteService.php
-│   │   ├── AllocationService.php
-│   │   ├── CovidConstraintService.php
-│   │   ├── ImportService.php
-│   │   ├── ExportService.php
-│   │   └── ValidationService.php
-│   │
-│   ├── repositories/
-│   │   ├── UserRepository.php
-│   │   ├── BuildingRepository.php
-│   │   ├── FloorRepository.php
-│   │   ├── RoomRepository.php
-│   │   ├── ScheduleRepository.php
-│   │   ├── EventRepository.php
-│   │   ├── RequestRepository.php
-│   │   ├── ResourceRepository.php
-│   │   ├── RouteRepository.php
-│   │   └── AuditLogRepository.php
-│   │
-│   ├── middleware/
-│   │   ├── AuthMiddleware.php
-│   │   ├── AdminMiddleware.php
-│   │   └── RoleMiddleware.php
-│   │
-│   ├── helpers/
-│   │   ├── Response.php
-│   │   ├── Validator.php
-│   │   ├── FileUploader.php
-│   │   ├── CsvParser.php
-│   │   ├── XmlParser.php
-│   │   ├── AsciiPlanParser.php
-│   │   └── SessionHelper.php
-│   │
-│   ├── core/
-│   │   ├── App.php
-│   │   ├── Router.php
-│   │   ├── Controller.php
-│   │   ├── Model.php
-│   │   ├── Database.php
-│   │   └── View.php
-│   │
-│   └── views/
-│       ├── layouts/
-│       │   ├── header.php
-│       │   ├── footer.php
-│       │   ├── navbar.php
-│       │   └── sidebar.php
-│       │
-│       ├── auth/
-│       │   ├── login.php
-│       │   └── register.php
-│       │
-│       ├── dashboard/
-│       │   └── index.php
-│       │
-│       ├── buildings/
-│       │   ├── index.php
-│       │   ├── create.php
-│       │   ├── edit.php
-│       │   └── details.php
-│       │
-│       ├── floors/
-│       │   ├── index.php
-│       │   ├── create.php
-│       │   └── edit.php
-│       │
-│       ├── rooms/
-│       │   ├── index.php
-│       │   ├── create.php
-│       │   ├── edit.php
-│       │   ├── details.php
-│       │   └── availability.php
-│       │
-│       ├── schedules/
-│       │   ├── index.php
-│       │   ├── calendar.php
-│       │   └── details.php
-│       │
-│       ├── events/
-│       │   ├── create.php
-│       │   ├── edit.php
-│       │   └── details.php
-│       │
-│       ├── requests/
-│       │   ├── index.php
-│       │   ├── create.php
-│       │   ├── edit.php
-│       │   └── review.php
-│       │
-│       ├── resources/
-│       │   ├── index.php
-│       │   └── manage.php
-│       │
-│       ├── routes/
-│       │   ├── index.php
-│       │   ├── map.php
-│       │   └── details.php
-│       │
-│       ├── allocation/
-│       │   ├── search.php
-│       │   ├── auto-assign.php
-│       │   └── result.php
-│       │
-│       ├── import-export/
-│       │   ├── import.php
-│       │   ├── export.php
-│       │   └── history.php
-│       │
-│       ├── users/
-│       │   ├── index.php
-│       │   ├── profile.php
-│       │   └── manage.php
-│       │
-│       └── errors/
-│           ├── 403.php
-│           ├── 404.php
-│           └── 500.php
-│
-├── config/
-│   ├── app.php
-│   ├── database.php
-│   ├── routes.php
-│   └── constants.php
-│
-├── public/
-│   ├── css/
-│   │   ├── main.css
-│   │   ├── layout.css
-│   │   ├── forms.css
-│   │   ├── dashboard.css
-│   │   ├── planner.css
-│   │   └── schedule.css
-│   │
-│   ├── js/
-│   │   ├── main.js
-│   │   ├── api.js
-│   │   ├── dragdrop.js
-│   │   ├── building-editor.js
-│   │   ├── room-visualization.js
-│   │   ├── schedule-calendar.js
-│   │   ├── route-map.js
-│   │   ├── allocation.js
-│   │   ├── import-export.js
-│   │   └── validation.js
-│   │
-│   ├── images/
-│   │   ├── logo/
-│   │   ├── icons/
-│   │   ├── buildings/
-│   │   └── ui/
-│   │
-│   ├── uploads/
-│   │   ├── imports/
-│   │   └── plans/
-│   │
-│   └── index.php
-│
-├── routes/
-│   ├── web.php
-│   └── api.php
-│
-├── storage/
-│   ├── logs/
-│   │   ├── app.log
-│   │   ├── error.log
-│   │   └── audit.log
-│   │
-│   ├── cache/
-│   ├── exports/
-│   └── temp/
-│
-├── database/
-│   ├── migrations/
-│   │   ├── 001_create_users_table.sql
-│   │   ├── 002_create_roles_table.sql
-│   │   ├── 003_create_buildings_table.sql
-│   │   ├── 004_create_floors_table.sql
-│   │   ├── 005_create_rooms_table.sql
-│   │   ├── 006_create_resources_table.sql
-│   │   ├── 007_create_events_table.sql
-│   │   ├── 008_create_schedules_table.sql
-│   │   ├── 009_create_routes_table.sql
-│   │   ├── 010_create_constraints_table.sql
-│   │   └── 011_create_audit_logs_table.sql
-│   │
-│   ├── seeders/
-│   │   ├── roles_seeder.sql
-│   │   ├── users_seeder.sql
-│   │   ├── buildings_seeder.sql
-│   │   ├── floors_seeder.sql
-│   │   └── rooms_seeder.sql
-│   │
-│   └── schema.sql
-│
-├── docs/
-│   ├── srs/
-│   ├── diagrams/
-│   ├── api/
-│   └── test-cases/
-│
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   └── manual/
-│
-├── .htaccess
-├── index.php
-├── README.md
-└── xampp-setup.txt
+Current project structure
+=========================
+
+README.md                 Project overview and documentation entrypoint
+CONTRIBUTING.md           Development and validation guide
+index.php                 HTTP front controller (repository root)
+.htaccess                 Apache routing and public asset aliases
+.env.example              Safe local configuration template
+config/app.ini            Non-secret fallback configuration
+config/routes.php         Registered HTTP endpoints
+
+app/core/                 Framework bootstrap, routing, PDO, rendering, base classes
+app/controllers/          HTTP actions, validation, sessions, role guards
+app/services/             Business workflows, allocation, routing, import/export
+app/repositories/         Prepared SQL and model mapping
+app/models/               Mutable domain records
+app/helpers/              Sessions, time, resource, delivery and sensitive-data helpers
+app/logger/               Application file logger
+app/exceptions/           Insert exception
+app/views/                Server-rendered templates grouped by feature
+
+public/css/style.css      Shared styling
+public/js/app.js          Browser validation, drafts and JSON fetch helper
+database/schema.sql       Initial MySQL schema (not a migration runner)
+database/seed.sql         Current demo fixtures
+database/*Insert.sql      Legacy standalone demo-user scripts
+docker/                   Apache virtual host and startup script
+Dockerfile                Apache/PHP image
+docker-compose.yml        Local app and MySQL services
+.gitlab-ci.yml            Runner-specific GitLab build/deploy pipeline (no tests)
+.gitattributes            LF line endings for shell scripts
+
+storage/                  Generated logs, exports and fallback sessions (Git-ignored)
+docs/                     Setup, configuration, deployment, architecture,
+                          components, HTTP, user guide, known issues, GitHub metadata
+services.md               Current service contracts
+IMPORT_EXPORT_FORMATS.md  Current CSV/XML/ASCII format reference
+
+project_requirements.txt  Original Bulgarian assignment
+project_specification.txt Proposed specification; includes unimplemented requirements
+user-roles.txt            Pointer to current permissions documentation
+admin_credentials.txt     Demo account reference
+
+The earlier structure proposal listed files that do not exist in the implementation.
+See docs/COMPONENTS.md for a linked inventory of every application component.
+No Composer manifest, frontend package manifest, migration directory, or automated
+test suite is currently included. The GitLab pipeline builds/deploys without tests.

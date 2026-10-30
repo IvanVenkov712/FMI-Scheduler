@@ -8,6 +8,10 @@ use App\Helpers\TimeHelper;
 use App\Repositories\OnlineAccessRepository;
 use App\Repositories\EventRepository;
 
+/**
+ * Validates pending requests and persists their resource/meeting associations.
+ * Caller authorization belongs to the controller, not this service.
+ */
 class EventRequestService extends BaseService
 {
     private $event_repository;

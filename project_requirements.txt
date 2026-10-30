@@ -1,3 +1,7 @@
+Documentation status: original assignment / proposed requirements.
+Preserved as planning context; not all behavior below is implemented.
+For current behavior see README.md, docs/ARCHITECTURE.md, and docs/KNOWN_ISSUES.md.
+
 Управление на график по етажи (ФМИ, Ректорат, Втори блок), & общо оптимизиране на трафика по коридорите между залите (да не се получават тапи или изчаквания).
 
 Проектиране на зали/етажи/сгради и маршрути за движение между тях. Вертикален изглед на сградите (схематичен) - от изток/запад/север/юг.

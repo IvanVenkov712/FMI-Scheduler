@@ -73,6 +73,10 @@ class MovementConstraintService extends BaseService
         return true;
     }
 
+    /**
+     * Compares a supplied group's size to each segment's effective capacity.
+     * Independent journeys are not aggregated; unspecified movement size is one.
+     */
     public function has_capacity_violation($route, $start_time, $end_time)
     {
         if (!TimeHelper::is_valid_interval($start_time, $end_time) || !is_array($route)) {

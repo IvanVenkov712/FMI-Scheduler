@@ -18,6 +18,12 @@ class SchedulePublishingService extends BaseService
         $this->approval_service = $this->dependency($approval_service, EventApprovalService::class, $this->event_repository);
     }
 
+    /**
+     * Approves a pending event, validates schedule dates, then attaches it.
+     * A later attachment failure does not roll back that approval.
+     *
+     * @return object|null The published event, or null when publication fails.
+     */
     public function publish_event_to_schedule($event_id, $schedule_id)
     {
         $event = $this->event_repository->find_by_id($event_id);

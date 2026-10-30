@@ -2,6 +2,7 @@
 namespace App\Core;
 use \PDO;
 
+/** Owns one PDO/MySQL connection; repository transactions are local to this connection. */
 class Database
 {
     private $connection;

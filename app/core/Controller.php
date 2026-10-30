@@ -2,6 +2,7 @@
 namespace App\Core;
 use App\Helpers\SensitiveDataHelper;
 
+/** Shared HTTP input, rendering and redirect helpers; domain guards live in subclasses. */
 abstract class Controller
 {
     protected $request;

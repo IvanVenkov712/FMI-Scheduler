@@ -74,6 +74,12 @@ class ImportService extends DataTransferService
         return $rooms;
     }
 
+    /**
+     * Inserts model rows independently and reports per-row failures.
+     * Input IDs are ignored; references are not remapped and prior inserts remain.
+     *
+     * @return array{success: bool, imported: int, errors: array}
+     */
     public function import_csv($file_path, $type)
     {
         if (!is_readable($file_path)) {
@@ -220,6 +226,7 @@ class ImportService extends DataTransferService
         return $data;
     }
 
+    /** Accepts declared model fields only, retaining defaults for omitted columns. */
     private function create_model($model_class, $data)
     {
         $model = new $model_class();

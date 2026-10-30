@@ -1,227 +1,111 @@
-След прочита на `project_requirements.txt` и `project_specification.txt`, за този проект най-смисленият набор е от `application services`, които стоят между controller-ите и `repository` слоя. Изискванията ясно сочат няколко домейна: сгради и етажи, зали и ресурси, маршрути и придвижване, графици и събития, заявки за изпити, автоматично разпределение, визуализация, import/export и потребители.
+# Service reference
 
-Предлагам следния набор от `services`:
+These are the services implemented in [app/services](app/services), replacing the earlier proposed service list. Services receive optional constructor dependencies; omitted dependencies are created lazily or during construction. They contain business workflows, while controllers supply HTTP/session guards.
 
-1. `AuthService`
-Отговаря за удостоверяване, проверка на парола, намиране на потребител по identity и role-based access checks. Работи естествено с `UserRepository`.
+A method existing here does not imply a registered endpoint. Consult [HTTP_API.md](docs/HTTP_API.md) and [KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) before exposing additional service methods.
 
-2. `UserService`
-Управлява потребители и роли: създаване, редакция, смяна на роля, профил, списък със заявки/събития на даден потребител. Това е отделно от `AuthService`, за да не се смесва authentication с user management.
+## Shared infrastructure
 
-3. `BuildingService`
-CRUD за сгради, извличане на пълен building tree, вертикални изгледи, агрегиране на етажите към дадена сграда. Добър match е с текущия `BuildingRepository::get_floors()`.
+| Service | Contract |
+| --- | --- |
+| [BaseService](app/services/BaseService.php) | Creates default dependencies, normalizes roles/email/newlines, refreshes updated records, and wraps repository-local transactions. `abort($result)` throws the internal `ServiceAbort`, which the wrapper catches to roll back and return that result. Other exceptions roll back and propagate. |
+| [DataTransferService](app/services/DataTransferService.php) | Shared constructor for building/floor/room/event/schedule/resource repositories and the export directory. It extends BaseService; ImportService and ExportService extend it. |
 
-4. `FloorService`
-CRUD за етажи, floor plan metadata, капацитет на етаж, зали в етажа, комуникационни точки. Ако още нямате `FloorRepository`, тук си заслужава да има.
+Transactions apply only to the PDO connection of the supplied repository. Other independently constructed repositories may use separate connections. Avoid assuming cross-repository atomicity or nesting support.
 
-5. `RoomService`
-CRUD за зали, тип на зала (`physical`, `online`, `hybrid`), капацитет, статус, местоположение в етаж, проверка дали зала е свободна, достъпни ресурси, update на ресурси в зала. Това директно стъпва върху наличния `RoomRepository`.
+## Accounts and access
 
-6. `ResourceService`
-Централизира ресурсите като каталог и валидира изисквания към тях: проектори, камера, таблет, маркери, листа, интернет и т.н. Добре е да държи логика за:
-- дефиниране на ресурс
-- наличност по зала
-- минимални изисквания за събитие
-- конфликт при недостатъчно количество
+| Service | Main public operations and behavior |
+| --- | --- |
+| [LoginService](app/services/LoginService.php) | `login(identity, password)` looks up username/email, requires an active account, and uses `password_verify`. Returns a user or `null`; session creation belongs to the controller/helper. |
+| [RegisterService](app/services/RegisterService.php) | `register(data)` normalizes identity/email, checks duplicates and nonempty password, hashes it, inserts an active student, and reloads it. Returns user/`null`; `errors()` and `error_message()` expose validation failures. Minimum password length is not enforced here. |
+| [AuthorizationService](app/services/AuthorizationService.php) | `get_role`, `has_role`, `has_any_role`, `is_authorized`, named-role predicates, and `is_active` look up active users by identity. Most HTTP guards instead use SessionHelper's role snapshot. |
+| [UserEventAccessService](app/services/UserEventAccessService.php) | `can_user_manage_event`: managers/admins or event requestor. `can_user_approve_event`: managers/admins except the requestor. `list_manageable_events` and `list_approvable_events` drive request lists. The approval controller does not call the self-approval check. |
 
-7. `ScheduleService`
-Управлява графици по ден/седмица/кампания, филтри по сграда/етаж/зала/преподавател/предмет и календарен изглед. Това е по-скоро orchestration service над `EventService`, не просто CRUD.
+## Event requests, approval, and online access
 
-8. `EventService`
-Управлява конкретните събития: изпит, лекция, упражнение, консултация, online/hybrid event, статус на събитието, свързване със зала, валидиране на time overlap. Тук стои основната логика за създаване/редакция/отмяна на събитие.
+### EventRequestService
 
-9. `ExamRequestService` или `RequestService`
-Отделна услуга за подаване и обработка на заявки за изпити/занятия. Функционалности:
-- създаване на заявка
-- предпочитана сграда/зала
-- брой студенти
-- тип провеждане
-- изисквани ресурси
-- редакция преди потвърждение
-- конвертиране на одобрена заявка в `Event`
+[Source](app/services/EventRequestService.php).
 
-10. `AvailabilityService`
-Много полезен отделен service, вместо тази логика да се разлива навсякъде. Той проверява:
-- свободна ли е зала в интервал
-- достатъчен ли е капацитетът
-- налични ли са ресурсите
-- спазени ли са ограниченията
-- кои зали са кандидати за дадено събитие
+- `submit_event_request(event, requirements = [], online_access = null)`: normalize/validate event, resources, selected room, and meeting setup; persist a pending event with requirements/online details in an event-repository transaction; return the reloaded event or `null`.
+- `edit_pending_request(event_id, new_event, new_requirements = [], new_online_access = null)`: only operates on a pending record, replacing event fields and resource requirements and updating/removing online access. This controller action currently has no route.
+- `attach_resource_requirements` and `attach_online_access`: attach validated data to an eligible pending event.
+- `errors()`: field-to-message map for the most recent request attempt.
 
-11. `AllocationService`
-Това е един от най-важните service-и според спецификацията. Отговаря за:
-- автоматично разпределение на зали
-- избор на най-подходяща зала
-- ranking/scoring на алтернативи
-- минимизиране на конфликти
-- обяснение защо е избрана дадена зала
-- batch allocation за цяла изпитна кампания
+Resource requirements accept arrays or objects with `resource_id`, `required_quantity`, and optional `notes`. Invalid or negative quantities fail; zero entries are ignored. Online data accepts an OnlineAccess-compatible object/array. Selected physical rooms are checked against approved bookings; pending requests do not reserve them.
 
-12. `RouteService`
-Управлява маршрутите и сегментите между зали/етажи/сгради. При вас това пасва на `RouteSegmentRepository`. Функционалности:
-- създаване на сегмент
-- време за придвижване
-- тип придвижване: пеша/кола/градски транспорт
-- извличане на съседни възли
-- намиране на маршрут между две точки
+### EventApprovalService
 
-13. `MovementConstraintService`
-Отделя правилата за трафик и ограничения:
-- еднопосочни коридори
-- ограничен капацитет на етаж/зона
-- буфери между събития
-- временни ограничения
-- пандемични/аварийни правила
-- проверка за конфликт при едновременно движение на групи
+[Source](app/services/EventApprovalService.php).
 
-14. `TrafficOptimizationService`
-По-аналитичен service над `RouteService` и `MovementConstraintService`. Използва се за:
-- препоръки за движение
-- откриване на potential bottlenecks
-- оценка дали две последователни събития водят до струпване
-- подпомагане на `AllocationService` при избор на зала
+- `approve_event_request(event_id)`: pending to approved after online-setup and physical booking checks; returns event/`null`.
+- `reject_event_request(event_id)`: pending to rejected; returns event/`null`.
+- `reschedule_approved_event(event_id)`: approved to pending; service-only in the current route table.
 
-15. `VisualizationService`
-Не за UI рисуването само по себе си, а за подготовка на данните за визуализация:
-- план на етаж
-- highlight на зала
-- route overlay
-- occupancy coloring
-- mapping между събитие и местоположение
-- vertical building view data
+The service does not authorize the acting user. Callers must apply their own role/ownership rules. Booking checks and status changes are not protected by a shared room lock, leaving a concurrent approval race.
 
-16. `PlanEditorService`
-Този service е нужен за drag-and-drop/ASCII плановете. Функции:
-- местене и resize на зали
-- свързване на зали с коридори/входове/стълбища
-- валидация на топологията
-- запис на floor/building plan
-- подготовка на план за export/import
+### OnlineAccessService
 
-17. `ImportService`
-Импорт от `CSV`, `XML`, ASCII план и текстови файлове. Добре е да има отделни parser/helper класове, а service-ът да оркестрира:
-- parsing
-- validation
-- preview
-- mapping
-- persist
+[Source](app/services/OnlineAccessService.php).
 
-18. `ExportService`
-Експорт на:
-- графици
-- планове
-- зали и ресурси
-- ASCII представяне
-- текстови отчети
-- евентуално audit/export history
+`provision_online_access(event_id, platform, link, key, host_notes)` stores valid meeting information for an online/hybrid event. `rotate_access_key(event_id)` generates a new stored key. `validate_hybrid_event_setup(event_id)` checks hybrid physical/online compatibility. These operations manage database records; they do not create meetings or rotate credentials through Zoom/Teams APIs.
 
-19. `ValidationService`
-Общ service за бизнес валидации, когато не искате да ги повтаряте по controller-и:
-- time interval validation
-- capacity validation
-- role/action validation
-- entity consistency
-- allowed event-room pairing
+### ExamSessionSetupService
 
-20. `AuditLogService`
-Според спецификацията и структурата има смисъл да пазите audit следи:
-- кой е създал/променил график
-- кой е одобрил заявка
-- кой е сменил ресурс/ограничение
-- import/export история
+[Source](app/services/ExamSessionSetupService.php).
 
-Ако искаш най-практичен стартов вариант за сегашния етап, бих започнал с този минимален пакет:
+`create_exam_session` validates an active requestor, subject, interval, count, delivery mode, requirements, and online setup. It creates a pending exam, attaches requirements, and, when a physical/hybrid room was omitted, calls best-room allocation. Failure to allocate aborts the transaction. Returns event/`null`.
 
-- `AuthService`
-- `UserService`
-- `BuildingService`
-- `FloorService`
-- `RoomService`
-- `ResourceService`
-- `EventService`
-- `ScheduleService`
-- `ExamRequestService`
-- `AvailabilityService`
-- `AllocationService`
-- `RouteService`
-- `ImportService`
-- `ExportService`
+`prepare_hybrid_exam` updates an existing exam's room and meeting setup. `validate_exam_capacity_and_resources` exposes room eligibility validation. Only exam creation currently has a registered HTTP route.
 
-Това е добър баланс между изискванията и текущите `repositories`. Всичко останало (`MovementConstraintService`, `TrafficOptimizationService`, `VisualizationService`, `AuditLogService`) може да дойде веднага след това като втори слой.
+## Rooms and schedules
 
-Ако искаш, в следващата стъпка мога да ти предложа и конкретна структура на `app/services/` с методи за всеки service, например `RoomService::findAvailableRooms(...)`, `AllocationService::assignBestRoom(...)`, `RouteService::findShortestPath(...)` и т.н.
+| Service | Main public operations and behavior |
+| --- | --- |
+| [RoomAvailabilityService](app/services/RoomAvailabilityService.php) | `is_room_bookable` checks valid interval/count, active room, capacity/resources, and no approved conflicts. `find_conflicting_events` returns approved overlaps. `find_eligible_rooms` permits omitted times, otherwise requires a valid pair, and sorts by capacity/ID. It does not itself filter delivery mode. |
+| [RoomAllocationService](app/services/RoomAllocationService.php) | `rank_candidate_rooms(event_id)` returns entries with `room`, `score`, `capacity_surplus`, sorted by surplus/capacity/ID. `assign_best_room` updates the event to the first candidate. `reassign_room` tries a valid preferred room then falls back to ranking. Online-only events are excluded. Returns event/`null` for assignments. |
+| [RoomResourceService](app/services/RoomResourceService.php) | `sync_room_resource(roomId, resourceId, quantity)` creates/updates an existing room/resource association, `remove_resource` removes it, and `room_meets_requirements` checks quantities. The corresponding sync controller action is unregistered. |
+| [SchedulePublishingService](app/services/SchedulePublishingService.php) | `publish_event_to_schedule` optionally approves a pending event, checks schedule dates, and adds the join row; returns event/`null`. Repeated attachment returns the event. `remove_event_from_schedule` returns a boolean. `publish_batch` handles each item independently and returns only successful events. Approval may persist after a later publication failure. |
 
-# Втори опит
-След прегледа на проекта ми се вижда, че в момента имате само 2 реални application services с бизнес стойност: [RegisterService.php](C:/Users/ivanv/FMI/WebProject/app/services/RegisterService.php) и [LoginService.php](C:/Users/ivanv/FMI/WebProject/app/services/LoginService.php). Останалата по-интересна домейн логика е разпиляна основно в repositories, най-вече [RoomRepository.php](C:/Users/ivanv/FMI/WebProject/app/repositories/RoomRepository.php), [EventRepository.php](C:/Users/ivanv/FMI/WebProject/app/repositories/EventRepository.php) и [ScheduleRepository.php](C:/Users/ivanv/FMI/WebProject/app/repositories/ScheduleRepository.php).
+Time intervals use strict overlap; adjacent bookings do not conflict. Resource quantities are checked per room/event, without shared consumable inventory across different rooms.
 
-Ако целта е service слой с значими, атомарни операции, а не общи CRUD-и, това са най-смислените кандидати:
+## Routes and movement
 
-1. `AuthenticationService`
-Примери: `registerUser(...)`, `loginWithIdentity(...)`, `validateCredentials(...)`, `ensureActiveUser(...)`.
-Това е естествено продължение на сегашните `RegisterService` и `LoginService`.
+### RoutePlanningService
 
-2. `RoomAvailabilityService`
-Примери: `isRoomBookable(roomId, interval, studentCount, resourceRequirements)`, `findConflictingEvents(...)`, `findEligibleRooms(...)`.
-Стъпва директно върху `RoomRepository::is_room_available()` и `has_available_resources()`.
+[Source](app/services/RoutePlanningService.php).
 
-3. `EventRequestService`
-Примери: `submitEventRequest(...)`, `editPendingRequest(...)`, `attachResourceRequirements(...)`, `attachOnlineAccess(...)`.
-Тук атомарната операция е “подаване/редакция на заявка за събитие”, не просто `insert event`.
+`find_route(from, to, start, end)` returns the shortest directed path by the sum of nonnegative distances. `find_accessible_route` excludes stairs and applies timed segment usability when both times are given. Results are ordered RouteSegment arrays, `[]` for the same room, or `null` for invalid/unreachable endpoints.
 
-4. `EventApprovalService`
-Примери: `approveEventRequest(eventId, approverId)`, `rejectEventRequest(...)`, `rescheduleApprovedEvent(...)`.
-Това е силен бизнес action, защото комбинира статус, зала, конфликт на време и изисквания за ресурси.
+`get_adjacent_rooms` lists active destinations of eligible outgoing segments. `get_route_distance(route)` resolves segments and totals distances, returning `null` for invalid input.
 
-5. `RoomAllocationService`
-Примери: `assignBestRoom(eventId)`, `reassignRoom(eventId, preferredRoomId = null)`, `rankCandidateRooms(...)`.
-Това е един от най-ценните service-и за вашия домейн.
+Search uses a linear-scan Dijkstra queue. Ordinary paths ignore timed constraints even when times are supplied. Distance is one scalar; the code has no distinct walking/car/transit travel-time fields.
 
-6. `SchedulePublishingService`
-Примери: `publishEventToSchedule(scheduleId, eventId)`, `removeEventFromSchedule(...)`, `publishBatch(events, scheduleId)`.
-Стъпва върху `ScheduleRepository::add_event_in_schedule()`, но прави това като бизнес операция.
+### MovementConstraintService
 
-7. `RoomResourceService`
-Примери: `syncRoomResource(roomId, resourceId, quantity)`, `ensureRoomMeetsRequirements(roomId, requirements)`, `removeUnavailableResource(...)`.
-Тук вече имате добра основа в `RoomRepository::update_resource()`.
+[Source](app/services/MovementConstraintService.php).
 
-8. `OnlineAccessService`
-Примери: `provisionOnlineAccess(eventId, platform, link, key)`, `rotateAccessKey(eventId)`, `validateHybridEventSetup(eventId)`.
-Има смисъл, защото в схемата имате отделна таблица `online_access`.
+- `is_route_segment_usable(segmentId, start, end)`: checks valid interval, segment availability, blocking rules, and nonpositive capacity restrictions.
+- `is_valid_movement_plan(route, start, end)`: checks segment continuity, usability, and capacity.
+- `has_capacity_violation(route, start, end)`: compares each route item's movement size with effective capacity.
 
-9. `RoutePlanningService`
-Примери: `findRoute(fromRoomId, toRoomId)`, `findAccessibleRoute(...)`, `getAdjacentRooms(roomId)`.
-Стъпва върху `RouteSegmentRepository` и е смислен домейн service, а не CRUD за сегменти.
+Blocking types: `blocked`, `closed`, `closure`, `maintenance`, `unavailable`, `emergency`, `pandemic`, `no_entry`. Capacity types: `capacity`, `capacity_limit`, `limited_capacity`, `reduced_capacity`, `max_capacity`.
 
-10. `MovementConstraintService`
-Примери: `isRouteSegmentUsable(segmentId, interval)`, `validateMovementPlan(route, interval)`, `detectCapacityViolation(...)`.
-Това е добър service, защото `movement_constraints` са отделен домейн слой с правила.
+Effective capacity is the minimum applicable capacity, including a positive base corridor capacity. With no applicable capacity it is unbounded. Movement size is read from `movement_size`, `student_count`, `people_count`, `group_size`, or `quantity`, defaulting to one. This validates a supplied group; it does not aggregate simultaneous independent routes.
 
-11. `ExamSessionSetupService`
-Примери: `createExamSession(...)`, `prepareHybridExam(...)`, `validateExamCapacityAndResources(...)`.
-Това е по-конкретен use-case service, много по-полезен от общ `EventService`.
+### RouteSegmentService
 
-12. `UserEventAccessService`
-Примери: `canUserManageEvent(userId, eventId)`, `canUserApproveEvent(...)`, `listManageableEvents(userId)`.
-Използва `UserRepository::get_role()` и връзката потребител-събития.
+[Source](app/services/RouteSegmentService.php).
 
-Ако трябва да ги подредя по стойност за текущия проект, бих започнал с:
-- `AuthenticationService`
-- `RoomAvailabilityService`
-- `EventRequestService`
-- `EventApprovalService`
-- `RoomAllocationService`
-- `SchedulePublishingService`
-- `RoutePlanningService`
+`resolve_route_segment(route_item)` accepts segment IDs, models, or supported array/object representations and returns a loaded segment or `null`. It centralizes resolution for distance and movement checks.
 
-Най-важното архитектурно наблюдение е, че при вас “атомарната операция” почти винаги е нещо като:
-- заяви събитие
-- провери дали може да се проведе
-- намери подходяща зала
-- одобри събитието
-- публикувай го в график
-- осигури онлайн достъп
-- провери маршрут/ограничения
+## Transfer and audit
 
-Това са добрите services. `UserService`, `RoomService`, `EventService` като чисти CRUD контейнери биха били твърде общи и слаби.
+| Service | Contract |
+| --- | --- |
+| [ImportService](app/services/ImportService.php) | CSV file, XML file/string, ASCII text/file import and token parsing. CSV/XML insert six supported model types and collect per-record errors; ASCII optionally creates/updates rooms by floor+position code. IDs are ignored. See [format reference](IMPORT_EXPORT_FORMATS.md). |
+| [ExportService](app/services/ExportService.php) | Floor/building ASCII, floor/building/schedule text files, six-type CSV, six-collection XML, arbitrary text files. Uses model fields, basenames for filenames, and `storage/exports` by default. XML without a filename can return a string; most file operations return a path or `null`. |
+| [AuditLogService](app/services/AuditLogService.php) | `record(request, user_id, username, details)` records successful mutation metadata; compacts/redacts array details and catches insert failures. It does not inherit BaseService. Audit failure does not abort the original operation. |
 
-Ако искаш, следващата стъпка мога да ти дам и конкретна структура за `app/services/` с имена на методи за всеки от тези service-и, съобразени с текущите repositories.
+Import results include `success`, `imported`, and `errors`; ASCII adds `updated`/`rooms`, XML adds `by_type`. A false success value can accompany rows already inserted. Transfer exports are not database backups.

@@ -5,6 +5,7 @@ use App\Helpers\SessionHelper;
 use App\Logger\Logger;
 use Throwable;
 
+/** Boots configuration, error handling and sessions, then dispatches registered routes. */
 class Kernel
 {
     private $root;

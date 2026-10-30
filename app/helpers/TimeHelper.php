@@ -13,6 +13,7 @@ class TimeHelper
             && $start_timestamp < $end_timestamp;
     }
 
+    /** Strict overlap permits one booking to start exactly when another ends. */
     public static function intervals_overlap($left_start, $left_end, $right_start, $right_end)
     {
         return strtotime((string) $left_start) < strtotime((string) $right_end)
