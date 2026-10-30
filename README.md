@@ -2,6 +2,8 @@
 
 FMI Scheduler is a university scheduling and campus planning application built for an FMI web programming project. It manages buildings, floors, rooms, teaching events, and exam requests in one place, helping users find suitable rooms and routes between them.
 
+Currently deployed at: https://w26-fmischeduler-yw72ij.hss.fmi.uni-sofia.bg/
+
 The application uses PHP with a custom MVC framework, MySQL, server-rendered HTML, CSS, and vanilla JavaScript. Docker provides a local Apache/PHP and MySQL environment; native Apache/PHP installations such as XAMPP are also supported. There is no Composer dependency installation or frontend build step.
 
 ## Features
